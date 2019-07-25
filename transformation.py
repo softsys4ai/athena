@@ -379,6 +379,9 @@ def cartoonify(original_images, transformation):
     filter_sigma_color = 300
     filter_sigma_space = 300
 
+    if (adaptive_method == 'gaussian'):
+        adaptive_method = cv2.ADAPTIVE_THRESH_GAUSSIAN_C
+
     if (catoon_type == 'type2'):
         thresh_bsize = 3
     elif (catoon_type == 'type3'):
