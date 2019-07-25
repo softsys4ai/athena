@@ -1,26 +1,14 @@
+"""
+Implement transformations.
+@author: Ying Meng (y(dot)meng201011(at)gmail(dot)com)
+"""
 import cv2
 import numpy as np
 
-IMG_ROW = 28
-IMG_COL = 28
+from keras.preprocessing.image import ImageDataGenerator
 
-# list of transformations
-IMG_ROTATE = ['rotate90', 'rotate180', 'rotate270']
-IMG_SHIFT = ['shift_left', 'shift_right', 'shift_up', 'shift_down',
-          'shift_top_left', 'shift_top_right', 'shift_bottom_right', 'shift_bottom_left']
-IMG_FLIP = ['horizontal_flip', 'vertical_flip', 'both_flip']
-IMG_AFFINE_TRANS = ['affine_vertical_compress', 'affine_vertical_stretch',
-                  'affine_horizontal_compress', 'affine_horizontal_stretch',
-                  'affine_both_compress', 'affine_both_stretch']
-IMG_MORPH_TRANS = ['erosion', 'dilation', 'opening', 'closing', 'gradient']
-IMG_TRANSFORMATIONS = []
-
-IMG_TRANSFORMATIONS.extend(IMG_ROTATE)
-IMG_TRANSFORMATIONS.extend(IMG_SHIFT)
-IMG_TRANSFORMATIONS.extend(IMG_FLIP)
-IMG_TRANSFORMATIONS.extend(IMG_AFFINE_TRANS)
-IMG_TRANSFORMATIONS.extend(IMG_MORPH_TRANS)
-
+from config import *
+from plot import draw_comparisons
 
 def rotate(original_images, transformation):
     """
@@ -33,24 +21,24 @@ def rotate(original_images, transformation):
     trans_matrix = None
     
     transformed_images = []
-    center = (IMG_ROW/2, IMG_COL/2)
+    center = (DATA.IMG_ROW/2, DATA.IMG_COL/2)
     
     # ---------------
     # rotate images
     # ---------------
-    if transformation == 'rotate90':
+    if (transformation == TRANSFORMATION.rotate90):
         # rotate 90-deg counterclockwise
         angle = 90
         scale = 1.0
 
         trans_matrix = cv2.getRotationMatrix2D(center, angle, scale)
-    elif transformation == 'rotate180':
+    elif (transformation == TRANSFORMATION.rotate180):
         # rotate 180-deg counterclockwise
         angle = 180
         scale = 1.0
         
         trans_matrix = cv2.getRotationMatrix2D(center, angle, scale)
-    elif transformation == 'rotate270':
+    elif (transformation == TRANSFORMATION.rotate270):
         # rotate 270-deg counterclockwise
         angle = 270
         scale = 1.0
@@ -63,9 +51,12 @@ def rotate(original_images, transformation):
     transformed_images = np.zeros_like(original_images)
     for i in range(original_images.shape[0]):
         transformed_images[i] = np.expand_dims(cv2.warpAffine(original_images[i], trans_matrix, 
-                                                              (IMG_COL, IMG_ROW)), axis=2)
+                                                              (DATA.IMG_COL, DATA.IMG_ROW)), axis=2)
 
     print('Applied transformation {}.'.format(transformation))
+
+    if MODE.DEBUG:
+        draw_comparisons(original_images, transformed_images)
         
     return transformed_images
 
@@ -87,31 +78,31 @@ def shift(original_images, transformation):
     #      [0, 1, ty]]
     #
     # -----------------------------------------
-    tx = tf.cast(0.15 * IMG_COL, tf.int32)
-    ty = tf.cast(0.15 * IMG_ROW, tf.int32)
+    tx = int(0.15 * DATA.IMG_COL)
+    ty = int(0.15 * DATA.IMG_ROW)
 
-    if transformation == 'shift_left':
+    if (transformation == TRANSFORMATION.shift_left):
         tx = 0 - tx
         ty = 0
-    elif transformation == 'shift_right':
+    elif (transformation == TRANSFORMATION.shift_right):
         tx = tx
         ty = 0
-    elif transformation == 'shift_up':
+    elif (transformation == TRANSFORMATION.shift_up):
         tx = 0
         ty = 0 - ty
-    elif transformation == 'shift_down':
+    elif (transformation == TRANSFORMATION.shift_down):
         tx = 0
         ty = ty
-    elif transformation == 'shift_top_right':
+    elif (transformation == TRANSFORMATION.shift_top_right):
         tx = tx
         ty = 0 - ty
-    elif transformation == 'shift_top_left':
+    elif (transformation == TRANSFORMATION.shift_top_left):
         tx = 0 - tx
         ty = 0 - ty
-    elif transformation == 'shift_bottom_left':
+    elif (transformation == TRANSFORMATION.shift_bottom_left):
         tx = 0 - tx
         ty = ty
-    elif transformation == 'shift_bottom_right':
+    elif (transformation == TRANSFORMATION.shift_bottom_right):
         tx = tx
         ty = ty
     else:
@@ -126,9 +117,12 @@ def shift(original_images, transformation):
     transformed_images = np.zeros_like(original_images)
     for i in range(original_images.shape[0]):
         transformed_images[i] = np.expand_dims(cv2.warpAffine(original_images[i], trans_matrix,
-                                                              (IMG_COL, IMG_ROW)), axis=2)
+                                                              (DATA.IMG_COL, DATA.IMG_ROW)), axis=2)
 
     print('Applied transformation {}.'.format(transformation))
+
+    if MODE.DEBUG:
+        draw_comparisons(original_images, transformed_images)
 
     return transformed_images
 
@@ -145,13 +139,13 @@ def flip(original_images, transformation):
 
     # set flipping direction
     flip_direction = 0
-    if transformation == 'vertical_flip':
+    if (transformation == TRANSFORMATION.vertical_flip):
         # flip around the x-axis
         flip_direction = 0
-    elif transformation == 'horizontal_flip':
+    elif (transformation == TRANSFORMATION.horizontal_flip):
         # flip around the y-axis
         flip_direction = 1
-    elif transformation == 'both_flip':
+    elif (transformation == TRANSFORMATION.both_flip):
         # flip around both axes
         flip_direction = -1
     else:
@@ -161,6 +155,8 @@ def flip(original_images, transformation):
     for i in range(original_images.shape[0]):
         transformed_images[i] = np.expand_dims(cv2.flip(original_images[i], flip_direction), axis=2)
 
+    if MODE.DEBUG:
+        draw_comparisons(original_images, transformed_images)
 
     return transformed_images
 
@@ -180,36 +176,36 @@ def affine_trans(original_images, transformation):
     # from the original image and their corresponding locations in transformed image.
     # Then, the transformation matrix M (2x3) can be generated by getAffineTransform():
     # -----------------------------------------
-    point1 = [0.25 * IMG_COL, 0.25 * IMG_ROW]
-    point2 = [0.25 * IMG_COL, 0.5 * IMG_ROW]
-    point3 = [0.5 * IMG_COL, 0.25 * IMG_ROW]
+    point1 = [0.25 * DATA.IMG_COL, 0.25 * DATA.IMG_ROW]
+    point2 = [0.25 * DATA.IMG_COL, 0.5 * DATA.IMG_ROW]
+    point3 = [0.5 * DATA.IMG_COL, 0.25 * DATA.IMG_ROW]
 
     pts_original = np.float32([point1, point2, point3])
 
-    if (transformation == 'affine_vertical_compress'):
-        point1 = [0.25 * IMG_COL, 0.25 * IMG_ROW]
-        point2 = [0.25 * IMG_COL, 0.4 * IMG_ROW]
-        point3 = [0.5 * IMG_COL, 0.25 * IMG_ROW]
-    elif (transformation == 'affine_vertical_stretch'):
-        point1 = [0.25 * IMG_COL, 0.25 * IMG_ROW]
-        point2 = [0.25 * IMG_COL, 0.6 * IMG_ROW]
-        point3 = [0.5 * IMG_COL, 0.25 * IMG_ROW]
-    elif (transformation == 'affine_horizontal_compress'):
-        point1 = [0.25 * IMG_COL, 0.25 * IMG_ROW]
-        point2 = [0.25 * IMG_COL, 0.5 * IMG_ROW]
-        point3 = [0.4 * IMG_COL, 0.25 * IMG_ROW]
-    elif (transformation == 'affine_horizontal_stretch'):
-        point1 = [0.25 * IMG_COL, 0.25 * IMG_ROW]
-        point2 = [0.25 * IMG_COL, 0.5 * IMG_ROW]
-        point3 = [0.6 * IMG_COL, 0.25 * IMG_ROW]
-    elif (transformation == 'affine_both_compress'):
-        point1 = [0.25 * IMG_COL, 0.25 * IMG_ROW]
-        point2 = [0.25 * IMG_COL, 0.4 * IMG_ROW]
-        point3 = [0.4 * IMG_COL, 0.25 * IMG_ROW]
-    elif (transformation == 'affine_both_stretch'):
-        point1 = [0.25 * IMG_COL, 0.25 * IMG_ROW]
-        point2 = [0.25 * IMG_COL, 0.6 * IMG_ROW]
-        point3 = [0.6 * IMG_COL, 0.25 * IMG_ROW]
+    if (transformation == TRANSFORMATION.affine_vertical_compress):
+        point1 = [0.25 * DATA.IMG_COL, 0.25 * DATA.IMG_ROW]
+        point2 = [0.25 * DATA.IMG_COL, 0.4 * DATA.IMG_ROW]
+        point3 = [0.5 * DATA.IMG_COL, 0.25 * DATA.IMG_ROW]
+    elif (transformation == TRANSFORMATION.affine_vertical_stretch):
+        point1 = [0.25 * DATA.IMG_COL, 0.25 * DATA.IMG_ROW]
+        point2 = [0.25 * DATA.IMG_COL, 0.6 * DATA.IMG_ROW]
+        point3 = [0.5 * DATA.IMG_COL, 0.25 * DATA.IMG_ROW]
+    elif (transformation == TRANSFORMATION.affine_horizontal_compress):
+        point1 = [0.25 * DATA.IMG_COL, 0.25 * DATA.IMG_ROW]
+        point2 = [0.25 * DATA.IMG_COL, 0.5 * DATA.IMG_ROW]
+        point3 = [0.4 * DATA.IMG_COL, 0.25 * DATA.IMG_ROW]
+    elif (transformation == TRANSFORMATION.affine_horizontal_stretch):
+        point1 = [0.25 * DATA.IMG_COL, 0.25 * DATA.IMG_ROW]
+        point2 = [0.25 * DATA.IMG_COL, 0.5 * DATA.IMG_ROW]
+        point3 = [0.6 * DATA.IMG_COL, 0.25 * DATA.IMG_ROW]
+    elif (transformation == TRANSFORMATION.affine_both_compress):
+        point1 = [0.25 * DATA.IMG_COL, 0.25 * DATA.IMG_ROW]
+        point2 = [0.25 * DATA.IMG_COL, 0.4 * DATA.IMG_ROW]
+        point3 = [0.4 * DATA.IMG_COL, 0.25 * DATA.IMG_ROW]
+    elif (transformation == TRANSFORMATION.affine_both_stretch):
+        point1 = [0.25 * DATA.IMG_COL, 0.25 * DATA.IMG_ROW]
+        point2 = [0.25 * DATA.IMG_COL, 0.6 * DATA.IMG_ROW]
+        point3 = [0.6 * DATA.IMG_COL, 0.25 * DATA.IMG_ROW]
     else:
         raise ValueError('{} is not supported.'.format(transformation))
 
@@ -223,7 +219,10 @@ def affine_trans(original_images, transformation):
     transformed_images = np.zeros_like(original_images)
     for i in range(original_images.shape[0]):
         transformed_images[i] = np.expand_dims(cv2.warpAffine(original_images[i], trans_matrix,
-                                                              (IMG_COL, IMG_ROW)), axis=2)
+                                                              (DATA.IMG_COL, DATA.IMG_ROW)), axis=2)
+
+    if MODE.DEBUG:
+        draw_comparisons(original_images, transformed_images)
 
     print('Applied transformation {}.'.format(transformation))
 
@@ -241,9 +240,9 @@ def morph_trans(original_images, transformation):
     transformed_images = np.zeros_like(original_images)
 
     # set kernel as a matrix of size 2
-    kernel = np.ones((2,2),np.uint8)
+    kernel = np.ones((2, 2),np.uint8)
 
-    if transformation == 'dilation':
+    if (transformation == TRANSFORMATION.dilation):
         # min filter (Graphics Mill)
         # It's opposite of erosion (max filter)
         # In dilation, a pixel element is '1' if at least one pixel
@@ -252,7 +251,7 @@ def morph_trans(original_images, transformation):
         for i in range(original_images.shape[0]):
             transformed_images[i] = np.expand_dims(cv2.dilate(original_images[i],
                                                               kernel, iterations=1), axis=2)
-    elif transformation == 'erosion':
+    elif (transformation == TRANSFORMATION.erosion):
         # max filter (Graphic Mill)
         # The basic idea of erosion is like soil erosion.
         # It erodes away the boundaries of foreground object
@@ -263,17 +262,17 @@ def morph_trans(original_images, transformation):
         for i in range(original_images.shape[0]):
             transformed_images[i] = np.expand_dims(cv2.erode(original_images[i],
                                                               kernel, iterations=1), axis=2)
-    elif transformation == 'opening':
+    elif (transformation == TRANSFORMATION.opening):
         # erosion followed by dilation
         for i in range(original_images.shape[0]):
             transformed_images[i] = np.expand_dims(cv2.morphologyEx(original_images[i],
                                                               cv2.MORPH_OPEN, kernel), axis=2)
-    elif transformation == 'closing':
+    elif (transformation == TRANSFORMATION.closing):
         # erosion followed by dilation
         for i in range(original_images.shape[0]):
             transformed_images[i] = np.expand_dims(cv2.morphologyEx(original_images[i],
                                                               cv2.MORPH_CLOSE, kernel), axis=2)
-    elif transformation == 'gradient':
+    elif (transformation == TRANSFORMATION.gradient):
         # keep the outline of the object
         for i in range(original_images.shape[0]):
             transformed_images[i] = np.expand_dims(cv2.morphologyEx(original_images[i],
@@ -283,20 +282,105 @@ def morph_trans(original_images, transformation):
 
     print('Applied transformation {}.'.format(transformation))
 
+    if MODE.DEBUG:
+        draw_comparisons(original_images, transformed_images)
 
     return transformed_images
 
+def augment(dataset, transformation):
+    original_images, desired_labels = dataset
+    data_generator = None
+
+    transformed_iamges = []
+    transformed_labels = []
+
+    if (transformation == TRANSFORMATION.samplewise_std_norm):
+        data_generator = ImageDataGenerator(samplewise_center=True,
+                                            samplewise_std_normalization=True)
+    elif (transformation == TRANSFORMATION.feature_std_norm):
+        data_generator = ImageDataGenerator(featurewise_center=True,
+                                            featurewise_std_normalization=True)
+    elif (transformation == TRANSFORMATION.zca_whitening):
+        data_generator = ImageDataGenerator(zca_whitening=True)
+    elif (transformation == TRANSFORMATION.pca_whitening):
+        raise NotImplementedError('{} is not ready yet.'.format(transformation))
+
+    # fit parameters from data
+    data_generator.fit(original_images)
+    batch_size = 1
+    cnt_trans = 0
+    input_size = len(original_images)
+
+    for X_batch, Y_batch in data_generator.flow(original_images, desired_labels, batch_size=batch_size):
+        for i in range(X_batch.shape[0]):
+            transformed_iamges.append(X_batch[i])
+            transformed_labels.append(Y_batch[i])
+
+        cnt_trans += batch_size
+        if (cnt_trans >= input_size):
+            print('transformed {} inputs.'.format(cnt_trans))
+            break
+
+    print('Applied transformation {}.'.format(transformation))
+
+    if MODE.DEBUG:
+        draw_comparisons(original_images, transformed_iamges)
+
+    return (transformed_iamges, transformed_labels)
+
+def cartoon_effect(original_images, **kwargs):
+    transformed_images = np.zeros_like(original_images)
+
+    blur_ksize = kwargs.get('blur_ksize', 3)
+
+    thresh_adaptive_method = kwargs.get('thresh_adaptive_method', cv2.ADAPTIVE_THRESH_MEAN_C)
+    thresh_bsize = kwargs.get('thresh_bsize', 9)
+    thresh_C = kwargs.get('thresh_C', 9)
+
+    filter_d = kwargs.get('filter_d', 9)
+    filter_sigma_color = kwargs.get('filter_sigma_color', 300)
+    filter_sigma_space = kwargs.get('filter_sigma_space', 300)
+
+    for i in range(original_images.shape[0]):
+        img = original_images[i] * 255
+        img = np.asarray(img, np.uint8)
+
+        # detecting edges
+        gray = cv2.medianBlur(src=img, ksize=blur_ksize)
+        edges = cv2.adaptiveThreshold(src=gray, maxValue=255, adaptiveMethod=thresh_adaptive_method,
+                                      thresholdType=cv2.THRESH_BINARY, blockSize=thresh_bsize, C=thresh_C)
+
+        # color
+        color = cv2.bilateralFilter(src=img, d=filter_d, sigmaColor=filter_sigma_color, sigmaSpace=filter_sigma_space)
+        # cartoon effect
+        cartoon = cv2.bitwise_and(src1=color, src2=color, mask=edges)
+        transformed_images[i] = np.expand_dims(cartoon, axis=2)
+
+    print('Applied cartoon effects.')
+
+    if MODE.DEBUG:
+        draw_comparisons(original_images, transformed_images)
+
+    return transformed_images
 
 def transform_images(X, transformation_type):
-    if (transformation_type in IMG_ROTATE):
+    """
+    Main entrance applying transformations on images.
+    :param X: the images to apply transformation.
+    :param transformation_type:
+    :return: the transformed images.
+    """
+    if (transformation_type in TRANSFORMATION.ROTATE):
         return rotate(X, transformation_type)
-    elif (transformation_type in IMG_FLIP):
+    elif (transformation_type in TRANSFORMATION.FLIP):
         return flip(X, transformation_type)
-    elif (transformation_type in IMG_SHIFT):
+    elif (transformation_type in TRANSFORMATION.SHIFT):
         return shift(X, transformation_type)
-    elif (transformation_type in IMG_AFFINE_TRANS):
+    elif (transformation_type in TRANSFORMATION.AFFINE_TRANS):
         return affine_trans(X, transformation_type)
-    elif (transformation_type in IMG_MORPH_TRANS):
+    elif (transformation_type in TRANSFORMATION.MORPH_TRANS):
         return morph_trans(X, transformation_type)
-
-
+    elif (transformation_type in TRANSFORMATION.AUGMENT):
+        return augment(X, transformation_type)
+    elif (transformation_type in TRANSFORMATION.CARTOONS):
+        return cartoon_effect(X)
