@@ -287,12 +287,11 @@ def morph_trans(original_images, transformation):
 
     return transformed_images
 
-def augment(dataset, transformation):
-    original_images, desired_labels = dataset
+def augment(original_images, desired_labels, transformation):
     data_generator = None
 
-    transformed_iamges = []
-    transformed_labels = []
+    transformed_images = np.zeros_like(original_images)
+    transformed_labels = np.zeros_like(desired_labels)
 
     if (transformation == TRANSFORMATION.samplewise_std_norm):
         data_generator = ImageDataGenerator(samplewise_center=True,
@@ -307,30 +306,31 @@ def augment(dataset, transformation):
 
     # fit parameters from data
     data_generator.fit(original_images)
-    batch_size = 1
+    batch_size = 128
     cnt_trans = 0
     input_size = len(original_images)
 
     for X_batch, Y_batch in data_generator.flow(original_images, desired_labels, batch_size=batch_size):
-        for i in range(X_batch.shape[0]):
-            transformed_iamges.append(X_batch[i])
-            transformed_labels.append(Y_batch[i])
+        for image, label in zip(X_batch, Y_batch):
+            transformed_images[cnt_trans] = image
+            transformed_labels[cnt_trans] = label
+            cnt_trans += 1
 
-        cnt_trans += batch_size
         if (cnt_trans >= input_size):
             print('transformed {} inputs.'.format(cnt_trans))
             break
 
     print('Applied transformation {}.'.format(transformation))
-
+    print(transformed_images.shape, transformed_labels.shape)
     if MODE.DEBUG:
-        draw_comparisons(original_images, transformed_iamges)
+        draw_comparisons(original_images, transformed_images)
 
-    return (transformed_iamges, transformed_labels)
+    return (transformed_images, transformed_labels)
 
 def cartoon_effect(original_images, **kwargs):
     transformed_images = np.zeros_like(original_images)
 
+    # default type: cartoon_mean_type1
     blur_ksize = kwargs.get('blur_ksize', 3)
 
     thresh_adaptive_method = kwargs.get('thresh_adaptive_method', cv2.ADAPTIVE_THRESH_MEAN_C)
@@ -354,7 +354,7 @@ def cartoon_effect(original_images, **kwargs):
         color = cv2.bilateralFilter(src=img, d=filter_d, sigmaColor=filter_sigma_color, sigmaSpace=filter_sigma_space)
         # cartoon effect
         cartoon = cv2.bitwise_and(src1=color, src2=color, mask=edges)
-        transformed_images[i] = np.expand_dims(cartoon, axis=2)
+        transformed_images[i] = np.expand_dims(cartoon/255, axis=2)
 
     print('Applied cartoon effects.')
 
@@ -363,7 +363,37 @@ def cartoon_effect(original_images, **kwargs):
 
     return transformed_images
 
-def transform_images(X, transformation_type):
+def cartoonify(original_images, transformation):
+    print('Applying transformation {}...'.format(transformation))
+
+    adaptive_method = transformation.split('_')[1]
+    catoon_type = transformation.split('_')[2]
+
+    # default type: cartoon_mean_type1
+    blur_ksize = 3
+    thresh_adaptive_method = cv2.ADAPTIVE_THRESH_MEAN_C
+    thresh_bsize = 9
+    thresh_C = 9
+
+    filter_d = 9
+    filter_sigma_color = 300
+    filter_sigma_space = 300
+
+    if (catoon_type == 'type2'):
+        thresh_bsize = 3
+    elif (catoon_type == 'type3'):
+        thresh_C = 3
+    elif (catoon_type == 'type4'):
+        thresh_bsize = 5
+        filter_d = 25
+
+    return cartoon_effect(original_images, blur_ksize=blur_ksize,
+                          thresh_adaptive_method=thresh_adaptive_method,
+                          thresh_bsize=thresh_bsize, thresh_C=thresh_C,
+                          filter_d=filter_d, filter_sigma_color=filter_sigma_color,
+                          filter_sigma_space=filter_sigma_space)
+
+def transform_images(X, transformation_type, *args):
     """
     Main entrance applying transformations on images.
     :param X: the images to apply transformation.
@@ -381,6 +411,6 @@ def transform_images(X, transformation_type):
     elif (transformation_type in TRANSFORMATION.MORPH_TRANS):
         return morph_trans(X, transformation_type)
     elif (transformation_type in TRANSFORMATION.AUGMENT):
-        return augment(X, transformation_type)
+        return augment(X, args[0], transformation_type)
     elif (transformation_type in TRANSFORMATION.CARTOONS):
-        return cartoon_effect(X)
+        return cartoonify(X, transformation_type)
