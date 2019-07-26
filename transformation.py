@@ -414,6 +414,7 @@ def transform_images(X, transformation_type, *args):
     elif (transformation_type in TRANSFORMATION.MORPH_TRANS):
         return morph_trans(X, transformation_type)
     elif (transformation_type in TRANSFORMATION.AUGMENT):
-        return augment(X, args[0], transformation_type)
+        (transformed_images, _) = augment(X, args[0], transformation_type)
+        return transformed_images
     elif (transformation_type in TRANSFORMATION.CARTOONS):
         return cartoonify(X, transformation_type)
