@@ -414,7 +414,10 @@ def transform_images(X, transformation_type, *args):
     elif (transformation_type in TRANSFORMATION.MORPH_TRANS):
         return morph_trans(X, transformation_type)
     elif (transformation_type in TRANSFORMATION.AUGMENT):
-        (transformed_images, _) = augment(X, args[0], transformation_type)
-        return transformed_images
+        """
+        A tuple of (transformed_images, new_desired_labels) will be return.
+        Images are shuffled after applied augment transformations.
+        """
+        return augment(X, desired_labels=args[0], transformation_type)
     elif (transformation_type in TRANSFORMATION.CARTOONS):
         return cartoonify(X, transformation_type)
