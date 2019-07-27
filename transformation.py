@@ -403,7 +403,12 @@ def transform_images(X, transformation_type, *args):
     :param transformation_type:
     :return: the transformed images.
     """
-    if (transformation_type in TRANSFORMATION.ROTATE):
+    if (transformation_type == TRANSFORMATION.clean):
+        """
+        Do not apply any transformation for 'clean' images.
+        """
+        return X
+    elif (transformation_type in TRANSFORMATION.ROTATE):
         return rotate(X, transformation_type)
     elif (transformation_type in TRANSFORMATION.FLIP):
         return flip(X, transformation_type)
@@ -418,6 +423,7 @@ def transform_images(X, transformation_type, *args):
         A tuple of (transformed_images, new_desired_labels) will be return.
         Images are shuffled after applied augment transformations.
         """
-        return augment(X, desired_labels=args[0], transformation_type)
+        Y = args[0]
+        return augment(X, Y, transformation_type)
     elif (transformation_type in TRANSFORMATION.CARTOONS):
         return cartoonify(X, transformation_type)
