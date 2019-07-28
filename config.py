@@ -81,19 +81,20 @@ class TRANSFORMATION:
                 cartoon_gaussian_type1, cartoon_gaussian_type2, cartoon_gaussian_type3, cartoon_gaussian_type4]
     GAUSSIAN_NOISES = []
 
-    def supported_types(self):
+    @classmethod
+    def supported_types(cls):
         transformations = ['clean']
-        transformations.extend(self.ROTATE)
-        transformations.extend(self.SHIFT)
-        transformations.extend(self.FLIP)
-        transformations.extend(self.AFFINE_TRANS)
-        transformations.extend(self.MORPH_TRANS)
-        transformations.extend(self.AUGMENT)
-        transformations.extend(self.CARTOONS)
-        #transformations.extend(self.THRESHING) # not ready yet
-        #transformations.extend(self.SCALING) # not ready yet
-        #transformations.extend(self.SHEAR) # not ready yet
-        #transformations.extend(self.GAUSSIAN_NOISES) # not ready yet
+        transformations.extend(TRANSFORMATION.ROTATE)
+        transformations.extend(TRANSFORMATION.SHIFT)
+        transformations.extend(TRANSFORMATION.FLIP)
+        transformations.extend(TRANSFORMATION.AFFINE_TRANS)
+        transformations.extend(TRANSFORMATION.MORPH_TRANS)
+        transformations.extend(TRANSFORMATION.AUGMENT)
+        transformations.extend(TRANSFORMATION.CARTOONS)
+        #transformations.extend(TRANSFORMATION.THRESHING) # not ready yet
+        #transformations.extend(TRANSFORMATION.SCALING) # not ready yet
+        #transformations.extend(TRANSFORMATION.SHEAR) # not ready yet
+        #transformations.extend(TRANSFORMATION.GAUSSIAN_NOISES) # not ready yet
 
         return transformations
 
@@ -114,23 +115,28 @@ class DATA:
     NB_CLASSES = 10
     VALIDATION_RATE = 0.2
 
-    def info(self):
-        print('Dataset: {}'.format(self.DATASET))
-        print('Image size: rows - {}; cols - {}'.format(self.IMG_ROW, self.IMG_COL))
-        print('Validation ratio: {}'.format(self.VALIDATION_RATE))
+    @classmethod
+    def info(cls):
+        print('Dataset: {}'.format(DATA.DATASET))
+        print('Image size: rows - {}; cols - {}'.format(DATA.IMG_ROW, DATA.IMG_COL))
+        print('Validation ratio: {}'.format(DATA.VALIDATION_RATE))
 
-    def set_dataset(self, dataset):
-        self.DATASET = dataset
+    @classmethod
+    def set_dataset(cls, dataset):
+        DATA.DATASET = dataset
 
-    def set_img_size(self, img_rows, img_cols):
-        self.IMG_ROW = img_rows
-        self.IMG_COL = img_cols
+    @classmethod
+    def set_img_size(cls, img_rows, img_cols):
+        DATA.IMG_ROW = img_rows
+        DATA.IMG_COL = img_cols
 
-    def set_number_classes(self, nb_classes):
-        self.NB_CLASSES = nb_classes
+    @classmethod
+    def set_number_classes(cls, nb_classes):
+        DATA.NB_CLASSES = nb_classes
 
-    def set_validation_rate(self, val_rate):
-        self.VALIDATION_RATE = val_rate
+    @classmethod
+    def set_validation_rate(cls, val_rate):
+        DATA.VALIDATION_RATE = val_rate
 
 class MODEL:
     """
@@ -141,7 +147,7 @@ class MODEL:
     NAME = '{}_{}_{}.model'.format(DATA.DATASET, TYPE, TRANS)
     LEARNING_RATE = 0.01
     BATCH_SIZE = 128
-    EPOCHS = 1
+    EPOCHS = 5
 
     def set_model_type(self, type):
         self.TYPE = type

@@ -7,6 +7,8 @@ import numpy as np
 from keras.preprocessing.image import ImageDataGenerator
 
 from config import *
+from plot import draw_comparisons
+
 
 def rotate(original_images, transformation):
     """
