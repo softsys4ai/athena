@@ -7,7 +7,6 @@ import numpy as np
 from keras.preprocessing.image import ImageDataGenerator
 
 from config import *
-from plot import draw_comparisons
 
 def rotate(original_images, transformation):
     """
@@ -310,14 +309,19 @@ def augment(original_images, transformation):
         raise ValueError('{} is not supported.'.format(transformation))
 
     # fit parameters from data
-    num_of_images = original_images.shape[0]
-    for i in range(num_of_images):
-        x = np.zeros((1, 28, 28, 1))
-        x[0, :, :, 0] = original_images[i, :, :, 0]
-        data_generator.fit(x)
-        for trans_x in data_generator.flow(x, batch_size=1):
-            transformed_images[i] = np.expand_dims(trans_x, axis=0)
-            break
+    data_generator.fit(original_images)
+    batch_size = 128
+    cnt_trans = 0
+    input_size = len(original_images)
+
+    for X_batch in data_generator.flow(original_images, shuffle=False,  batch_size=batch_size):
+        for image in X_batch:
+            transformed_images[cnt_trans] = image
+            cnt_trans += 1
+
+        if (cnt_trans >= input_size):
+            print('transformed {} inputs.'.format(cnt_trans))
+            break;
 
     if MODE.DEBUG:
         draw_comparisons(original_images, transformed_images)
