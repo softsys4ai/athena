@@ -103,7 +103,7 @@ class ATTACK:
     Define attack related configuration.
     """
     APPROACHES = ['fgsm', 'iter_fgsm', 'deepfool', 'cw', 'jsma']
-    FGSM_EPS = [0.10, 0.15, 0.175, 0.20, 0.225, 0.25]
+    FGSM_EPS = [0.005, 0.01, 0.025, 0.05, 0.075, 0.1, 0.125, 0.15, 0.175, 0.2, 0.225, 0.25, 0.5, 1]
 
 class DATA:
     """

@@ -316,6 +316,7 @@ def augment(original_images, transformation):
     cnt_trans = 0
     input_size = len(original_images)
 
+
     for X_batch in data_generator.flow(original_images, shuffle=False,  batch_size=batch_size):
         for image in X_batch:
             transformed_images[cnt_trans] = image
