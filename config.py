@@ -2,6 +2,7 @@
 Define global configurations.
 @author: Ying Meng (y(dot)meng201011(at)gmail(dot)com
 """
+import numpy as np
 
 class TRANSFORMATION:
     """
@@ -73,13 +74,9 @@ class TRANSFORMATION:
                     affine_horizontal_compress, affine_horizontal_stretch,
                     affine_both_compress, affine_both_stretch]
     MORPH_TRANS = [erosion, dilation, opening, closing, gradient]
-    THRESHING = [thresh_binary, thresh_mean, thresh_gaussian] # not ready yet
     AUGMENT = [samplewise_std_norm, feature_std_norm, zca_whitening]
-    SCALING = [scaling, upsampling, downsampling] # not ready yet
-    SHEAR = [horizontal_shear, vertical_shear, range_shear] # not ready yet
     CARTOONS = [cartoon_mean_type1, cartoon_mean_type2, cartoon_mean_type3, cartoon_mean_type4,
                 cartoon_gaussian_type1, cartoon_gaussian_type2, cartoon_gaussian_type3, cartoon_gaussian_type4]
-    GAUSSIAN_NOISES = []
 
     @classmethod
     def supported_types(cls):
@@ -91,10 +88,6 @@ class TRANSFORMATION:
         transformations.extend(TRANSFORMATION.MORPH_TRANS)
         transformations.extend(TRANSFORMATION.AUGMENT)
         transformations.extend(TRANSFORMATION.CARTOONS)
-        #transformations.extend(TRANSFORMATION.THRESHING) # not ready yet
-        #transformations.extend(TRANSFORMATION.SCALING) # not ready yet
-        #transformations.extend(TRANSFORMATION.SHEAR) # not ready yet
-        #transformations.extend(TRANSFORMATION.GAUSSIAN_NOISES) # not ready yet
 
         return transformations
 
@@ -102,8 +95,83 @@ class ATTACK:
     """
     Define attack related configuration.
     """
-    APPROACHES = ['fgsm', 'iter_fgsm', 'deepfool', 'cw', 'jsma']
-    FGSM_EPS = [0.005, 0.01, 0.025, 0.05, 0.075, 0.1, 0.125, 0.15, 0.175, 0.2, 0.225, 0.25, 0.5, 1]
+    # ---------------------------
+    # Supported methods
+    # ---------------------------
+    FGSM = 'fgsm'
+    BIM = 'bim'
+    DEEPFOOL = 'deepfool'
+    CW = 'cw'
+    JSMA = 'jsma'
+    ONE_PIXEL = 'one-pixel'
+    PGD = 'pgd'
+    BLACKBOX = 'blackbox'
+
+    @classmethod
+    def get_supported_attacks(cls):
+        return [ATTACK.FGSM, ATTACK.BIM, ATTACK.DEEPFOOL, ATTACK.JSMA, ATTACK.CW,
+                ATTACK.ONE_PIXEL, ATTACK.PGD, ATTACK.BLACKBOX]
+
+    # ---------------------------
+    # FGSM Parameters
+    # ---------------------------
+    @classmethod
+    def get_fgsm_eps(cls):
+        # return [0.25, 0.3, 0.5, 0.1, 0.05, 0.01, 0.005] # full set
+        return [0.01]
+
+    # ---------------------------
+    # i-FGSM/BIM Parameters
+    # ---------------------------
+    @classmethod
+    def get_bim_nbIter(cls):
+        # return [1000, 100, 10000, 10, 1, 100000] # full set
+        return [1000]
+
+    @classmethod
+    def get_bim_norm(cls):
+        # return [np.inf, 2] # full set
+        return [np.inf]
+
+    @classmethod
+    def get_bim_eps(cls, order):
+        if order == 2:
+            # return [0.5, 1, 0.25, 0.1, 0.05]
+            return [0.5]
+        elif order == np.inf:
+            # return [0.5, 0.25, 0.1, 0.05, 0.025, 0.01, 0.005]
+            return [0.25]
+
+    # ----------------------------
+    # Deepfool parameters
+    # ----------------------------
+    @classmethod
+    def get_df_maxIter(cls):
+        # return [1000, 100, 10000, 10, 1, 100000] # full set
+        return [100]
+
+    # ----------------------------
+    # JSMA parameters
+    # ----------------------------
+    @classmethod
+    def get_jsma_theta(cls):
+        # return [-1., -0.7, -0.5, -0.3, -0.1, 0.1, 0.3, 0.5, 0,7, 1.] # full set
+        return [0.5]
+
+    @classmethod
+    def get_jsma_gamma(cls):
+        # return [0.05, 0.1, 0.3, 0.5, 0.7] # full set. Need to double-check the meaning of gamma, values may change later.
+        return [0.5]
+
+    # ----------------------------
+    # CW parameters
+    # ----------------------------
+    # TODO:
+    CW_ORD = [np.inf, 2, 0]
+    CW_BIN_SEARCH_STEPS = [1, 2, 3, 4, 5]
+    CW_MAXITERATIONS = [10, 50, 100, 200, 300, 500]
+    CW_LEARNING_RATES = [0.01, 0.05, 0.1, 0.25, 0.5]
+    CW_INITIAL_CONST = [5, 10, 50, 75, 100]
 
 class DATA:
     """
@@ -165,10 +233,17 @@ class MODEL:
         self.EPOCHS = epochs
 
 class MODE:
-    DEBUG = False
-
+    DEBUG = True
+    @classmethod
     def debug_on(self):
         self.DEBUG = True
-
+    @classmethod
     def debug_off(self):
         self.DEBUG = False
+
+class PATH:
+    MODEL = 'data/models'
+    ADVERSARIAL_FILE = 'data/adversarial_examples'
+    FIGURES = 'data/figures'
+    RESULTS = 'data/results'
+    ANALYSE = 'data/analyse'
