@@ -17,7 +17,9 @@ def rotate(original_images, transformation):
     :param: transformation - the standard transformation to apply.
     :return: the transformed dataset.
     """
-    print('Rotating images({})...'.format(transformation))
+    if MODE.DEBUG:
+        print('Rotating images({})...'.format(transformation))
+
     trans_matrix = None
     
     transformed_images = []
@@ -52,10 +54,8 @@ def rotate(original_images, transformation):
     for i in range(original_images.shape[0]):
         transformed_images[i] = np.expand_dims(cv2.warpAffine(original_images[i], trans_matrix, 
                                                               (DATA.IMG_COL, DATA.IMG_ROW)), axis=2)
-
-    print('Applied transformation {}.'.format(transformation))
-
     if MODE.DEBUG:
+        print('Applied transformation {}.'.format(transformation))
         draw_comparisons(original_images, transformed_images)
         
     return transformed_images
@@ -67,7 +67,8 @@ def shift(original_images, transformation):
     :param: transformation - the standard transformation to apply.
     :return: the transformed dataset.
     """
-    print('Shifting images({})...'.format(transformation))
+    if MODE.DEBUG:
+        print('Shifting images({})...'.format(transformation))
 
     # -----------------------------------------
     # Shift images in (tx, ty) direction, by 15% of width and/or height.
@@ -118,10 +119,8 @@ def shift(original_images, transformation):
     for i in range(original_images.shape[0]):
         transformed_images[i] = np.expand_dims(cv2.warpAffine(original_images[i], trans_matrix,
                                                               (DATA.IMG_COL, DATA.IMG_ROW)), axis=2)
-
-    print('Applied transformation {}.'.format(transformation))
-
     if MODE.DEBUG:
+        print('Applied transformation {}.'.format(transformation))
         draw_comparisons(original_images, transformed_images)
 
     return transformed_images
@@ -133,7 +132,8 @@ def flip(original_images, transformation):
     :param: transformation - the standard transformation to apply.
     :return: the transformed dataset.
     """
-    print('Flipping images({})...'.format(transformation))
+    if MODE.DEBUG:
+        print('Flipping images({})...'.format(transformation))
 
     transformed_images = np.zeros_like(original_images)
 
@@ -167,7 +167,8 @@ def affine_trans(original_images, transformation):
     :param: transformation - the standard transformation to apply.
     :return: the transformed dataset.
     """
-    print('Applying affine transformation on images({})...'.format(transformation))
+    if MODE.DEBUG:
+        print('Applying affine transformation on images({})...'.format(transformation))
 
     # -----------------------------------------
     # In affine transformation, all parallel lines in the original image
@@ -223,8 +224,7 @@ def affine_trans(original_images, transformation):
 
     if MODE.DEBUG:
         draw_comparisons(original_images, transformed_images)
-
-    print('Applied transformation {}.'.format(transformation))
+        print('Applied transformation {}.'.format(transformation))
 
     return transformed_images
 
@@ -235,7 +235,8 @@ def morph_trans(original_images, transformation):
     :param: transformation - the standard transformation to apply.
     :return: the transformed dataset.
     """
-    print('Applying morphological transformation ({})...'.format(transformation))
+    if MODE.DEBUG:    
+        print('Applying morphological transformation ({})...'.format(transformation))
 
     transformed_images = np.zeros_like(original_images)
 
@@ -280,9 +281,8 @@ def morph_trans(original_images, transformation):
     else:
         raise ValueError('{} is not supported.'.format(transformation))
 
-    print('Applied transformation {}.'.format(transformation))
-
     if MODE.DEBUG:
+        print('Applied transformation {}.'.format(transformation))
         draw_comparisons(original_images, transformed_images)
 
     return transformed_images
@@ -360,15 +360,15 @@ def cartoon_effect(original_images, **kwargs):
         cartoon = cv2.bitwise_and(src1=color, src2=color, mask=edges)
         transformed_images[i] = np.expand_dims((1.0 * cartoon/255), axis=2)
 
-    print('Applied cartoon effects.')
-
     if MODE.DEBUG:
+        print('Applied cartoon effects.')
         draw_comparisons(original_images, transformed_images)
 
     return transformed_images
 
 def cartoonify(original_images, transformation):
-    print('Applying transformation {}...'.format(transformation))
+    if MODE.DEBUG:    
+        print('Applying transformation {}...'.format(transformation))
 
     adaptive_method = transformation.split('_')[1]
     catoon_type = transformation.split('_')[2]
