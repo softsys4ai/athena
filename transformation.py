@@ -2,7 +2,6 @@
 Implement transformations.
 """
 import cv2
-import numpy as np
 
 from keras.preprocessing.image import ImageDataGenerator
 
@@ -56,7 +55,7 @@ def rotate(original_images, transformation):
                                                               (DATA.IMG_COL, DATA.IMG_ROW)), axis=2)
     if MODE.DEBUG:
         print('Applied transformation {}.'.format(transformation))
-        draw_comparisons(original_images, transformed_images)
+        draw_comparisons(original_images, transformed_images, transformation)
         
     return transformed_images
 
@@ -121,7 +120,7 @@ def shift(original_images, transformation):
                                                               (DATA.IMG_COL, DATA.IMG_ROW)), axis=2)
     if MODE.DEBUG:
         print('Applied transformation {}.'.format(transformation))
-        draw_comparisons(original_images, transformed_images)
+        draw_comparisons(original_images, transformed_images, transformation)
 
     return transformed_images
 
@@ -156,7 +155,7 @@ def flip(original_images, transformation):
         transformed_images[i] = np.expand_dims(cv2.flip(original_images[i], flip_direction), axis=2)
 
     if MODE.DEBUG:
-        draw_comparisons(original_images, transformed_images)
+        draw_comparisons(original_images, transformed_images, transformation)
 
     return transformed_images
 
@@ -223,7 +222,7 @@ def affine_trans(original_images, transformation):
                                                               (DATA.IMG_COL, DATA.IMG_ROW)), axis=2)
 
     if MODE.DEBUG:
-        draw_comparisons(original_images, transformed_images)
+        draw_comparisons(original_images, transformed_images, transformation)
         print('Applied transformation {}.'.format(transformation))
 
     return transformed_images
@@ -283,7 +282,7 @@ def morph_trans(original_images, transformation):
 
     if MODE.DEBUG:
         print('Applied transformation {}.'.format(transformation))
-        draw_comparisons(original_images, transformed_images)
+        draw_comparisons(original_images, transformed_images, transformation)
 
     return transformed_images
 
@@ -327,7 +326,7 @@ def augment(original_images, transformation):
             break;
 
     if MODE.DEBUG:
-        draw_comparisons(original_images, transformed_images)
+        draw_comparisons(original_images, transformed_images, transformation)
 
     return transformed_images
 
@@ -346,7 +345,7 @@ def cartoon_effect(original_images, **kwargs):
     filter_sigma_space = kwargs.get('filter_sigma_space', 300)
 
     for i in range(original_images.shape[0]):
-        img = original_images[i] * 255
+        img = (original_images[i] + 0.5) * 255
         img = np.asarray(img, np.uint8)
 
         # detecting edges
@@ -358,11 +357,11 @@ def cartoon_effect(original_images, **kwargs):
         color = cv2.bilateralFilter(src=img, d=filter_d, sigmaColor=filter_sigma_color, sigmaSpace=filter_sigma_space)
         # cartoon effect
         cartoon = cv2.bitwise_and(src1=color, src2=color, mask=edges)
-        transformed_images[i] = np.expand_dims((1.0 * cartoon/255), axis=2)
+        transformed_images[i] = np.expand_dims((1.0 * cartoon/255 - 0.5), axis=2)
 
     if MODE.DEBUG:
         print('Applied cartoon effects.')
-        draw_comparisons(original_images, transformed_images)
+        draw_comparisons(original_images, transformed_images, 'catoon type')
 
     return transformed_images
 
