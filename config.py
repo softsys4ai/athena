@@ -4,6 +4,21 @@ Define global configurations.
 """
 import numpy as np
 
+# [For defenses]
+numOfWCDefenses=3
+numOfCVDefenses=2
+cvDefenseNames=["Majority", "Max"] # strategies used to decide the label across clusters
+# EM    :   expertise matrix
+# 1s    :   every element in expertise matrix is 1
+# SM    :   sum weighted confidence across models for one sample,
+#           then return the label with largest sum of weighted confidence
+# MMV   :   find the label with largest confidence for the input sample for each model
+#           then run a majority vote across models to determine final label
+wcDefenseNames=["1s_SM", "EM_SM", "EM_MMV"]
+kmeansResultFoldName="KMeans_result"
+
+
+
 class TRANSFORMATION:
     """
     Define transformation types that are supported.
