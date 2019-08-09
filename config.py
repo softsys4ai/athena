@@ -18,7 +18,7 @@ cvDefenseNames=["Majority", "Max"] # strategies used to decide the label across 
 wcDefenseNames=["1s_SM", "EM_SM", "EM_MMV"]
 kmeansResultFoldName="KMeans_result"
 
-class TRANSFORMATION:
+class TRANSFORMATION(object):
     """
     Define transformation types that are supported.
     """
@@ -84,6 +84,7 @@ class TRANSFORMATION:
     quant_12clusters = 'quant_12_clusters'
     quant_16clusters = 'quant_16_clusters'
 
+    #
     thresh_binary = 'thresh_binary'
     thresh_mean = 'thresh_mean'
     thresh_gaussian = 'thresh_gaussian'
@@ -127,7 +128,7 @@ class TRANSFORMATION:
 
         return transformations
 
-class ATTACK:
+class ATTACK(object):
     """
     Define attack related configuration.
     """
@@ -214,7 +215,7 @@ class ATTACK:
         # return [1, 10, 100, 1000, 10000, 100000] # full set
         return [100]
 
-class DATA:
+class DATA(object):
     """
     Configuration for data.
     """
@@ -223,54 +224,60 @@ class DATA:
     cifar_10 = 'cifar10'
     cifar_100 = 'cifar100'
 
+    valiation_rate = 0.2
+
     @classmethod
     def get_supported_datasets(cls):
-        datasets = [DATA.mnist, DATA.fation_mnist, DATA.cifar_10, DATA.cifar_100]
+        datasets = [cls.mnist, cls.fation_mnist, cls.cifar_10, cls.cifar_100]
         return datasets
 
-class MODEL:
+    @classmethod
+    def set_validation_rate(cls, rate):
+        cls.valiation_rate = rate
+
+class MODEL(object):
     """
     Configuration regarding model and training
     """
-    TYPE = 'cnn'
-    TRANS = TRANSFORMATION.clean
-    NAME = '{}_{}_{}.model'.format(DATA.DATASET, TYPE, TRANS)
+    ARCHITECTURE = 'cnn'
+    DATASET = 'mnist'
+    TRANS_TYPE = TRANSFORMATION.clean
     LEARNING_RATE = 0.01
     BATCH_SIZE = 128
-    EPOCHS = 5
+    EPOCHS = 50
 
-    def set_model_type(self, type):
-        self.TYPE = type
+    @classmethod
+    def set_architecture(cls, architecture):
+        cls.ARCHITECTURE = architecture
+    @classmethod
+    def set_batch_size(cls, batch_size):
+        cls.BATCH_SIZE = batch_size
+    @classmethod
+    def set_learning_rate(cls, lr):
+        cls.LEARNING_RATE = lr
+    @classmethod
+    def set_dataset(cls, dataset):
+        cls.NAME = dataset
+    @classmethod
+    def set_epochs(cls, epochs):
+        cls.EPOCHS = epochs
 
-    def set_batch_size(self, batch_size):
-        self.BATCH_SIZE = batch_size
-
-    def set_learning_rate(self, lr):
-        self.LEARNING_RATE = lr
-
-    def set_model_name(self, model_name):
-        self.NAME = model_name
-
-    def set_epochs(self, epochs):
-        self.EPOCHS = epochs
-
-class MODE:
+class MODE(object):
     DEBUG = False
     @classmethod
-    def debug_on(self):
-        self.DEBUG = True
+    def debug_on(cls):
+        cls.DEBUG = True
     @classmethod
-    def debug_off(self):
-        self.DEBUG = False
+    def debug_off(cls):
+        cls.DEBUG = False
 
-class PATH:
+class PATH(object):
     if MODE.DEBUG:
         MODEL = 'data/debug/models'
-        # ADVERSARIAL_FILE = 'data/debug/AEs'
+        ADVERSARIAL_FILE = 'data/debug/AEs'
     else:
         MODEL = 'data/models'
-        # ADVERSARIAL_FILE = 'data/adversarial_examples'
-    ADVERSARIAL_FILE = 'data/debug/AEs'
+        ADVERSARIAL_FILE = 'data/adversarial_examples'
     FIGURES = 'data/figures'
     RESULTS = 'data/results'
     ANALYSE = 'data/analyse'

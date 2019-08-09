@@ -8,19 +8,83 @@ import numpy as np
 import tensorflow as tf
 from tensorflow.python.platform import flags
 from tensorflow.keras import layers, models
-from tensorflow.keras.models import load_model
 
 from config import *
 
 FLAGS = flags.FLAGS
-def cnn(input_shape, nb_classes):
+
+def create_model(dataset, input_shape, nb_classes):
+    if (dataset == DATA.mnist):
+        MODEL.set_dataset(DATA.mnist)
+        MODEL.set_learning_rate(0.01)
+        MODEL.set_batch_size(128)
+        MODEL.set_epochs(50)
+        return cnn_mnist(input_shape, nb_classes)
+    elif (dataset == DATA.fation_mnist):
+        MODEL.set_dataset(DATA.fation_mnist)
+        MODEL.set_learning_rate(0.01)
+        MODEL.set_batch_size(128)
+        MODEL.set_epochs(50)
+        return cnn_mnist(input_shape, nb_classes)
+    elif (dataset == DATA.cifar_10):
+        MODEL.set_dataset(DATA.cifar_10)
+        MODEL.set_learning_rate(0.01)
+        MODEL.set_batch_size(32)
+        MODEL.set_epochs(350)
+        return cnn_cifar(input_shape, nb_classes)
+
+def cnn_cifar(input_shape, nb_classes):
     """
-    a cnn model.
+    a cnn for cifar
+    :param input_shape:
+    :param nb_classes:
+    :return:
+    """
+    MODEL.ARCHITECTURE = 'cnn'
+
+    struct = [
+        layers.Conv2D(96, (3, 3), input_shape=input_shape),
+        layers.Activation('relu'),
+        layers.Conv2D(96, (3, 3)),
+        layers.Activation('relu'),
+        layers.Conv2D(96, (3, 3)),
+        layers.Activation('relu'),
+        layers.MaxPooling2D(pool_size=(2, 2)),
+
+        layers.Conv2D(192, (3, 3)),
+        layers.Activation('relu'),
+        layers.Conv2D(192, (3, 3)),
+        layers.Activation('relu'),
+        layers.Conv2D(192, (3, 3)),
+        layers.Activation('relu'),
+        layers.MaxPooling2D(pool_size=(2, 2)),
+
+        layers.Conv2D(192, (3, 3)),
+        layers.Activation('relu'),
+        layers.Conv2D(192, (1, 1)),
+        layers.Activation('relu'),
+        layers.Conv2D(10, (1, 1)),
+        layers.Activation('relu'),
+        layers.AveragePooling2D(pool_size=1),
+        layers.Flatten(),
+        layers.Dense(nb_classes),
+        layers.Activation('softmax')
+    ]
+
+    model = models.Sequential()
+    for layer in struct:
+        model.add(layer)
+
+    return model
+
+def cnn_mnist(input_shape, nb_classes):
+    """
+    a simple cnn model.
     :param input_shape:
     :param nb_classes:
     :return: a simple cnn model
     """
-    MODEL.TYPE = 'cnn'
+    MODEL.ARCHITECTURE = 'cnn'
 
     struct = [
         layers.Conv2D(32, (3, 3), input_shape=input_shape),
@@ -47,7 +111,7 @@ def cnn(input_shape, nb_classes):
 # --------------------------------------------
 # OPERATIONS
 # --------------------------------------------
-def train(X, Y, model_type, model_name):
+def train(X, Y, model_name):
     """
     Train a model over given training set, then
     save the trained model as given name.
@@ -57,24 +121,22 @@ def train(X, Y, model_type, model_name):
     :param model_name: the name to save the model as
     :return: na
     """
-    nb_validation = int(len(X) * DATA.VALIDATION_RATE)
+    _, dataset, architect, trans_type = model_name.split('-')
+
+    nb_validation = int(len(X) * DATA.valiation_rate)
     train_samples = X[: -nb_validation]
     train_labels = Y[: -nb_validation]
     val_sample = X[-nb_validation :]
     val_labels = Y[-nb_validation :]
 
-    img_rows = X.shape[1]
-    img_cols = X.shape[2]
-    nb_channels = X.shape[3]
-    nb_classes = Y.shape[1]
+    _, img_rows, img_cols, nb_channels = X.shape
+    input_shape = (img_rows, img_cols, nb_channels)
+    nb_classes = int(Y.shape[1])
+    print('input_shape: {}; nb_classes: {}'.format(input_shape, nb_classes))
 
-    model = None
+    model = create_model(dataset, input_shape=input_shape, nb_classes=nb_classes)
 
-    if (model_type == 'cnn'):
-        input_shape = (img_rows, img_cols, nb_channels)
-        model = cnn(input_shape=input_shape, nb_classes=nb_classes)
-
-    model.compile(loss='categorical_crossentropy', optimizer='adam', metrics=['accuracy'])
+    model.compile(loss='categorical_crossentropy', optimizer='sgd', metrics=['accuracy'])
 
     # train the model
     print('Training {}...'.format(model_name))
