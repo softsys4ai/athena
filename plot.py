@@ -13,9 +13,11 @@ def draw_comparisons(controls, treatments, title="None"):
     :return: na
     """
     img_rows, img_cols, nb_channels = controls.shape[1:4]
+    print('shapes: control_set - {}; treatment_set - {}'.format(controls.shape, treatments.shape))
+    print('rows/cols/channels: {}/{}/{}'.format(img_rows, img_cols, nb_channels))
+
     pos = 1
     fig = plt.figure(figsize=(10, 10))
-
 
     fig.suptitle(title)
     cols = 4
@@ -27,14 +29,20 @@ def draw_comparisons(controls, treatments, title="None"):
         ax1.grid(b=None)
         ax1.set_aspect('equal')
         # show an original image
-        plt.imshow(controls[i - 1].reshape(img_rows, img_cols), cmap='gray')
+        if (nb_channels == 1):
+            plt.imshow(controls[i - 1].reshape(img_rows, img_cols), cmap='gray')
+        else:
+            plt.imshow(controls[i - 1].reshape(img_rows, img_cols, nb_channels))
         pos += 1
         ax2 = fig.add_subplot(fig.add_subplot(rows, cols, pos))
         ax2.axis('off')
         ax2.grid(b=None)
         ax2.set_aspect('equal')
         # show a transformed/perturbed images
-        plt.imshow(treatments[i - 1].reshape(img_rows, img_cols), cmap='gray')
+        if (nb_channels == 1):
+            plt.imshow(treatments[i - 1].reshape(img_rows, img_cols), cmap='gray')
+        else:
+            plt.imshow(treatments[i - 1].reshape(img_rows, img_cols, nb_channels))
         pos += 1
 
     plt.subplots_adjust(wspace=0.01, hspace=0.05)
