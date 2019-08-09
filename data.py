@@ -4,9 +4,9 @@ Implement operations related to data (dataset).
 """
 from __future__ import division, absolute_import, print_function
 
+import keras
 import tensorflow as tf
 from keras.datasets import mnist, cifar10, fashion_mnist, cifar100
-from keras.utils import np_utils
 
 from config import DATA
 
@@ -22,6 +22,7 @@ def load_data(dataset):
         along with a test set of 10,000 images.
         """
         (X_train, Y_train), (X_test, Y_test) = mnist.load_data()
+        nb_classes = 10
     elif (dataset == DATA.fation_mnist):
         """
         Dataset of 60,000 28x28 grayscale images of 10 fashion categories,
@@ -39,17 +40,19 @@ def load_data(dataset):
         9       Ankle boot
         """
         (X_train, Y_train), (X_test, Y_test) = fashion_mnist.load_data()
-        raise NotImplementedError('{} is not implemented.'.format(dataset.upper()))
+        nb_classes = 10
     elif (dataset == DATA.cifar_10):
         """
         Dataset of 50,000 32x32 color training images, labeled over 10 categories, and 10,000 test images.
         """
         (X_train, Y_train), (X_test, Y_test) = cifar10.load_data()
+        nb_classes = 10
     elif (dataset == DATA.cifar_100):
         (X_train, Y_train), (X_test, Y_test) = cifar100.load_data()
+        nb_classes = 100
 
+    # processing data
     _, img_rows, img_cols, nb_channels = X_test.shape
-    nb_classes = Y_test.shape[1]
 
     X_train = X_train.reshape(-1, img_rows, img_cols, nb_channels)
     X_test = X_test.reshape(-1, img_rows, img_cols, nb_channels)
@@ -61,8 +64,8 @@ def load_data(dataset):
     X_test /= 255.
 
     # one-hot-encode the labels
-    Y_train = np_utils.to_categorical(Y_train, nb_classes)
-    Y_test = np_utils.to_categorical(Y_test, nb_classes)
+    Y_train = keras.utils.to_categorical(Y_train, nb_classes)
+    Y_test = keras.utils.to_categorical(Y_test, nb_classes)
 
     # summarize mnist data set
     print('Dataset({}) Summary:'.format(dataset.upper()))
@@ -71,3 +74,11 @@ def load_data(dataset):
 
     return (X_train, Y_train), (X_test, Y_test)
 
+"""
+for testing
+"""
+def main(args):
+    load_data(args)
+
+if __name__ == "__main__":
+    main(DATA.cifar_10)
