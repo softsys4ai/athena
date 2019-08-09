@@ -59,7 +59,7 @@ def rotate(original_images, transformation):
     if MODE.DEBUG:
         print('Applied transformation {}.'.format(transformation))
         draw_comparisons(original_images, transformed_images, transformation)
-        
+       
     return transformed_images
 
 def shift(original_images, transformation):

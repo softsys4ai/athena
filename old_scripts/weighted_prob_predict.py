@@ -1,117 +1,49 @@
 import os
 import sys
 
-from sklearn.cluster import KMeans
 import numpy as np
-
-from tensorflow.keras.models import load_model
 import cv2
+from config import *
+from util import *
 
-from transformation import IMG_TRANSFORMATIONS, transform_images
-
+# Basic parameters
+experimentRootDir="experiment/2019-07-28_08-51-00"
 AEDir    ="./AEs"
 
-# load AEs and their original labels
-numOfEPS = 4
-numOfModels = 25
+listEPS = ATTACK.FGSM_EPS
+numOfEPS = len(listEPS)
+transformConfig = TRANSFORMATION()
+IMG_TRANSFORMATIONS = transformConfig.supported_types() 
+numOfModels = len(IMG_TRANSFORMATIONS) - 1 # exclude the clean model and only consider the transformation-based model
+maxNumOfClusters = numOfModels
 numOfAEs    = 10000
 
 
-listEPS = [10,15,20,25]
 
 #modelacc = np.zeros((numOfModels, 4))
-numOfTrans = len(IMG_TRANSFORMATIONS)
+
+allBestAccsAE=np.zeros((numOfEPS, 3)) # 3 defense approaches
+for epsID in range(numOfEPS):
+    eps = int(1000*listEPS[epsID])
+    curExprDir = os.path.join(experimentRootDir, "eps"+str(eps))
+    print("Process EPS "+str(eps))
 
 
-# Calculate the accuracy of the ensemble model
-# based weighted sum of each model's initial confidences
-def calAccu(predProb, trueLabels, modelWeights=None):
-    '''
-        Input:
-            predProb: numOfModels X numOfAEs X 10
-            trueLabels: 1D numpy array - numOfAEs
-            modelWeights: 2D numpy array - numOfModels X 10
-        Output:
-            accuracy
-    '''
-    numOfModels = predProb.shape[0]
-    numOfAEs = predProb.shape[1]
-    numOfClasses = predProb.shape[2]
-    weightedPredProb = np.zeros(predProb.shape)
-    if modelWeights is None:
-        modelWeights = np.ones((numOfModels, numOfClasses)) # each model is 100% trusted
-    
-    cnt = 0
-
-    for aeID in range(numOfAEs):
-        predLabel = np.argmax(np.multiply(predProb[:,aeID,:], modelWeights).sum(axis=0))
-        if predLabel == trueLabels[aeID]:
-            cnt+=1
-
-    return round(1.0*cnt/numOfAEs, 4)
-
-# Calculate the accuracy of the ensemble model
-# based max trustworthness and majority voting
-def calAccu_MTMV(predProb, trueLabels, modelWeights=None):
-    '''
-        Input:
-            predProb: numOfModels X numOfAEs X 10
-            trueLabels: 1D numpy array - numOfAEs
-            modelWeights: 2D numpy array - numOfModels X 10
-        Output:
-            accuracy
-    '''
-    numOfModels = predProb.shape[0]
-    numOfAEs = predProb.shape[1]
-    numOfClasses = predProb.shape[2]
-    weightedPredProb = np.zeros(predProb.shape)
-    if modelWeights is None:
-        modelWeights = np.ones((numOfModels, numOfClasses)) # each model is 100% trusted
-    
-    cnt = 0
-
-    for aeID in range(numOfAEs):
-        # max trustworthness
-        weightedProb = np.multiply(predProb[:,aeID,:], modelWeights)
-        predLabels = np.argmax(weightedProb, axis=1)
-        confidences = np.max(weightedProb, axis=1)
-
-        # majority voting
-        voteDict={}
-        for pl, conf in zip(predLabels, confidences):
-            if pl in voteDict:
-                voteDict[pl] = (1+voteDict[pl][0], conf+voteDict[pl][1])
-            else:
-                voteDict[pl] = (1, conf)
-        predLabel = None
-        maxCount  = 0
-        for pl, value in voteDict.items():
-            if (maxCount < value[0]) or (maxCount == value[0] and voteDict[predLabel][1] < value[1]):
-                maxCount = value[0]
-                predLabel = pl
-
-        if predLabel == trueLabels[aeID]:
-            cnt+=1
-
-    return round(1.0*cnt/numOfAEs, 4)
-
-
-
-for epsID in range(len(listEPS)):
-    advPredProb=np.zeros((numOfModels, numOfAEs, 10))
-
-    eps = listEPS[epsID]
-    # advPredProb: numOfModels X numOfAEs X numOfClasses
-    advPredProb  = np.load("adv_pred_prob_eps"+str(eps)+".npy")
-    origPredProb = np.load("orig_pred_prob_eps"+str(eps)+".npy")
+    AEPredProbFP = os.path.join(curExprDir, "AE_pred_prob_eps"+str(eps)+".npy")
+    # AEPredProb: (numOfModels, numOfAEs, numOfClasses)
+    AEPredProb = np.load(AEPredProbFP)
+    BSPredProb = np.load(os.path.join(curExprDir, "BS_pred_prob_eps"+str(eps)+".npy"))
     labels_raw   =np.load(os.path.join(AEDir, "label_mnist_cnn_clean_fgsm_eps"+str(eps)+".npy"))
     labels=np.argmax(labels_raw, axis=1)
-    modelsExpertise = np.load("eps"+str(eps)+"_modelExpertise.npy")
 
-    advPredLabels = np.argmax(advPredProb, axis=2)
+    # modelsExpertise: numOfModels X numOfClasses
+    modelsExpertise = np.load(os.path.join(curExprDir, "modelExpertise_eps"+str(eps)+".npy"))
+
+    AEPredLabels = np.argmax(AEPredProb, axis=2)
+
     modelAccs = np.zeros((numOfModels))
     for modelID in range(numOfModels):
-        modelAccs[modelID] = round(1.0 * len(np.where(advPredLabels[modelID, :] == labels)[0]) / numOfAEs, 4)
+        modelAccs[modelID] = round(1.0 * len(np.where(AEPredLabels[modelID, :] == labels)[0]) / numOfAEs, 4)
         #print("model {} - Acc: {}".format(modelID+1, modelAccs[modelID]))
     print("Sort models in descending order based on their accuracies")
     sortedIndices = np.argsort(-modelAccs)
@@ -120,12 +52,12 @@ for epsID in range(len(listEPS)):
 
     accuracies = np.zeros((numOfModels, 6))
     print("#ofTM\tAE-1\tBS-1\tAE-W\tBS-W\tAE-MV\tBS-MV")
-    with open("accuracies_weighted_confidences_eps"+str(eps)+".txt", "w") as fp:
+    with open(os.path.join(curExprDir, "accuracies_weighted_confidences_eps"+str(eps)+".txt"), "w") as fp:
         fp.write("#ofTM\tAE-1\tBS-1\tAE-W\tBS-W\tAE-MV\tBS-MV\n")
         for num in range(numOfModels):
             topModelIndices = sortedIndices[0:num+1]
-            curAdvPredProb = advPredProb[topModelIndices, :, :]
-            curOrigPredProb = origPredProb[topModelIndices, :, :]
+            curAdvPredProb = AEPredProb[topModelIndices, :, :]
+            curOrigPredProb = BSPredProb[topModelIndices, :, :]
             curModelsExpertise = modelsExpertise[topModelIndices, :]
 
             advAcc  = calAccu(curAdvPredProb, labels)
@@ -140,6 +72,7 @@ for epsID in range(len(listEPS)):
             fp.write("{}\t{}\t{}\t{}\t{}\t{}\t{}\n".format(num+1, advAcc, oriAcc, advAccW, oriAccW, advAccMTMV, oriAccMTMV))
 
         bestAccs = np.max(accuracies, axis=0)
+        allBestAccsAE[epsID, :] = np.array([bestAccs[0], bestAccs[2], bestAccs[4]])
         bestAccMNs = np.argmax(accuracies, axis=0)
         print("\n[Best Accuracies]")
         print("Type\tAE-1\tBS-1\tAE-W\tBS-W\tAE-MV\tBS-MV")
@@ -153,5 +86,61 @@ for epsID in range(len(listEPS)):
  
 
 
-    np.save("accuracies_weighted_confidences_eps"+str(eps)+".npy", accuracies)
+    np.save(os.path.join(curExprDir, "accuracies_weighted_confidences_eps"+str(eps)+".npy"), accuracies)
 
+np.save(os.path.join(experimentRootDir, "allBestAccuracy.npy"), allBestAccsAE)
+with open(os.path.join(experimentRootDir, "allBestAccuracy.txt"), "w") as fp:
+    strFormat="{:<4}\t{:<8}\t{:<8}\t{:<8}\n"
+    fp.write(strFormat.format("EPS", "WC_ONES", "WC_EM_MX", "WC_EM_MV"))
+    for epsID in range(numOfEPS):
+        fp.write(strFormat.format(listEPS[epsID], allBestAccsAE[epsID][0], allBestAccsAE[epsID][1], allBestAccsAE[epsID][2]))
+
+    '''
+    advAcc  = calAccu(AEPredProb, labels)
+    oriAcc  = calAccu(BSPredProb, labels)
+    advAccW = calAccu(AEPredProb, labels, modelsExpertise)
+    oriAccW = calAccu(BSPredProb, labels, modelsExpertise)
+    advAccMTMV = calAccu_MTMV(AEPredProb, labels, modelsExpertise)
+    oriAccMTMV = calAccu_MTMV(BSPredProb, labels, modelsExpertise)
+ 
+    print("EPS: {}, advAcc: {}, oriAcc: {}, advAccW: {}, oriAccW: {}, advAccMTMV: {}, oriAccMTMV: {}.".format(eps, advAcc, oriAcc, advAccW, oriAccW, advAccMTMV, oriAccMTMV))
+    '''
+
+
+    '''
+    # count each classes
+    classesCnt=[]
+    for i in range(10):
+        classesCnt.append(len(np.where(labels==i)[0]))
+    print("num of AES: {}".format(np.array(classesCnt).sum()))
+    #print("eps: {}, shape of labels: {} \n\tclassCnt: {}".format(eps, labels.shape,classesCnt))
+    #np.save("eps"+str(eps)+"_classCount.npy", np.array(classesCnt))
+
+    '''
+
+    '''
+    for modelID in range(numOfModels):
+        for aeID in range(numOfAEs):
+            if predResult[modelID, aeID, 0] == labels[aeID]:
+                modelExpertise[modelID, labels[aeID]] += 1
+    modelacc[:, epsID] = np.transpose(modelExpertise.sum(axis=1)/np.array(classesCnt).sum())
+    '''
+
+    '''
+    # normalize
+    modelExpertise = np.round(modelExpertise/np.array(classesCnt), 4)
+    np.save("eps"+str(eps)+"_modelExpertise.npy", modelExpertise)
+    with open("eps"+str(eps)+"_modelExpertise.txt", "w") as fp:
+        for modelID in range(numOfModels):
+            for labelID in range(10):
+                fp.write(str(modelExpertise[modelID, labelID])+",")
+            fp.write("\n")
+    '''
+'''
+with open("transModelAcc.txt", "w") as fp:
+    for modelID in range(numOfModels):
+        for epsID in range(4):
+            fp.write(str(modelacc[modelID, epsID])+",")
+        fp.write("\n")
+np.save("transModelAcc.npy", modelacc)
+'''
