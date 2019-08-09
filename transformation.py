@@ -1,13 +1,15 @@
 """
 Implement transformations.
+@auther: Ying Meng (y(dot)meng201011(at)gmail(dot)com)
 """
 import cv2
 
 from keras.preprocessing.image import ImageDataGenerator
+from sklearn.cluster import MiniBatchKMeans
 
 from config import *
+from data import load_mnist
 from plot import draw_comparisons
-
 
 def rotate(original_images, transformation):
     """
@@ -345,7 +347,7 @@ def cartoon_effect(original_images, **kwargs):
     filter_sigma_space = kwargs.get('filter_sigma_space', 300)
 
     for i in range(original_images.shape[0]):
-        img = (original_images[i] + 0.5) * 255
+        img = original_images[i] * 255
         img = np.asarray(img, np.uint8)
 
         # detecting edges
@@ -357,7 +359,7 @@ def cartoon_effect(original_images, **kwargs):
         color = cv2.bilateralFilter(src=img, d=filter_d, sigmaColor=filter_sigma_color, sigmaSpace=filter_sigma_space)
         # cartoon effect
         cartoon = cv2.bitwise_and(src1=color, src2=color, mask=edges)
-        transformed_images[i] = np.expand_dims((1.0 * cartoon/255 - 0.5), axis=2)
+        transformed_images[i] = np.expand_dims((1.0 * cartoon/255), axis=2)
 
     if MODE.DEBUG:
         print('Applied cartoon effects.')
@@ -399,6 +401,73 @@ def cartoonify(original_images, transformation):
                           filter_d=filter_d, filter_sigma_color=filter_sigma_color,
                           filter_sigma_space=filter_sigma_space)
 
+def quantize(original_images, transformation):
+    """
+    Adapted from tutorial
+    https://www.pyimagesearch.com/2014/07/07/color-quantization-opencv-using-k-means-clustering/
+    :param original_images:
+    :param transformation:
+    :return:
+    """
+    transformed_images = np.zeros_like(original_images)
+    nb_clusters = int(transformation.split('_')[1])
+
+    original_images *= 255.
+    nb_images, img_rows, img_cols, nb_channels = original_images.shape[:4]
+
+    for i in range(nb_images):
+        img = original_images[i]
+        """
+        Convert gray scale images to RGB color space such that
+        we can further convert the image to LAB color space.
+        This function will return a 3-channel gray image that
+        each channel is a copy of the original gray image.
+        """
+        if (nb_channels == 1):
+            img = cv2.cvtColor(img, cv2.COLOR_GRAY2BGR)
+        """
+        Convert the image from the RGB color space to the LAB color space,
+        since we will be clustering using k-means which is based on
+        the euclidean distance, we will use the LAB color space where
+        the euclidean distance implies perceptual meaning.
+        """
+        img = cv2.cvtColor(img, cv2.COLOR_BGR2LAB)
+        """
+        reshape the image into a feature vector so that k-mean can be applied
+        """
+        img = img.reshape((img_rows * img_cols, 3))
+        """
+        apply k-means using the specified number of clusters and then
+        create the quantized image based on the predictions.
+        """
+        cluster = MiniBatchKMeans(n_clusters=nb_clusters)
+        labels = cluster.fit_predict(img)
+        quant = cluster.cluster_centers_.astype('uint8')[labels]
+
+        """
+        reshape the feature vectors back to image
+        """
+        quant = quant.reshape((img_rows, img_cols, 3))
+        img = img.reshape((img_rows, img_cols, 3))
+
+        """
+        convert from LAB back to RGB
+        """
+        quant = cv2.cvtColor(quant, cv2.COLOR_LAB2BGR)
+        img = cv2.cvtColor(img, cv2.COLOR_LAB2BGR)
+        """
+        convert from RGB back to grayscale
+        """
+        if (nb_channels == 1):
+            quant = cv2.cvtColor(quant, cv2.COLOR_RGB2GRAY)
+            img = cv2.cvtColor(img, cv2.COLOR_RGB2GRAY)
+        transformed_images[i] = np.expand_dims(quant, axis=2)
+
+    transformed_images /= 255.
+
+    return transformed_images
+
+
 def transform_images(X, transformation_type):
     """
     Main entrance applying transformations on images.
@@ -425,3 +494,20 @@ def transform_images(X, transformation_type):
         return augment(X, transformation_type)
     elif (transformation_type in TRANSFORMATION.CARTOONS):
         return cartoonify(X, transformation_type)
+    elif (transformation_type in TRANSFORMATION.QUANTIZATIONS):
+        return quantize(X, transformation_type)
+    else:
+        raise ValueError('Transformation type {} is not supported.'.format(transformation_type.upper()))
+
+"""
+for testing
+"""
+def main(args):
+    _, (X, _) = load_mnist()
+    X = X[:10]
+
+    X_trans = transform_images(X, args)
+    draw_comparisons(X, X_trans, args)
+
+if __name__ == "__main__":
+    main(TRANSFORMATION.quant_12clusters)
