@@ -44,6 +44,62 @@ def cnn_cifar(input_shape, nb_classes):
 
     struct = [
         layers.Conv2D(96, (3, 3), input_shape=input_shape),
+        layers.BatchNormalization(),
+        layers.Activation('relu'),
+        layers.Conv2D(96, (3, 3)),
+        layers.BatchNormalization(),
+        layers.Activation('relu'),
+        layers.Conv2D(96, (3, 3)),
+        layers.BatchNormalization(),
+        layers.Activation('relu'),
+        layers.MaxPooling2D(pool_size=(2, 2)),
+
+        layers.Dropout(dropout),
+
+        layers.Conv2D(192, (3, 3)),
+        layers.BatchNormalization(),
+        layers.Activation('relu'),
+        layers.Conv2D(192, (3, 3)),
+        layers.BatchNormalization(),
+        layers.Activation('relu'),
+        layers.Conv2D(192, (3, 3)),
+        layers.BatchNormalization(),
+        layers.Activation('relu'),
+        layers.MaxPooling2D(pool_size=(2, 2)),
+
+        layers.Dropout(dropout),
+
+        layers.Conv2D(192, (3, 3)),
+        layers.BatchNormalization(),
+        layers.Activation('relu'),
+        layers.Conv2D(192, (1, 1)),
+        layers.BatchNormalization(),
+        layers.Activation('relu'),
+        layers.Conv2D(nb_classes, (1, 1)),
+        layers.BatchNormalization(),
+        layers.Activation('relu'),
+
+        layers.GlobalAveragePooling2D(),
+        layers.Activation('softmax')
+    ]
+
+    model = models.Sequential()
+    for layer in struct:
+        model.add(layer)
+
+    return model
+
+def cnn_cifar_with_dropout(input_shape, nb_classes):
+    """
+    a cnn for cifar
+    :param input_shape:
+    :param nb_classes:
+    :return:
+    """
+    MODEL.ARCHITECTURE = 'cnn'
+
+    struct = [
+        layers.Conv2D(96, (3, 3), input_shape=input_shape),
         layers.Activation('relu'),
         layers.Conv2D(96, (3, 3)),
         layers.Activation('relu'),
@@ -67,6 +123,8 @@ def cnn_cifar(input_shape, nb_classes):
         layers.Activation('relu'),
         layers.AveragePooling2D(pool_size=1),
         layers.Flatten(),
+        layers.Dense(100),
+        layers.Dropout(rate=0.4),
         layers.Dense(nb_classes),
         layers.Activation('softmax')
     ]

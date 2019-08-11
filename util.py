@@ -1,5 +1,6 @@
 import os
 import time
+import logging
 
 import matplotlib.pyplot as plt
 
@@ -10,6 +11,8 @@ from tensorflow.keras.models import Model
 
 from config import *
 from transformation import transform_images
+
+from functools import wraps
 
 def randomChoiceBasedDefense(predProb, measureTC=False):
     '''
@@ -1408,5 +1411,28 @@ def wc_mv_defense(pred, modelWeights):
 
     return predLabels
 
+
+def logger(func):
+    logging.basicConfig(filename='{}.log'.format(func.__name__), level=logging.INFO)
+
+    @wraps(func)
+    def wrapper(*args, **kwargs):
+        logging.info('Ran with args: {}, and kwargs: {}'.format(args, kwargs))
+        return func(*args, **kwargs)
+
+    return wrapper
+
+
+def nano_timer(func):
+
+    @wraps(func)
+    def wrapper(*args, **kwargs):
+        t1 = time.monotonic_ns()
+        result = func(*args, **kwargs)
+        t2 = time.monotonic_ns()
+        print('{} ran in: {} nano-seconds'.format(func.__name__, t2 - t1))
+        return result
+
+    return wrapper
 
 
