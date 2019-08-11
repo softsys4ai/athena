@@ -2,6 +2,7 @@
 Implement methods plotting and drawing figures.
 @author: Ying Meng (y(dot)meng201011(at)gmail(dot)com))
 """
+import os
 import matplotlib.pyplot as plt
 from config import PATH
 
@@ -48,3 +49,34 @@ def draw_comparisons(controls, treatments, title="None"):
 
     plt.show()
     fig.savefig('{}/{}.jpg'.format(PATH.FIGURES, title))
+
+def plotTrainingResult(history, model_name):
+    # Plot training & validation accuracy values
+    print("plotting accuracy")
+    f_acc = plt.figure()
+    plt.plot(history.history['acc'])
+    plt.plot(history.history['val_acc'])
+    plt.title('Model accuracy')
+    plt.ylabel('Accuracy')
+    plt.xlabel('Epoch')
+    plt.legend(['Train', 'Test'], loc='upper left')
+    #plt.show()
+    f_acc.savefig(
+            os.path.join(PATH.FIGURES, model_name+"_training_acc_vs_val_acc.pdf"),
+            bbox_inches='tight')
+    plt.close()
+    
+    # Plot training & validation loss values
+    print("plotting loss")
+    f_loss = plt.figure()
+    plt.plot(history.history['loss'])
+    plt.plot(history.history['val_loss'])
+    plt.title('Model loss')
+    plt.ylabel('Loss')
+    plt.xlabel('Epoch')
+    plt.legend(['Train', 'Test'], loc='upper left')
+    #plt.show()
+    f_loss.savefig(
+            os.path.join(PATH.FIGURES, model_name+"_training_loss_vs_val_loss.pdf"),
+            bbox_inches='tight')
+    plt.close()
