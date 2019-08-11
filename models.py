@@ -44,30 +44,39 @@ def cnn_cifar(input_shape, nb_classes):
 
     struct = [
         layers.Conv2D(96, (3, 3), input_shape=input_shape),
+        layers.BatchNormalization(),
         layers.Activation('relu'),
         layers.Conv2D(96, (3, 3)),
+        layers.BatchNormalization(),
         layers.Activation('relu'),
         layers.Conv2D(96, (3, 3)),
+        layers.BatchNormalization(),
         layers.Activation('relu'),
         layers.MaxPooling2D(pool_size=(2, 2)),
 
         layers.Dropout(dropout),
 
         layers.Conv2D(192, (3, 3)),
+        layers.BatchNormalization(),
         layers.Activation('relu'),
         layers.Conv2D(192, (3, 3)),
+        layers.BatchNormalization(),
         layers.Activation('relu'),
         layers.Conv2D(192, (3, 3)),
+        layers.BatchNormalization(),
         layers.Activation('relu'),
         layers.MaxPooling2D(pool_size=(2, 2)),
 
         layers.Dropout(dropout),
 
         layers.Conv2D(192, (3, 3)),
+        layers.BatchNormalization(),
         layers.Activation('relu'),
         layers.Conv2D(192, (1, 1)),
+        layers.BatchNormalization(),
         layers.Activation('relu'),
         layers.Conv2D(nb_classes, (1, 1)),
+        layers.BatchNormalization(),
         layers.Activation('relu'),
 
         layers.GlobalAveragePooling2D(),
