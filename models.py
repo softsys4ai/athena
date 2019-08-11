@@ -51,6 +51,8 @@ def cnn_cifar(input_shape, nb_classes):
         layers.Activation('relu'),
         layers.MaxPooling2D(pool_size=(2, 2)),
 
+        layers.Dropout(dropout),
+
         layers.Conv2D(192, (3, 3)),
         layers.Activation('relu'),
         layers.Conv2D(192, (3, 3)),
@@ -59,15 +61,16 @@ def cnn_cifar(input_shape, nb_classes):
         layers.Activation('relu'),
         layers.MaxPooling2D(pool_size=(2, 2)),
 
+        layers.Dropout(dropout),
+
         layers.Conv2D(192, (3, 3)),
         layers.Activation('relu'),
         layers.Conv2D(192, (1, 1)),
         layers.Activation('relu'),
-        layers.Conv2D(10, (1, 1)),
+        layers.Conv2D(nb_classes, (1, 1)),
         layers.Activation('relu'),
-        layers.AveragePooling2D(pool_size=1),
-        layers.Flatten(),
-        layers.Dense(nb_classes),
+
+        layers.GlobalAveragePooling2D(),
         layers.Activation('softmax')
     ]
 
