@@ -18,6 +18,7 @@ def draw_comparisons(controls, treatments, title="None"):
 
     pos = 1
     fig = plt.figure(figsize=(10, 10))
+    plt.subplots_adjust(left=0.06, right=0.95, top=0.92, bottom=0.015, wspace=0.001, hspace=0.015)
 
     fig.suptitle(title)
     cols = 4
@@ -45,6 +46,5 @@ def draw_comparisons(controls, treatments, title="None"):
             plt.imshow(treatments[i - 1].reshape(img_rows, img_cols, nb_channels))
         pos += 1
 
-    plt.subplots_adjust(wspace=0.01, hspace=0.05)
     plt.show()
     fig.savefig('{}/{}.jpg'.format(PATH.FIGURES, title))

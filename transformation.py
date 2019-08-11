@@ -61,8 +61,7 @@ def rotate(original_images, transformation):
     if MODE.DEBUG:
         print('shapes: original - {}; transformed - {}'.format(original_images.shape, transformed_images.shape))
         print('Applied transformation {}.'.format(transformation))
-        draw_comparisons(original_images, transformed_images, transformation)
-        
+
     return transformed_images
 
 def shift(original_images, transformation):
@@ -126,11 +125,6 @@ def shift(original_images, transformation):
         transformed_images.append(cv2.warpAffine(img, trans_matrix, (img_cols, img_rows)))
     transformed_images = np.stack(transformed_images, axis=0)
 
-    if MODE.DEBUG:
-        print('shapes: original - {}; transformed - {}'.format(original_images.shape, transformed_images.shape))
-        print('Applied transformation {}.'.format(transformation))
-        draw_comparisons(original_images, transformed_images, transformation)
-
     return transformed_images
 
 def flip(original_images, transformation):
@@ -165,7 +159,6 @@ def flip(original_images, transformation):
 
     if MODE.DEBUG:
         print('shapes: original - {}; transformed - {}'.format(original_images.shape, transformed_images.shape))
-        draw_comparisons(original_images, transformed_images, transformation)
 
     return transformed_images
 
@@ -194,29 +187,29 @@ def affine_trans(original_images, transformation):
     pts_original = np.float32([point1, point2, point3])
 
     if (transformation == TRANSFORMATION.affine_vertical_compress):
-        point1 = [0.25 * img_cols, 0.25 * img_rows]
-        point2 = [0.25 * img_cols, 0.4 * img_rows]
-        point3 = [0.5 * img_cols, 0.25 * img_rows]
+        point1 = [0.25 * img_cols, 0.32 * img_rows]
+        point2 = [0.25 * img_cols, 0.48 * img_rows]
+        point3 = [0.5 * img_cols, 0.32 * img_rows]
     elif (transformation == TRANSFORMATION.affine_vertical_stretch):
-        point1 = [0.25 * img_cols, 0.25 * img_rows]
-        point2 = [0.25 * img_cols, 0.6 * img_rows]
-        point3 = [0.5 * img_cols, 0.25 * img_rows]
+        point1 = [0.25 * img_cols, 0.2 * img_rows]
+        point2 = [0.25 * img_cols, 0.55 * img_rows]
+        point3 = [0.5 * img_cols, 0.2 * img_rows]
     elif (transformation == TRANSFORMATION.affine_horizontal_compress):
-        point1 = [0.25 * img_cols, 0.25 * img_rows]
-        point2 = [0.25 * img_cols, 0.5 * img_rows]
-        point3 = [0.4 * img_cols, 0.25 * img_rows]
+        point1 = [0.32 * img_cols, 0.25 * img_rows]
+        point2 = [0.32 * img_cols, 0.5 * img_rows]
+        point3 = [0.43 * img_cols, 0.25 * img_rows]
     elif (transformation == TRANSFORMATION.affine_horizontal_stretch):
-        point1 = [0.25 * img_cols, 0.25 * img_rows]
-        point2 = [0.25 * img_cols, 0.5 * img_rows]
-        point3 = [0.6 * img_cols, 0.25 * img_rows]
+        point1 = [0.2 * img_cols, 0.25 * img_rows]
+        point2 = [0.2 * img_cols, 0.5 * img_rows]
+        point3 = [0.55 * img_cols, 0.25 * img_rows]
     elif (transformation == TRANSFORMATION.affine_both_compress):
-        point1 = [0.25 * img_cols, 0.25 * img_rows]
-        point2 = [0.25 * img_cols, 0.4 * img_rows]
-        point3 = [0.4 * img_cols, 0.25 * img_rows]
+        point1 = [0.28 * img_cols, 0.28 * img_rows]
+        point2 = [0.28 * img_cols, 0.47 * img_rows]
+        point3 = [0.47 * img_cols, 0.28 * img_rows]
     elif (transformation == TRANSFORMATION.affine_both_stretch):
-        point1 = [0.25 * img_cols, 0.25 * img_rows]
-        point2 = [0.25 * img_cols, 0.6 * img_rows]
-        point3 = [0.6 * img_cols, 0.25 * img_rows]
+        point1 = [0.22 * img_cols, 0.22 * img_rows]
+        point2 = [0.22 * img_cols, 0.55 * img_rows]
+        point3 = [0.55 * img_cols, 0.22 * img_rows]
     else:
         raise ValueError('{} is not supported.'.format(transformation))
 
@@ -232,7 +225,6 @@ def affine_trans(original_images, transformation):
 
     if MODE.DEBUG:
         print('shapes: original - {}; transformed - {}'.format(original_images.shape, transformed_images.shape))
-        draw_comparisons(original_images, transformed_images, transformation)
         print('Applied transformation {}.'.format(transformation))
 
     return transformed_images
@@ -288,7 +280,6 @@ def morph_trans(original_images, transformation):
 
     if MODE.DEBUG:
         print('Applied transformation {}.'.format(transformation))
-        draw_comparisons(original_images, transformed_images, transformation)
 
     return transformed_images
 
@@ -335,14 +326,14 @@ def augment(original_images, transformation):
     transformed_images = np.stack(transformed_images, axis=0)
 
     if MODE.DEBUG:
-        draw_comparisons(original_images, transformed_images, transformation)
+        print('Applied augmentations. ')
 
     return transformed_images
 
 def cartoon_effect(original_images, **kwargs):
-    transformed_images = np.zeros_like(original_images)
-
-    # default type: cartoon_mean_type1
+    """
+    default type: cartoon_mean_type1
+    """
     blur_ksize = kwargs.get('blur_ksize', 3)
 
     thresh_adaptive_method = kwargs.get('thresh_adaptive_method', cv2.ADAPTIVE_THRESH_MEAN_C)
@@ -350,62 +341,151 @@ def cartoon_effect(original_images, **kwargs):
     thresh_C = kwargs.get('thresh_C', 9)
 
     filter_d = kwargs.get('filter_d', 9)
-    filter_sigma_color = kwargs.get('filter_sigma_color', 300)
+    filter_sigma_color = kwargs.get('filter_sigma_color', 50)
     filter_sigma_space = kwargs.get('filter_sigma_space', 300)
+
+    # number of downsampling steps
+    nb_downsampling = kwargs.get('nb_downsampling', 2)
+    # number of bilateral filtering steps
+    nb_bilateral = kwargs.get('nb_bilateral', 3)
+
+    nb_images, img_rows, img_cols, nb_channels = original_images.shape
+    nb_pixels = img_rows * img_cols
+    transformed_images = []
 
     for i in range(original_images.shape[0]):
         img = original_images[i] * 255
         img = np.asarray(img, np.uint8)
 
-        # detecting edges
-        gray = cv2.medianBlur(src=img, ksize=blur_ksize)
-        edges = cv2.adaptiveThreshold(src=gray, maxValue=255, adaptiveMethod=thresh_adaptive_method,
-                                      thresholdType=cv2.THRESH_BINARY, blockSize=thresh_bsize, C=thresh_C)
+        img_color = img
+        """
+        step 1. edge-aware smoothing using a bilateral filter
+        """
+        # downsample image using Gaussian pyramid
+        for _ in range(nb_downsampling):
+            img_color = cv2.pyrDown(img_color)
 
-        # color
-        color = cv2.bilateralFilter(src=img, d=filter_d, sigmaColor=filter_sigma_color, sigmaSpace=filter_sigma_space)
-        # cartoon effect
-        cartoon = cv2.bitwise_and(src1=color, src2=color, mask=edges)
-        transformed_images[i] = np.expand_dims((1.0 * cartoon/255), axis=2)
+        # repeatedly apply small bilateral filter instead of applying one large filter
+        for _ in range(nb_bilateral):
+            img_color = cv2.bilateralFilter(src=img_color,
+                                        d=6,
+                                        sigmaColor=filter_sigma_color,
+                                        sigmaSpace=filter_sigma_space)
+
+        # upsample image
+        for _ in range(nb_downsampling):
+            img_color = cv2.pyrUp(img_color)
+
+        """
+        step 2. reduce noise using a median filter
+        """
+        if (nb_channels == 3):
+            # convert to grayscale
+            img_gray = cv2.cvtColor(img, cv2.COLOR_RGB2GRAY)
+        else:
+            img_gray = img
+        # apply median blur
+        img_blur = cv2.medianBlur(src=img_gray, ksize=blur_ksize)
+
+        """
+        step 3. create an edge mask using adaptive thresholding
+        """
+        img_edges = cv2.adaptiveThreshold(src=img_blur,
+                                          maxValue=255,
+                                          adaptiveMethod=thresh_adaptive_method,
+                                          thresholdType=cv2.THRESH_BINARY,
+                                          blockSize=thresh_bsize,
+                                          C=thresh_C)
+        """
+        step 4. combine color image with edge mask
+        """
+        if (nb_channels == 3):
+            img_edges = cv2.cvtColor(img_edges, cv2.COLOR_GRAY2RGB)
+
+        img_cartoon = cv2.bitwise_and(img_color, img_edges)
+
+        transformed_images.append(img_cartoon/255.)
+    transformed_images = np.stack(transformed_images, axis=0)
 
     if MODE.DEBUG:
+        print(transformed_images.shape)
         print('Applied cartoon effects.')
-        draw_comparisons(original_images, transformed_images, 'catoon type')
 
     return transformed_images
 
 def cartoonify(original_images, transformation):
+    """
+    Configure for each type of cartoon effect.
+    :param original_images:
+    :param transformation:
+    :return:
+    """
     if MODE.DEBUG:    
         print('Applying transformation {}...'.format(transformation))
 
+    _, img_rows, img_cols, nb_channels = original_images.shape
     adaptive_method = transformation.split('_')[1]
     catoon_type = transformation.split('_')[2]
 
-    # default type: cartoon_mean_type1
+    """
+    default type: cartoon_mean_type1
+    """
+    # number of downsampling steps
+    if (nb_channels == 1):
+        nb_downsampling = 0
+    else:
+        nb_downsampling = 2
+
+    # number of bilateral filtering steps
+    if (nb_channels == 1):
+        nb_bilateral = 3
+    else:
+        nb_bilateral = 5
+
     blur_ksize = 3
     thresh_adaptive_method = cv2.ADAPTIVE_THRESH_MEAN_C
-    thresh_bsize = 9
-    thresh_C = 9
+    if (nb_channels == 1):
+        thresh_bsize = 9
+        thresh_C = 9
+    else:
+        thresh_bsize = 3
+        thresh_C = 3
 
     filter_d = 9
-    filter_sigma_color = 300
-    filter_sigma_space = 300
+    if (nb_channels == 1):
+        filter_sigma_color = 300
+    else:
+        filter_sigma_color = 2
+    filter_sigma_space = 30
 
     if (adaptive_method == 'gaussian'):
         adaptive_method = cv2.ADAPTIVE_THRESH_GAUSSIAN_C
+        nb_downsampling = 1
+        nb_bilateral = 10
+        filter_d = 250
     if (catoon_type == 'type2'):
         thresh_bsize = 3
+        nb_downsampling = 1
+        nb_bilateral = 100
     elif (catoon_type == 'type3'):
-        thresh_C = 3
+        thresh_C = 7
+        nb_downsampling = 0
+        nb_bilateral = 0
+        if (nb_channels == 1):
+            nb_downsampling = 2
+            filter_sigma_color = 100
+
     elif (catoon_type == 'type4'):
         thresh_bsize = 5
+        thresh_C = 5
         filter_d = 25
 
     return cartoon_effect(original_images, blur_ksize=blur_ksize,
                           thresh_adaptive_method=thresh_adaptive_method,
                           thresh_bsize=thresh_bsize, thresh_C=thresh_C,
                           filter_d=filter_d, filter_sigma_color=filter_sigma_color,
-                          filter_sigma_space=filter_sigma_space)
+                          filter_sigma_space=filter_sigma_space,
+                          nb_downsampling=nb_downsampling, nb_bilateral=nb_bilateral)
 
 def quantize(original_images, transformation):
     """
@@ -416,13 +496,11 @@ def quantize(original_images, transformation):
     :return:
     """
     nb_clusters = int(transformation.split('_')[1])
-
-    original_images *= 255.
-    nb_images, img_rows, img_cols, nb_channels = original_images.shape[:4]
+    nb_images, img_rows, img_cols, nb_channels = original_images.shape
     transformed_images = []
 
-    for img in original_images:
-        # img = original_images[i]
+    for i in range(nb_images):
+        img = np.copy(original_images[i])
         """
         Convert gray scale images to RGB color space such that
         we can further convert the image to LAB color space.
@@ -430,14 +508,14 @@ def quantize(original_images, transformation):
         each channel is a copy of the original gray image.
         """
         if (nb_channels == 1):
-            img = cv2.cvtColor(img, cv2.COLOR_GRAY2BGR)
+            img = cv2.cvtColor(img, cv2.COLOR_GRAY2RGB)
         """
         Convert the image from the RGB color space to the LAB color space,
         since we will be clustering using k-means which is based on
         the euclidean distance, we will use the LAB color space where
         the euclidean distance implies perceptual meaning.
         """
-        img = cv2.cvtColor(img, cv2.COLOR_BGR2LAB)
+        img = cv2.cvtColor(img, cv2.COLOR_RGB2LAB)
         """
         reshape the image into a feature vector so that k-mean can be applied
         """
@@ -448,30 +526,120 @@ def quantize(original_images, transformation):
         """
         cluster = MiniBatchKMeans(n_clusters=nb_clusters)
         labels = cluster.fit_predict(img)
-        quant = cluster.cluster_centers_.astype('uint8')[labels]
+        quant = cluster.cluster_centers_[labels]
 
         """
         reshape the feature vectors back to image
         """
         quant = quant.reshape((img_rows, img_cols, 3))
-        img = img.reshape((img_rows, img_cols, 3))
-
         """
         convert from LAB back to RGB
         """
-        quant = cv2.cvtColor(quant, cv2.COLOR_LAB2BGR)
-        img = cv2.cvtColor(img, cv2.COLOR_LAB2BGR)
+        quant = cv2.cvtColor(quant, cv2.COLOR_Lab2RGB)
         """
         convert from RGB back to grayscale
         """
         if (nb_channels == 1):
             quant = cv2.cvtColor(quant, cv2.COLOR_RGB2GRAY)
-            img = cv2.cvtColor(img, cv2.COLOR_RGB2GRAY)
 
-        transformed_images.append(quant/255.)
-
-    # transformed_images /= 255.
+        transformed_images.append(quant)
+        del img
     transformed_images = np.stack(transformed_images, axis=0)
+
+    return transformed_images
+
+def distortion(original_images, transformation):
+    if (transformation == TRANSFORMATION.distortion_wave):
+        return wave(original_images)
+    else:
+        return affine_distortion(original_images, transformation)
+
+def wave(original_images):
+    transformed_images = []
+
+    nb_images, img_rows, img_cols, nb_channels = original_images.shape
+
+    r1 = 3.
+    r2 = 2.
+    if (nb_channels == 3):
+        r1 = 3.
+        r2 = 8.
+    a = img_rows / r1
+    w = r2 / img_cols
+    shift = lambda x: a * np.sin(np.pi * x * w)
+
+    for img in original_images:
+        img_distorted = np.copy(img)
+        for i in range(img_rows):
+            img_distorted[i, :] = np.roll(img_distorted[i, :], int(shift(i)))
+        transformed_images.append(img_distorted)
+    transformed_images = np.stack(transformed_images, axis=0)
+    return transformed_images
+
+def affine_distortion(original_images, transformation):
+    """
+    Distort an image.
+    :param: original_images - the images to applied transformations on.
+    :param: transformation - the standard transformation to apply.
+    :return: the transformed dataset.
+    """
+    if MODE.DEBUG:
+        print('Applying distortion on images ({})...'.format(transformation))
+
+    """
+    Distort the image via affine transformations.
+    In affine transformation, all parallel lines in the original image will still be parallel in the transformed image.
+    To find the transformation matrix, we need to specify 3 points from the original image 
+    and their corresponding locations in transformed image. Then, the transformation matrix M (2x3) 
+    can be generated by getAffineTransform()
+    """
+    nb_images, img_rows, img_cols, nb_channels = original_images.shape[:4]
+    point1 = [0.2 * img_cols, 0.2 * img_rows]
+    point2 = [0.2 * img_cols, 0.6 * img_rows]
+    point3 = [0.6 * img_cols, 0.2 * img_rows]
+
+    pts_original = np.float32([point1, point2, point3])
+
+    if (transformation == TRANSFORMATION.distortion_horizontal_top):
+        point1 = [0.3 * img_cols, 0.3 * img_rows]
+        point2 = [0.2 * img_cols, 0.6 * img_rows]
+        point3 = [0.55 * img_cols, 0.15 * img_rows]
+    elif (transformation == TRANSFORMATION.affine_vertical_stretch):
+        point1 = [0.25 * img_cols, 0.2 * img_rows]
+        point2 = [0.25 * img_cols, 0.55 * img_rows]
+        point3 = [0.5 * img_cols, 0.2 * img_rows]
+    elif (transformation == TRANSFORMATION.affine_horizontal_compress):
+        point1 = [0.32 * img_cols, 0.25 * img_rows]
+        point2 = [0.32 * img_cols, 0.5 * img_rows]
+        point3 = [0.43 * img_cols, 0.25 * img_rows]
+    elif (transformation == TRANSFORMATION.affine_horizontal_stretch):
+        point1 = [0.2 * img_cols, 0.25 * img_rows]
+        point2 = [0.2 * img_cols, 0.5 * img_rows]
+        point3 = [0.55 * img_cols, 0.25 * img_rows]
+    elif (transformation == TRANSFORMATION.affine_both_compress):
+        point1 = [0.28 * img_cols, 0.28 * img_rows]
+        point2 = [0.28 * img_cols, 0.47 * img_rows]
+        point3 = [0.47 * img_cols, 0.28 * img_rows]
+    elif (transformation == TRANSFORMATION.affine_both_stretch):
+        point1 = [0.22 * img_cols, 0.22 * img_rows]
+        point2 = [0.22 * img_cols, 0.55 * img_rows]
+        point3 = [0.55 * img_cols, 0.22 * img_rows]
+    else:
+        raise ValueError('{} is not supported.'.format(transformation))
+
+    # define transformation matrix
+    pts_transformed = np.float32([point1, point2, point3])
+    trans_matrix = cv2.getAffineTransform(pts_original, pts_transformed)
+
+    # applying an affine transformation over the dataset
+    transformed_images = []
+    for img in original_images:
+        transformed_images.append(cv2.warpAffine(img, trans_matrix, (img_cols, img_rows)))
+    transformed_images = np.stack(transformed_images, axis=0)
+
+    if MODE.DEBUG:
+        print('shapes: original - {}; transformed - {}'.format(original_images.shape, transformed_images.shape))
+        print('Applied transformation {}.'.format(transformation))
 
     return transformed_images
 
@@ -507,6 +675,8 @@ def transform_images(X, transformation_type):
         return cartoonify(X, transformation_type)
     elif (transformation_type in TRANSFORMATION.QUANTIZATIONS):
         return quantize(X, transformation_type)
+    elif (transformation_type in TRANSFORMATION.DISTORTIONS):
+        return distortion(X, transformation_type)
     else:
         raise ValueError('Transformation type {} is not supported.'.format(transformation_type.upper()))
 
@@ -514,10 +684,12 @@ def transform_images(X, transformation_type):
 for testing
 """
 def main(*args):
+    print('Transform --- {}'.format(args))
     _, (X, _) = load_data(args[0])
-    X = X[:10]
-    transform_images(X, args[1])
+    X_orig = np.copy(X[:10])
+    X_trans = transform_images(X_orig, args[1])
+    draw_comparisons(X[:10], X_trans, '{}-{}'.format(args[0], args[1]))
 
 if __name__ == "__main__":
     MODE.debug_on()
-    main(DATA.mnist, TRANSFORMATION.quant_8clusters)
+    main(DATA.cifar_10, TRANSFORMATION.shift_bottom_left)

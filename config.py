@@ -22,19 +22,24 @@ defensesList = ["CV_Maj", "CV_Max", "1s_Mean", "EM_Mean", "EM_MMV", "1s_Mean_L",
 
 
 class TRANSFORMATION(object):
-
     """
     Define transformation types that are supported.
     """
-    # clean image, no transformation is applied.
+    """
+    clean image, no transformation is applied.
+    """
     clean = 'clean'
 
-    # rotation
+    """
+    rotation
+    """
     rotate90 = 'rotate90'
     rotate180 = 'rotate180'
     rotate270 = 'rotate270'
 
-    # shift/translation
+    """
+    shift/translation
+    """
     shift_left = 'shift_left'
     shift_right = 'shift_right'
     shift_up = 'shift_up'
@@ -44,12 +49,16 @@ class TRANSFORMATION(object):
     shift_bottom_left = 'shift_bottom_left'
     shift_bottom_right = 'shift_bottom_right'
 
-    # flipping
+    """
+    flipping
+    """
     horizontal_flip = 'horizontal_flip'
     vertical_flip = 'vertical_flip'
     both_flip = 'both_flip'
 
-    # stretch/compress
+    """
+    stretch/compress
+    """
     affine_vertical_compress = 'affine_vertical_compress'
     affine_vertical_stretch = 'affine_vertical_stretch'
     affine_horizontal_compress = 'affine_horizontal_compress'
@@ -57,20 +66,26 @@ class TRANSFORMATION(object):
     affine_both_compress = 'affine_both_compress'
     affine_both_stretch = 'affine_both_stretch'
 
-    # morphology
+    """
+    morphology
+    """
     erosion = 'erosion'
     dilation = 'dilation'
     opening = 'opening'
     closing = 'closing'
     gradient = 'gradient'
 
-    # augmentation
+    """
+    augmentation
+    """
     samplewise_std_norm = 'samplewise_std_norm'
     feature_std_norm = 'feature_std_norm'
     zca_whitening = 'zca_whitening'
     pca_whitening = 'pca_whitening'
 
-    # cartoonify
+    """
+    cartoonify
+    """
     cartoon_mean_type1 = 'cartoon_mean_type1'
     cartoon_mean_type2 = 'cartoon_mean_type2'
     cartoon_mean_type3 = 'cartoon_mean_type3'
@@ -80,13 +95,24 @@ class TRANSFORMATION(object):
     cartoon_gaussian_type3 = 'cartoon_gaussian_type3'
     cartoon_gaussian_type4 = 'cartoon_gaussian_type4'
 
-    # quantization
+    """
+    quantization
+    """
     quant_2clusters = 'quant_2_clusters'
     quant_4clusters = 'quant_4_clusters'
-    quant_6clusters = 'quant_6_clusters'
     quant_8clusters = 'quant_8_clusters'
-    quant_12clusters = 'quant_12_clusters'
     quant_16clusters = 'quant_16_clusters'
+    quant_32clusters = 'quant_32_clusters'
+    quant_64clusters = 'quant_64_clusters'
+
+    """
+    distortion
+    """
+    distortion_horizontal_top = 'distortion_horizontal_top'
+    distortion_horizontal_bottom = 'distortion_horizontal_bottom'
+    distortion_vertical_left = 'distortion_vertical_left'
+    distortion_vertical_right = 'distortion_vertical_right'
+    distortion_wave = 'distortion_wave'
 
     #
     thresh_binary = 'thresh_binary'
@@ -112,23 +138,25 @@ class TRANSFORMATION(object):
     AUGMENT = [samplewise_std_norm, feature_std_norm, zca_whitening]
     CARTOONS = [cartoon_mean_type1, cartoon_mean_type2, cartoon_mean_type3, cartoon_mean_type4,
                 cartoon_gaussian_type1, cartoon_gaussian_type2, cartoon_gaussian_type3, cartoon_gaussian_type4]
-    QUANTIZATIONS = [quant_2clusters, quant_4clusters, quant_6clusters, quant_8clusters,
-                     quant_12clusters, quant_16clusters]
-
+    QUANTIZATIONS = [quant_2clusters, quant_4clusters, quant_8clusters,
+                     quant_16clusters, quant_32clusters, quant_64clusters]
+    DISTORTIONS = [distortion_horizontal_top, distortion_horizontal_bottom, distortion_vertical_left,
+                   distortion_vertical_right, distortion_wave]
     NOISES =[]
     FILTERS = []
 
     @classmethod
     def supported_types(cls):
         transformations = ['clean']
-        transformations.extend(TRANSFORMATION.ROTATE)
-        transformations.extend(TRANSFORMATION.SHIFT)
-        transformations.extend(TRANSFORMATION.FLIP)
-        transformations.extend(TRANSFORMATION.AFFINE_TRANS)
-        transformations.extend(TRANSFORMATION.MORPH_TRANS)
-        transformations.extend(TRANSFORMATION.AUGMENT)
-        transformations.extend(TRANSFORMATION.CARTOONS)
-        transformations.extend(TRANSFORMATION.QUANTIZATIONS)
+        transformations.extend(cls.ROTATE)
+        transformations.extend(cls.SHIFT)
+        transformations.extend(cls.FLIP)
+        transformations.extend(cls.AFFINE_TRANS)
+        transformations.extend(cls.MORPH_TRANS)
+        transformations.extend(cls.AUGMENT)
+        transformations.extend(cls.CARTOONS)
+        transformations.extend(cls.QUANTIZATIONS)
+        transformations.extend(cls.DISTORTIONS)
 
         return transformations
 
@@ -150,8 +178,8 @@ class ATTACK(object):
 
     @classmethod
     def get_supported_attacks(cls):
-        return [ATTACK.FGSM, ATTACK.BIM, ATTACK.DEEPFOOL, ATTACK.JSMA, ATTACK.CW,
-                ATTACK.ONE_PIXEL, ATTACK.PGD, ATTACK.BLACKBOX]
+        return [cls.FGSM, cls.BIM, cls.DEEPFOOL, cls.JSMA, cls.CW,
+                cls.ONE_PIXEL, cls.PGD, cls.BLACKBOX]
 
     # ---------------------------
     # FGSM Parameters
