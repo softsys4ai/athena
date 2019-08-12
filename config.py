@@ -115,10 +115,23 @@ class TRANSFORMATION(object):
     """
     noises
     """
+    noise_gaussian = 'noise_gaussian'
+    noise_localvar = 'noise_localvar'
+    noise_poisson = 'noise_poisson'
+    noise_salt = 'noise_salt'
+    noise_pepper = 'noise_pepper'
+    noise_saltNpepper = 'noise_s&p'
+    noise_speckle = 'noise_speckle'
 
     """
     filter
     """
+    sobel = 'sobel'
+    gaussian_filter = 'gaussian_filter'
+    rank_filter = 'rank_filter'
+    median_filter = 'median_filter'
+    min_filter = 'minimum_filter'
+    max_filter = 'maximum_filter'
 
 
     """
@@ -139,22 +152,26 @@ class TRANSFORMATION(object):
     QUANTIZATIONS = [quant_2clusters, quant_4clusters, quant_8clusters,
                      quant_16clusters, quant_32clusters, quant_64clusters]
     DISTORTIONS = [distortion_x, distortion_y]
-    NOISES =[]
-    FILTERS = []
+    NOISES =[noise_gaussian, noise_localvar, noise_poisson, noise_salt,
+             noise_pepper, noise_saltNpepper, noise_speckle]
+    FILTERS = [sobel, gaussian_filter, rank_filter, median_filter, min_filter, max_filter]
     COMPRESSION = []
 
     @classmethod
     def supported_types(cls):
-        transformations = ['clean']
+        transformations = []
+        transformations.extend(['clean'])
         transformations.extend(cls.ROTATE)
         transformations.extend(cls.SHIFT)
         transformations.extend(cls.FLIP)
         transformations.extend(cls.AFFINE_TRANS)
         transformations.extend(cls.MORPH_TRANS)
-        # transformations.extend(cls.AUGMENT)
+        transformations.extend(cls.AUGMENT)
         transformations.extend(cls.CARTOONS)
         transformations.extend(cls.QUANTIZATIONS)
-        # transformations.extend(cls.DISTORTIONS)
+        transformations.extend(cls.DISTORTIONS)
+        transformations.extend(cls.NOISES)
+        transformations.extend(cls.FILTERS)
 
         return transformations
 
@@ -302,12 +319,14 @@ class MODE(object):
         cls.DEBUG = False
 
 class PATH(object):
-    if MODE.DEBUG:
-        MODEL = 'data/debug/models'
-        ADVERSARIAL_FILE = 'data/debug/AEs'
-    else:
-        MODEL = 'data/models'
-        ADVERSARIAL_FILE = 'data/adversarial_examples'
+    # for debugging
+    # MODEL = 'data/debug/models'
+    # ADVERSARIAL_FILE = 'data/debug/AEs'
+
+    # for experiment
+    MODEL = 'data/models'
+    ADVERSARIAL_FILE = 'data/adversarial_examples'
+
     FIGURES = 'data/figures'
     RESULTS = 'data/results'
     ANALYSE = 'data/analyse'

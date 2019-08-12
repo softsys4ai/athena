@@ -5,7 +5,7 @@ Implement methods plotting and drawing figures.
 """
 import os
 import matplotlib.pyplot as plt
-from config import PATH
+from config import PATH, MODE
 
 def draw_comparisons(controls, treatments, title="None"):
     """
@@ -48,7 +48,8 @@ def draw_comparisons(controls, treatments, title="None"):
             plt.imshow(treatments[i - 1].reshape(img_rows, img_cols, nb_channels))
         pos += 1
 
-    plt.show()
+    if (MODE.DEBUG):
+        plt.show()
     fig.savefig(
         os.path.join(PATH.FIGURES, '{}.pdf'.format(title)),
         bbox_inches='tight'
@@ -65,7 +66,8 @@ def plotTrainingResult(history, model_name):
     plt.ylabel('Accuracy')
     plt.xlabel('Epoch')
     plt.legend(['Train', 'Test'], loc='upper left')
-    plt.show()
+    if MODE.DEBUG:
+        plt.show()
     f_acc.savefig(
             os.path.join(PATH.FIGURES, model_name+"_training_acc_vs_val_acc.pdf"),
             bbox_inches='tight')
@@ -80,7 +82,8 @@ def plotTrainingResult(history, model_name):
     plt.ylabel('Loss')
     plt.xlabel('Epoch')
     plt.legend(['Train', 'Test'], loc='upper left')
-    plt.show()
+    if (MODE.DEBUG):
+        plt.show()
     f_loss.savefig(
             os.path.join(PATH.FIGURES, model_name+"_training_loss_vs_val_loss.pdf"),
             bbox_inches='tight')

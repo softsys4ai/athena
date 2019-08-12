@@ -3,8 +3,11 @@ Implement transformations.
 @auther: Ying Meng (y(dot)meng201011(at)gmail(dot)com)
 """
 import cv2
+from scipy import ndimage, misc
 
 from keras.preprocessing.image import ImageDataGenerator
+import PIL.Image
+import skimage
 from sklearn.cluster import MiniBatchKMeans
 
 from config import *
@@ -573,7 +576,7 @@ def quantize(original_images, transformation):
 
     return transformed_images
 
-def distortion(original_images, transformation):
+def distort(original_images, transformation):
     transformed_images = []
 
     nb_images, img_rows, img_cols, nb_channels = original_images.shape
@@ -609,13 +612,74 @@ def distortion(original_images, transformation):
     return transformed_images
 
 def filter(original_images, transformation):
-    # TODO
-    pass
+    """
+    :param original_images:
+    :param transformation:
+    :return:
+    """
+    nb_images, img_rows, img_cols, nb_channels = original_images.shape
+    transformed_images = []
+
+    if (transformation == TRANSFORMATION.sobel):
+        if (nb_channels == 1):
+            print('This transformation type ({}) does not support grayscale.'.format(transformation))
+            return
+
+        for img in original_images:
+            img_trans = ndimage.sobel(img)
+            transformed_images.append(img_trans)
+    elif (transformation == TRANSFORMATION.median_filter):
+        for img in original_images:
+            img_trans = ndimage.median_filter(img, size=3)
+            transformed_images.append(img_trans)
+    elif (transformation == TRANSFORMATION.min_filter):
+        for img in original_images:
+            img_trans = ndimage.minimum_filter(img, size=3)
+            transformed_images.append(img_trans)
+    elif (transformation == TRANSFORMATION.max_filter):
+        for img in original_images:
+            img_trans = ndimage.maximum_filter(img, size=3)
+            transformed_images.append(img_trans)
+    elif (transformation == TRANSFORMATION.gaussian_filter):
+        for img in original_images:
+            img_trans = ndimage.gaussian_filter(img, sigma=1)
+            transformed_images.append(img_trans)
+    elif (transformation == TRANSFORMATION.rank_filter):
+        for img in original_images:
+            img_trans = ndimage.rank_filter(img, rank=15, size=3)
+            transformed_images.append(img_trans)
+    else:
+        raise ValueError('{} is not supported.'.format(transformation))
+
+    transformed_images = np.stack(transformed_images, axis=0)
+    if (nb_channels == 1):
+        # reshape a 3d to a 4d
+        transformed_images = transformed_images.reshape((nb_images, img_rows, img_cols, nb_channels))
+    return transformed_images
 
 def add_noise(original_images, transformation):
-    pass
+    """
+    Adding noise to given images.
+    :param original_images:
+    :param transformation:
+    :return:
+    """
+    nb_images, img_rows, img_cols, nb_channels = original_images.shape
+    transformed_images = []
+    noise_mode = transformation.split('_')[1]
+
+    for img in original_images:
+        img_noised = skimage.util.random_noise(img, mode=noise_mode)
+        transformed_images.append(img_noised)
+    transformed_images = np.stack(transformed_images, axis=0)
+    if (nb_channels == 1):
+        transformed_images = transformed_images.reshape((nb_images, img_rows, img_cols, nb_channels))
+    return transformed_images
 
 def compress(original_images, transformation):
+    pass
+
+def autoencoder():
     pass
 
 def transform_images(X, transformation_type):
@@ -647,7 +711,7 @@ def transform_images(X, transformation_type):
     elif (transformation_type in TRANSFORMATION.QUANTIZATIONS):
         return quantize(X, transformation_type)
     elif (transformation_type in TRANSFORMATION.DISTORTIONS):
-        return distortion(X, transformation_type)
+        return distort(X, transformation_type)
     elif (transformation_type in TRANSFORMATION.FILTERS):
         return filter(X, transformation_type)
     elif (transformation_type in TRANSFORMATION.NOISES):
@@ -669,4 +733,4 @@ def main(*args):
 
 if __name__ == "__main__":
     MODE.debug_on()
-    main(DATA.cifar_10, TRANSFORMATION.distortion_y)
+    main(DATA.cifar_10, TRANSFORMATION.noise_gaussian)

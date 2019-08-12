@@ -13,6 +13,7 @@ def train_model_batch(dataset):
     :param dataset:
     """
     for trans in TRANSFORMATION.supported_types():
+    # for trans in TRANSFORMATION.AFFINE_TRANS:
         # train a model per type of transformation
         train_model(dataset, trans)
 
@@ -45,6 +46,6 @@ def main(dataset, trans_type=TRANSFORMATION.clean, batch=False):
         train_model(dataset, trans_type)
 
 if __name__ == "__main__":
-    # MODE.debug_on()
-    MODE.debug_off()
-    main(DATA.cifar_10, TRANSFORMATION.affine_both_compress, batch=True)
+    MODE.debug_on()
+    # MODE.debug_off()
+    main(DATA.mnist, TRANSFORMATION.affine_both_compress, batch=True)

@@ -238,19 +238,19 @@ def train(model_name, X, Y, need_augment=False):
             # verbose: integer. 0 = silent; 1 = progress bar; 2 = one line per epoch
             # train the model silently
             scores = model.evaluate(val_sample, val_labels, batch_size=128, verbose=0)
-
     else:
         # compile model
         model.compile(loss='categorical_crossentropy', optimizer='sgd', metrics=['accuracy'])
 
-        # train
-        history = model.fit(train_samples, train_labels,
-                            epochs=MODEL.EPOCHS, batch_size=MODEL.BATCH_SIZE,
-                            shuffle=True, verbose=1, validation_data=(val_sample, val_labels))
-        # test
-        # verbose: integer. 0 = silent; 1 = progress bar; 2 = one line per epoch
-        # train the model silently
-        scores = model.evaluate(val_sample, val_labels, batch_size=128, verbose=0)
+        with tf.device('/device:GPU:0'):
+            # train
+            history = model.fit(train_samples, train_labels,
+                                epochs=MODEL.EPOCHS, batch_size=MODEL.BATCH_SIZE,
+                                shuffle=True, verbose=1, validation_data=(val_sample, val_labels))
+            # test
+            # verbose: integer. 0 = silent; 1 = progress bar; 2 = one line per epoch
+            # train the model silently
+            scores = model.evaluate(val_sample, val_labels, batch_size=128, verbose=0)
 
     # save the trained model
     model.save('{}/{}.h5'.format(PATH.MODEL, model_name))
@@ -261,7 +261,7 @@ def train(model_name, X, Y, need_augment=False):
     file.dict2csv(history.history, '{}/{}'.format(PATH.RESULTS, file_name))
     plotTrainingResult(history, model_name)
     # delete the model after it's been saved.
-    del model
+    # del model
 
 def lr_schedule(epoch):
     """
