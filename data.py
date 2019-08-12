@@ -4,6 +4,7 @@ Implement operations related to data (dataset).
 """
 from __future__ import division, absolute_import, print_function
 
+import numpy as np
 import keras
 import tensorflow as tf
 from keras.datasets import mnist, cifar10, fashion_mnist, cifar100
@@ -22,6 +23,7 @@ def load_data(dataset):
     img_rows = 0
     img_cols = 0
     nb_channels = 0
+    nb_classes = 0
 
     if (dataset == DATA.mnist):
         """
@@ -94,6 +96,20 @@ def load_data(dataset):
     print('Train set: {}, {}'.format(X_train.shape, Y_train.shape))
     print('Test set: {}, {}'.format(X_test.shape, Y_test.shape))
     return (X_train, Y_train), (X_test, Y_test)
+
+def normalize(X):
+    """
+    Normalize the given dataset X.
+    :param X:
+    :return: normalized dataset.
+    """
+    # z-score
+    mean = np.mean(X, axis=(0, 1, 2, 3))
+    std = np.std(X, axis=(0, 1, 2, 3))
+    # avoid dividing zero by adding a very small number
+    X = (X - mean) / (std + 1e-7)
+
+    return X
 
 """
 for testing

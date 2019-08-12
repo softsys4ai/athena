@@ -109,24 +109,21 @@ class TRANSFORMATION(object):
     """
     distortion
     """
-    distortion_horizontal_top = 'distortion_horizontal_top'
-    distortion_horizontal_bottom = 'distortion_horizontal_bottom'
-    distortion_vertical_left = 'distortion_vertical_left'
-    distortion_vertical_right = 'distortion_vertical_right'
-    distortion_wave = 'distortion_wave'
+    distortion_y = 'distortion_y'
+    distortion_x = 'distortion_x'
 
-    #
-    thresh_binary = 'thresh_binary'
-    thresh_mean = 'thresh_mean'
-    thresh_gaussian = 'thresh_gaussian'
+    """
+    noises
+    """
 
-    scaling = 'scaling'
-    upsampling = 'upsampling'
-    downsampling = 'downsampling'
+    """
+    filter
+    """
 
-    horizontal_shear = 'horizontal_shear'
-    vertical_shear = 'vertical_shear'
-    range_shear = 'range_shear'
+
+    """
+    compression
+    """
 
     ROTATE = [rotate90, rotate180, rotate270]
     SHIFT = [shift_left, shift_right, shift_up, shift_down,
@@ -141,10 +138,10 @@ class TRANSFORMATION(object):
                 cartoon_gaussian_type1, cartoon_gaussian_type2, cartoon_gaussian_type3, cartoon_gaussian_type4]
     QUANTIZATIONS = [quant_2clusters, quant_4clusters, quant_8clusters,
                      quant_16clusters, quant_32clusters, quant_64clusters]
-    DISTORTIONS = [distortion_horizontal_top, distortion_horizontal_bottom, distortion_vertical_left,
-                   distortion_vertical_right, distortion_wave]
+    DISTORTIONS = [distortion_x, distortion_y]
     NOISES =[]
     FILTERS = []
+    COMPRESSION = []
 
     @classmethod
     def supported_types(cls):
@@ -154,10 +151,10 @@ class TRANSFORMATION(object):
         transformations.extend(cls.FLIP)
         transformations.extend(cls.AFFINE_TRANS)
         transformations.extend(cls.MORPH_TRANS)
-        transformations.extend(cls.AUGMENT)
+        # transformations.extend(cls.AUGMENT)
         transformations.extend(cls.CARTOONS)
         transformations.extend(cls.QUANTIZATIONS)
-        transformations.extend(cls.DISTORTIONS)
+        # transformations.extend(cls.DISTORTIONS)
 
         return transformations
 

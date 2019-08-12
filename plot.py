@@ -1,6 +1,7 @@
 """
 Implement methods plotting and drawing figures.
 @author: Ying Meng (y(dot)meng201011(at)gmail(dot)com))
+        Jianhai Su
 """
 import os
 import matplotlib.pyplot as plt
@@ -19,7 +20,7 @@ def draw_comparisons(controls, treatments, title="None"):
 
     pos = 1
     fig = plt.figure(figsize=(10, 10))
-    plt.subplots_adjust(left=0.06, right=0.95, top=0.92, bottom=0.015, wspace=0.001, hspace=0.015)
+    plt.subplots_adjust(left=0.05, right=0.95, top=0.92, bottom=0.02, wspace=0.001, hspace=0.015)
 
     fig.suptitle(title)
     cols = 4
@@ -36,7 +37,7 @@ def draw_comparisons(controls, treatments, title="None"):
         else:
             plt.imshow(controls[i - 1].reshape(img_rows, img_cols, nb_channels))
         pos += 1
-        ax2 = fig.add_subplot(fig.add_subplot(rows, cols, pos))
+        ax2 = fig.add_subplot(rows, cols, pos)
         ax2.axis('off')
         ax2.grid(b=None)
         ax2.set_aspect('equal')
@@ -48,7 +49,11 @@ def draw_comparisons(controls, treatments, title="None"):
         pos += 1
 
     plt.show()
-    fig.savefig('{}/{}.jpg'.format(PATH.FIGURES, title))
+    fig.savefig(
+        os.path.join(PATH.FIGURES, '{}.pdf'.format(title)),
+        bbox_inches='tight'
+    )
+    plt.close()
 
 def plotTrainingResult(history, model_name):
     # Plot training & validation accuracy values
@@ -60,7 +65,7 @@ def plotTrainingResult(history, model_name):
     plt.ylabel('Accuracy')
     plt.xlabel('Epoch')
     plt.legend(['Train', 'Test'], loc='upper left')
-    #plt.show()
+    plt.show()
     f_acc.savefig(
             os.path.join(PATH.FIGURES, model_name+"_training_acc_vs_val_acc.pdf"),
             bbox_inches='tight')
@@ -75,7 +80,7 @@ def plotTrainingResult(history, model_name):
     plt.ylabel('Loss')
     plt.xlabel('Epoch')
     plt.legend(['Train', 'Test'], loc='upper left')
-    #plt.show()
+    plt.show()
     f_loss.savefig(
             os.path.join(PATH.FIGURES, model_name+"_training_loss_vs_val_loss.pdf"),
             bbox_inches='tight')
