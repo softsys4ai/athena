@@ -1,6 +1,5 @@
 import os
 import time
-import logging
 
 import matplotlib.pyplot as plt
 
@@ -12,7 +11,6 @@ from tensorflow.keras.models import Model
 from config import *
 from transformation import transform_images
 
-from functools import wraps
 
 def randomChoiceBasedDefense(predProb, measureTC=False):
     '''
@@ -214,13 +212,17 @@ def clusteringDefensesEvaluation(
             1. numOfTrans is the number of tranform models
             2. numOfModels is numOfTrans + 1 (the original model without transformation applied)
         Input:
-            AEPredProbTrain: (numOfModels, numOfAEs, numOfClasses)
-            labelsTrain    : numOfModels true labels
-            AEPredProbTest: (numOfTrans, numOfAEs, numOfClasses)
-            labelsTest    : numOfTrans true labels
+            AEPredProbTrain : (numOfModels, numOfAEs, numOfClasses)
+            labelsTrain     : true labels for training set
+            AEPredProbTest  : (numOfTrans, numOfAEs, numOfClasses)
+            labelsTest      : labels for testing set
+            BSPredLC        : (numOfTrans, numOfBSs, numOfClasses)
+            BSLabels        : true labels
+
     '''
 
     # TRAIN
+    print("\t\t==== Training ====")
     numOfModels = AEPredProbTrain.shape[0]
     numOfTrainingSamples = AEPredProbTrain.shape[1] # number of AEs = number of BSs
     numOfTrans = numOfModels-1
@@ -252,6 +254,7 @@ def clusteringDefensesEvaluation(
 
 
     # TEST
+    print("\t\t==== Testing ====")
     numOfTestingSamples = AEPredProbTest.shape[1]
     AEPredLCTest = np.zeros((numOfTrans, numOfTestingSamples, 2))
 
@@ -263,7 +266,7 @@ def clusteringDefensesEvaluation(
     #testVotes   : (numOfCVDefenses, numOfTestingSamples, 2)
     # 2: AE-accuracy, AE-time cost
     #testResults : (numOfCVDefenses, 2)
-    testVotes, testResults = clusteringBasedDefesTest(
+    testVotesAE, testResultsAE = clusteringBasedDefesTest(
             curExprDir,
             AEPredLCTest,
             labelsTest,
@@ -275,14 +278,14 @@ def clusteringDefensesEvaluation(
             BSLabels,
             numOfClusters)
 
-    np.save(os.path.join(curExprDir, "testVotes_ClusteringAndVote.npy"), testVotes)
-    np.save(os.path.join(curExprDir, "testResults_ClusteringAndVote.npy"), testResults)
+    np.save(os.path.join(curExprDir, "AE_testVotes_ClusteringAndVote.npy"), testVotesAE)
+    np.save(os.path.join(curExprDir, "AE_testResults_ClusteringAndVote.npy"), testResultsAE)
 
     np.save(os.path.join(curExprDir, "BS_testVotes_ClusteringAndVote.npy"), testVotesBS)
     np.save(os.path.join(curExprDir, "BS_testResults_ClusteringAndVote.npy"), testResultsBS)
 
 
-    return testResults, testResultsBS
+    return testResultsAE, testResultsBS
 
 
 
@@ -467,20 +470,19 @@ def weightedConfBasedDefsTrain(
 
 def weightedConfBasedDefsTest(
         curExprDir,
-        AEPred,
+        pred,
         labels,
         EMModels):
 
     '''
         Input:
             AEPred: (numOfTrans, numOfSamples, numOfClasses)
-            BSPred: (numOfTrans, numOfSamples, numOfClasses)
             EMModels: dictionary. wc_defense_name / (expertise mattrix, array of model IDs)
         Output:
             testResult: (numOfWCDefenses, 2)
             votedResults: (numOfWCDefenses, numOfSamples).
     '''
-    numOfSamples = AEPred.shape[1]
+    numOfSamples = pred.shape[1]
     votedResults = np.zeros((numOfWCDefenses, numOfSamples))   
     # 3: 0-Accuracy, 1-Time cost per sample in seconds
     testResult = np.zeros((numOfWCDefenses, 2))
@@ -491,16 +493,16 @@ def weightedConfBasedDefsTest(
         curExpertiseMat = EMModels[defenseName][0]
         topModelIndices = EMModels[defenseName][1] 
 
-        curAEPred = AEPred[topModelIndices, :, :]
+        curPred = pred[topModelIndices, :, :]
 
 
-        predLabelsAE, timeCostAE = wcdefenses(
-                curAEPred, curExpertiseMat, defenseName, measureTC=True)
+        predLabels, timeCost = wcdefenses(
+                curPred, curExpertiseMat, defenseName, measureTC=True)
 
-        testResult[defenseIdx, 0] = calAccuracy(predLabelsAE, labels)
-        testResult[defenseIdx, 1] = timeCostAE
+        testResult[defenseIdx, 0] = calAccuracy(predLabels, labels)
+        testResult[defenseIdx, 1] = timeCost
 
-        votedResults[defenseIdx, :] = predLabelsAE
+        votedResults[defenseIdx, :] = predLabels
 
     return testResult, votedResults
 
@@ -518,8 +520,20 @@ def weightedConfDefenseEvaluation(
         predLogitsBS,
         labelsBS):
 
+    '''
+        Input:
+            predProbAETr: numOfModels X numOfSamples X 10
+            predProbAETe: numOfTrans X numOfSamples X  10
+            predProbBS  : numOfTrans X numOfSamples X 10
+            predLogitsAETr: numOfModels X numOfSamples X 10
+            predLogitsAETe: numOfTrans X numOfSamples X  10
+            predLogitsBS  : numOfTrans X numOfSamples X 10
+    '''
+
     # TRAIN
     # include the original model
+    # modelsAcc: (numOfModels)
+    print("\t\t=== pre-train ====")
     modelsAcc, expertiseMat = weightedConfBasedDefsTrainPre(
             curExprDir,
             predProbAETr,
@@ -529,12 +543,12 @@ def weightedConfDefenseEvaluation(
     # For TESTING
     numOfGroups = 2
     numOfTestingSamples = predProbAETe.shape[1]
-    testResults = np.zeros((numOfGroups, numOfWCDefenses, 2))
-    votedResults = np.zeros((numOfGroups, numOfWCDefenses, numOfTestingSamples))
+    AETestResults = np.zeros((numOfGroups, numOfWCDefenses, 2))
+    AEVotedResults = np.zeros((numOfGroups, numOfWCDefenses, numOfTestingSamples))
 
     numOfBSSamples = predProbBS.shape[1]
-    testResultsBS = np.zeros((numOfGroups, numOfWCDefenses, 2))
-    votedResultsBS = np.zeros((numOfGroups, numOfWCDefenses, numOfBSSamples))
+    BSTestResults = np.zeros((numOfGroups, numOfWCDefenses, 2))
+    BSVotedResults = np.zeros((numOfGroups, numOfWCDefenses, numOfBSSamples))
 
     # testResults[2, numOfWCDefenses-1] is non-sense. Same to other three arraies.
     for plIdx, useLogits, AEPredTr, AEPredTe, BSPred in zip(
@@ -544,9 +558,10 @@ def weightedConfDefenseEvaluation(
             [predProbAETe, predLogitsAETe],
             [predProbBS, predLogitsBS]):
 
-
+        predictionType = "probability" if not useLogits else "logit"
         # TRAIN
         # modelsAcc[1:]: exclude the original model at the index 0 in modelsAcc
+        print("\t\t==== Training with {} ====".format(predictionType))
         EMModels = weightedConfBasedDefsTrain(
                 curExprDir,
                 useLogits,
@@ -557,36 +572,37 @@ def weightedConfDefenseEvaluation(
 
 
         # TEST
+        print("\t\t==== Testing with {} ====".format(predictionType))
         # AE
-        testResults[plIdx, :, :], votedResults[plIdx, :, :] = weightedConfBasedDefsTest(
+        AETestResults[plIdx, :, :], AEVotedResults[plIdx, :, :] = weightedConfBasedDefsTest(
                 curExprDir,
                 AEPredTe,
                 labelsTe,
                 EMModels)
 
         # BS
-        testResultsBS[plIdx, :, :], votedResultsBS[plIdx, :, :] = weightedConfBasedDefsTest(
+        BSTestResults[plIdx, :, :], BSVotedResults[plIdx, :, :] = weightedConfBasedDefsTest(
                 curExprDir,
                 BSPred,
                 labelsBS,
                 EMModels)
 
 
-    votesFP = os.path.join(curExprDir, "testVotes_WeightedConfDefenses.npy")
-    testResultsFP = os.path.join(curExprDir, "testResults_WeightedConfDefenses.npy")
-    np.save(votesFP, votedResults)
-    np.save(testResultsFP, testResults)
+    votesFP = os.path.join(curExprDir, "AE_testVotes_WeightedConfDefenses.npy")
+    testResultsFP = os.path.join(curExprDir, "AE_testResults_WeightedConfDefenses.npy")
+    np.save(votesFP, AEVotedResults)
+    np.save(testResultsFP, AETestResults)
 
-    votesBSFP = os.path.join(curExprDir, "testVotes_WeightedConfDefenses_BS.npy")
-    testResultsBSFP = os.path.join(curExprDir, "testResults_WeightedConfDefenses_BS.npy")
-    np.save(votesBSFP, votedResultsBS)
-    np.save(testResultsBSFP, testResultsBS)
+    votesBSFP = os.path.join(curExprDir, "BS_testVotes_WeightedConfDefenses.npy")
+    testResultsBSFP = os.path.join(curExprDir, "BS_testResults_WeightedConfDefenses.npy")
+    np.save(votesBSFP, BSVotedResults)
+    np.save(testResultsBSFP, BSTestResults)
  
 
-    return testResults, testResultsBS
+    return AETestResults, BSTestResults
 
 def curvePlot(xs, ys, xlabel, ylabel, labelFontSize, tickFontSize, lineColor, marker, outputfile, title):
-        print("\t[curvePlot] ploting " + outputfile)
+        #print("\t[curvePlot] ploting " + outputfile)
 
         plt.plot(xs, ys, marker+lineColor)
         plt.xlabel(xlabel, fontsize=labelFontSize)
@@ -597,7 +613,7 @@ def curvePlot(xs, ys, xlabel, ylabel, labelFontSize, tickFontSize, lineColor, ma
         plt.tight_layout()
         plt.savefig(outputfile)
         plt.close()
-        print("\tploting finished!")
+        #print("\tploting finished!")
 
 def drawUBCurve(curDir, predLC, labels, AEType, modelsAcc):
     '''
@@ -633,13 +649,23 @@ def drawUBCurve(curDir, predLC, labels, AEType, modelsAcc):
             os.path.join(curDir, "upper_bound_accuracy_vs_topk_models.pdf"),
             AEType)
 
+def boxPlot(data, title, xLabels, yLabel, saveFP):
+    green_diamond = dict(markerfacecolor='g', marker='D')
+    fig, ax = plt.subplots()
+    ax.set_title(title)
+    ax.boxplot(data, notch=True, flierprops=green_diamond, labels = xLabels)
+    ax.set_ylabel(yLabel)
+    fig.savefig(saveFP, bbox_inches='tight')
+    plt.close(fig)
+
 def postAnalysis(
         experimentRootDir,
         kFold,
         predictionResultDir,
         foldDirs,
-        AETypes):
+        sampleTypes):
 
+    AETypes = sampleTypes[1:]
     # for weighted-condience based defenses,
     # there are two groups. One uses probability, the other uses logit.
     numOfDefenses = numOfCVDefenses + numOfWCDefenses*2 
@@ -649,9 +675,10 @@ def postAnalysis(
     TestAccsAE  = np.zeros((kFold, numOfAETypes, numOfDefenses))
     TestAccsBS  = np.zeros((kFold, numOfAETypes, numOfDefenses))
 
-    postAnaDir=os.path.join(experimentRootDir, "postAnalysisDir")
+    postAnaDir=os.path.join(experimentRootDir, "result_of_post_analysis")
     createDirSafely(postAnaDir)
 
+    defenseTCs = np.zeros((kFold, numOfAETypes, numOfDefenses))
     for foldIdx in range(kFold):
         for AETypeIdx in range(numOfAETypes):
             AEType = AETypes[AETypeIdx]
@@ -661,13 +688,15 @@ def postAnalysis(
             ensembleModelsCVDefenses = np.load(os.path.join(curExprDir, "ensemble_models_clustering_based_defenses.npy"))
             TrainAccs[foldIdx, AETypeIdx, 0:numOfCVDefenses] = ensembleModelsCVDefenses[:, 1]
 
-            AETestResultsCAV = np.load(os.path.join(curExprDir, "testResults_ClusteringAndVote.npy"))
+            AETestResultsCAV = np.load(os.path.join(curExprDir, "AE_testResults_ClusteringAndVote.npy"))
             TestAccsAE[foldIdx, AETypeIdx, 0:numOfCVDefenses] = AETestResultsCAV[:, 0]
 
             BSTestResultsCAV = np.load(os.path.join(curExprDir, "BS_testResults_ClusteringAndVote.npy"))
             TestAccsBS[foldIdx, AETypeIdx, 0:numOfCVDefenses] = BSTestResultsCAV[:, 0]
 
-
+            defenseTCs[foldIdx, AETypeIdx, 0:numOfCVDefenses] = AETestResultsCAV[:, 1]
+            
+            # weighted-confidence baased defenses
             TrainAccs[foldIdx, AETypeIdx, numOfCVDefenses]   = np.load(os.path.join(curExprDir, "train_best_accuracy_1s_SM.npy"))[0]
             TrainAccs[foldIdx, AETypeIdx, numOfCVDefenses+1] = np.load(os.path.join(curExprDir, "train_best_accuracy_EM_SM.npy"))[0]
             TrainAccs[foldIdx, AETypeIdx, numOfCVDefenses+2] = np.load(os.path.join(curExprDir, "train_best_accuracy_EM_MMV.npy"))[0]
@@ -675,12 +704,30 @@ def postAnalysis(
             TrainAccs[foldIdx, AETypeIdx, numOfCVDefenses+4] = np.load(os.path.join(curExprDir, "LG_train_best_accuracy_EM_SM.npy"))[0]
             TrainAccs[foldIdx, AETypeIdx, numOfCVDefenses+5] = np.load(os.path.join(curExprDir, "LG_train_best_accuracy_EM_MMV.npy"))[0]
 
-            AETestResultWCD = np.load(os.path.join(curExprDir, "testResults_WeightedConfDefenses.npy"))
+            AETestResultWCD = np.load(os.path.join(curExprDir, "AE_testResults_WeightedConfDefenses.npy"))
             TestAccsAE[foldIdx, AETypeIdx, numOfCVDefenses:] = np.hstack((AETestResultWCD[0, :, 0], AETestResultWCD[1, :, 0]))
-            BSTestResultWCD = np.load(os.path.join(curExprDir, "testResults_WeightedConfDefenses_BS.npy"))
+            BSTestResultWCD = np.load(os.path.join(curExprDir, "BS_testResults_WeightedConfDefenses.npy"))
             TestAccsBS[foldIdx, AETypeIdx, numOfCVDefenses:] = np.hstack((BSTestResultWCD[0, :, 0], BSTestResultWCD[1, :, 0]))
 
-        
+            defenseTCs[foldIdx, AETypeIdx, numOfCVDefenses:] = np.hstack((AETestResultWCD[0, :, 1], AETestResultWCD[1, :, 1]))
+        curDefenseTCsFP = os.path.join(foldDirs[foldIdx], "defenseTimeCost_fold"+str(foldIdx+1)+"_in_ms.txt")
+        create2DTable(
+                np.round(defenseTCs[foldIdx, :, :]*1000, decimals=6),
+                defensesList,
+                AETypes,
+                curDefenseTCsFP)
+
+
+
+    np.save(os.path.join(postAnaDir, "TestLatency_DefenseTimeCost.npy"), defenseTCs)
+    msDefenseTCs = defenseTCs*1000 # ms: millium seconds
+    meanDefenseTCsFP = os.path.join(experimentRootDir, "meanDefenseTimeCostInMS.txt")
+    stdDefenseTCsFP = os.path.join(experimentRootDir, "stdDefenseTimeCostInMS.txt")
+    create2DTable(msDefenseTCs.mean(axis=0).round(decimals=6), defensesList, AETypes, meanDefenseTCsFP)
+    create2DTable(msDefenseTCs.std(axis=0).round(decimals=6), defensesList, AETypes, stdDefenseTCsFP)
+
+
+
     np.save(os.path.join(postAnaDir, "TrainAccs_fold_AEType.npy"), np.round(TrainAccs, decimals=4))
     np.save(os.path.join(postAnaDir, "TestAccsAE_fold_AEType.npy"), np.round(TestAccsAE, decimals=4))
     np.save(os.path.join(postAnaDir, "TestAccsBS_fold_AEType.npy"), np.round(TestAccsBS, decimals=4))
@@ -770,6 +817,15 @@ def postAnalysis(
             stdTestBSAccsFP)
 
 
+    # plot latency
+    predTCs = np.load(os.path.join(predictionResultDir, "predTCs.npy"))
+    predTCs = predTCs.mean(axis=1)
+    xLabels = ["Transformation", "Inference (Probability)", "Inference (Logit)"]
+    yLabel = "Time Cost in Millium Seconds"
+    for sampleTypeIdx in range(len(sampleTypes)):
+        sampleType = sampleTypes[sampleTypeIdx]
+        saveFP = os.path.join(predictionResultDir, sampleType+"_latency.pdf")
+        boxPlot(predTCs[sampleTypeIdx]*1000, sampleType, xLabels, yLabel, saveFP)
 
 def create2DTable(mat, colHeaders, rowHeaders, filename):
     '''
@@ -885,6 +941,8 @@ def kFoldPredictionSetup(
     sampleTypes.extend(AETypes)
     numOfAETypes = len(AETypes)
     numOfSampleTypes = 1+numOfAETypes
+    # average time cost in seconds 
+    # averaing upon samples
     predTCs = np.zeros((numOfSampleTypes, kFold, numOfModels, 3))
 
     oneFoldAmount = int(numOfSamples/kFold)
@@ -945,7 +1003,7 @@ def kFoldPredictionSetup(
                         logitsModels[modelID])
 
        
-            predTCs[sampleTypeIdx, foldIdx-1, : ,:] = curPredTCs
+            predTCs[sampleTypeIdx, foldIdx-1, : ,:] = curPredTCs / numOfCurSamples
 
             # stack up the result of the current fold
             if foldIdx == 1:
@@ -956,7 +1014,7 @@ def kFoldPredictionSetup(
                 predLogits    = np.hstack((predLogits, curPredLogits))
 
         np.save(os.path.join(curExprDir, "predProb.npy"), predProb)
-        np.save(os.path.join(curExprDir, "predLogits.npy"), predLogits)
+        np.save(os.path.join(curExprDir, "predLogit.npy"), predLogits)
     
     np.save(os.path.join(predictionResultDir, "predTCs.npy"), predTCs)
     np.save(os.path.join(predictionResultDir, "labels.npy"), labels)
@@ -1412,27 +1470,10 @@ def wc_mv_defense(pred, modelWeights):
     return predLabels
 
 
-def logger(func):
-    logging.basicConfig(filename='{}.log'.format(func.__name__), level=logging.INFO)
-
-    @wraps(func)
-    def wrapper(*args, **kwargs):
-        logging.info('Ran with args: {}, and kwargs: {}'.format(args, kwargs))
-        return func(*args, **kwargs)
-
-    return wrapper
-
-
-def nano_timer(func):
-
-    @wraps(func)
-    def wrapper(*args, **kwargs):
-        t1 = time.monotonic_ns()
-        result = func(*args, **kwargs)
-        t2 = time.monotonic_ns()
-        print('{} ran in: {} nano-seconds'.format(func.__name__, t2 - t1))
-        return result
-
-    return wrapper
-
-
+def createKFoldDirs(experimentRootDir, kFold):
+    foldDirs=[]
+    for foldIdx in range(1, kFold+1):
+        foldDir=os.path.join(experimentRootDir, str(foldIdx))
+        createDirSafely(foldDir)
+        foldDirs.append(foldDir)
+    return foldDirs
