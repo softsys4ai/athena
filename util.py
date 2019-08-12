@@ -3,13 +3,12 @@ import time
 
 import matplotlib.pyplot as plt
 
-import numpy as np
 from sklearn.cluster import KMeans
 from tensorflow.keras.models import load_model
 from tensorflow.keras.models import Model
 
 from config import *
-from transformation import transform_images
+from process.transformation import transform_images
 
 
 def randomChoiceBasedDefense(predProb, measureTC=False):
@@ -825,7 +824,7 @@ def postAnalysis(
     for sampleTypeIdx in range(len(sampleTypes)):
         sampleType = sampleTypes[sampleTypeIdx]
         saveFP = os.path.join(predictionResultDir, sampleType+"_latency.pdf")
-        boxPlot(predTCs[sampleTypeIdx]*1000, sampleType, xLabels, yLabel, saveFP)
+        boxPlot(predTCs[sampleTypeIdx, 1:, :]*1000, sampleType, xLabels, yLabel, saveFP)
 
 def create2DTable(mat, colHeaders, rowHeaders, filename):
     '''
