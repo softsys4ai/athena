@@ -15,9 +15,9 @@ cvDefenseNames=["Majority", "Max"] # strategies used to decide the label across 
 #           then return the label with largest sum of weighted confidence
 # MMV   :   find the label with largest confidence for the input sample for each model
 #           then run a majority vote across models to determine final label
-wcDefenseNames=["1s_SM", "EM_SM", "EM_MMV"]
+wcDefenseNames=["1s_Mean", "EM_Mean", "EM_MXMV"]
 kmeansResultFoldName="KMeans_result"
-defensesList = ["CV_Maj", "CV_Max", "1s_Mean", "EM_Mean", "EM_MMV", "1s_Mean_L", "EM_Mean_L", "EM_MMV_L"]
+defensesList = ["CV_Maj", "CV_Max", "1s_Mean", "EM_Mean", "EM_MXMV", "1s_Mean_L", "EM_Mean_L", "EM_MXMV_L"]
 
 dropout = 0.5
 
