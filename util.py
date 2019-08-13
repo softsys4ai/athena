@@ -8,7 +8,7 @@ from tensorflow.keras.models import load_model
 from tensorflow.keras.models import Model
 
 from config import *
-from process.transformation import transform_images
+from transformation import transform_images
 
 
 def randomChoiceBasedDefense(predProb, measureTC=False):
