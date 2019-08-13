@@ -691,7 +691,7 @@ def compress(original_images, transformation):
     encode_param = [int(cv2.IMWRITE_JPEG_QUALITY), compress_rate]
 
     if (format == '.png'):
-        encode_param = [cv2.IMWRITE_PNG_COMPRESSION, compress_rate]
+        encode_param = [cv2.IMWRITE_PNG_COMPRESSION, 0.5]
 
     for img in original_images:
         # encode an image
@@ -763,4 +763,4 @@ def main(*args):
 
 if __name__ == "__main__":
     MODE.debug_on()
-    main(DATA.cifar_10, TRANSFORMATION.compress_jpeg_quality_10)
+    main(DATA.cifar_10, TRANSFORMATION.compress_png_compression_5)

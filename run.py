@@ -1,6 +1,6 @@
 import sys
 
-from defense.util import *
+from util import *
 
 
 def usage():
