@@ -8,7 +8,7 @@ from tensorflow.keras.models import load_model
 from tensorflow.keras.models import Model
 
 from config import *
-from transformation import transform_images
+from process.transformation import transform_images
 
 
 def randomChoiceBasedDefense(predProb, measureTC=False):
@@ -293,7 +293,7 @@ def wcdefenses(pred, expertiseMat, defenseName, measureTC=False):
         Input:
             pred: numOfModels X numOfSamples X numOfClasses
             expertiseMat: numOfModels X numOfClasses
-            defenseName: 1s_SM, EM_SM, or EM_MMV
+            defenseName: 1s_Mean, EM_Mean, or EM_MXMV
 
         Output:
             predLabels: 1D numpy array - numOfSamples labels
@@ -303,16 +303,16 @@ def wcdefenses(pred, expertiseMat, defenseName, measureTC=False):
         numOfSamples = pred.shape[1]
         startTime = time.monotonic()
 
-    if defenseName == "1s_SM":
+    if defenseName == "1s_Mean":
         ones = np.ones((expertiseMat.shape))
         predLabels = wc_based_defense(pred, ones)
-    elif defenseName == "EM_SM":
+    elif defenseName == "EM_Mean":
         predLabels = wc_based_defense(pred, expertiseMat)
-    elif defenseName == "EM_MMV":
+    elif defenseName == "EM_MXMV":
         predLabels = wc_mv_defense(pred, expertiseMat)
     else:
         errMsg = "Unknown weighted-confidence based defense - defense name is {}.\n".format(defenseName)
-        supDefsMsg = "Currently, only support defense names) - 1s_SM, EM_SM and EM_MMV."
+        supDefsMsg = "Currently, only support defenses names) - 1s_Mean, EM_Mean and EM_MXMV."
         raise ValueError(errMsg+supDefsMsg)
 
     if measureTC:
@@ -665,7 +665,7 @@ def postAnalysis(
         sampleTypes):
 
     AETypes = sampleTypes[1:]
-    # for weighted-condience based defense,
+    # for weighted-condience based defenses,
     # there are two groups. One uses probability, the other uses logit.
     numOfDefenses = numOfCVDefenses + numOfWCDefenses*2 
     numOfAETypes = len(AETypes)
@@ -683,7 +683,7 @@ def postAnalysis(
             AEType = AETypes[AETypeIdx]
             curExprDir = os.path.join(foldDirs[foldIdx], AEType)
 
-            # clustering-and-voting based defense
+            # clustering-and-voting based defenses
             ensembleModelsCVDefenses = np.load(os.path.join(curExprDir, "ensemble_models_clustering_based_defenses.npy"))
             TrainAccs[foldIdx, AETypeIdx, 0:numOfCVDefenses] = ensembleModelsCVDefenses[:, 1]
 
@@ -695,13 +695,14 @@ def postAnalysis(
 
             defenseTCs[foldIdx, AETypeIdx, 0:numOfCVDefenses] = AETestResultsCAV[:, 1]
             
-            # weighted-confidence baased defense
-            TrainAccs[foldIdx, AETypeIdx, numOfCVDefenses]   = np.load(os.path.join(curExprDir, "train_best_accuracy_1s_SM.npy"))[0]
-            TrainAccs[foldIdx, AETypeIdx, numOfCVDefenses+1] = np.load(os.path.join(curExprDir, "train_best_accuracy_EM_SM.npy"))[0]
-            TrainAccs[foldIdx, AETypeIdx, numOfCVDefenses+2] = np.load(os.path.join(curExprDir, "train_best_accuracy_EM_MMV.npy"))[0]
-            TrainAccs[foldIdx, AETypeIdx, numOfCVDefenses+3] = np.load(os.path.join(curExprDir, "LG_train_best_accuracy_1s_SM.npy"))[0]
-            TrainAccs[foldIdx, AETypeIdx, numOfCVDefenses+4] = np.load(os.path.join(curExprDir, "LG_train_best_accuracy_EM_SM.npy"))[0]
-            TrainAccs[foldIdx, AETypeIdx, numOfCVDefenses+5] = np.load(os.path.join(curExprDir, "LG_train_best_accuracy_EM_MMV.npy"))[0]
+            # weighted-confidence baased defenses
+            for defenseIdx in range(numOfWCDefenses):
+                defenseName = wcDefenseNames[defenseIdx]
+                filename = "train_best_accuracy_"+defenseName+".npy"
+                trainingAccProbFP = os.path.join(curExprDir, filename)
+                trainingAccLogitFP = os.path.join(curExprDir, "LG_"+filename)
+                TrainAccs[foldIdx, AETypeIdx, numOfCVDefenses+defenseIdx]                   = np.load(trainingAccProbFP)[0]
+                TrainAccs[foldIdx, AETypeIdx, numOfCVDefenses+defenseIdx+numOfWCDefenses]   = np.load(trainingAccLogitFP)[0] 
 
             AETestResultWCD = np.load(os.path.join(curExprDir, "AE_testResults_WeightedConfDefenses.npy"))
             TestAccsAE[foldIdx, AETypeIdx, numOfCVDefenses:] = np.hstack((AETestResultWCD[0, :, 0], AETestResultWCD[1, :, 0]))
@@ -709,13 +710,13 @@ def postAnalysis(
             TestAccsBS[foldIdx, AETypeIdx, numOfCVDefenses:] = np.hstack((BSTestResultWCD[0, :, 0], BSTestResultWCD[1, :, 0]))
 
             defenseTCs[foldIdx, AETypeIdx, numOfCVDefenses:] = np.hstack((AETestResultWCD[0, :, 1], AETestResultWCD[1, :, 1]))
+
         curDefenseTCsFP = os.path.join(foldDirs[foldIdx], "defenseTimeCost_fold"+str(foldIdx+1)+"_in_ms.txt")
         create2DTable(
                 np.round(defenseTCs[foldIdx, :, :]*1000, decimals=6),
                 defensesList,
                 AETypes,
                 curDefenseTCsFP)
-
 
 
     np.save(os.path.join(postAnaDir, "TestLatency_DefenseTimeCost.npy"), defenseTCs)
