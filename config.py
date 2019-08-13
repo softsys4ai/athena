@@ -5,7 +5,7 @@ Define global configurations.
 """
 import numpy as np
 
-# [For defenses]
+# [For defense]
 numOfWCDefenses=3
 numOfCVDefenses=2
 cvDefenseNames=["Majority", "Max"] # strategies used to decide the label across clusters
@@ -20,7 +20,6 @@ kmeansResultFoldName="KMeans_result"
 defensesList = ["CV_Maj", "CV_Max", "1s_Mean", "EM_Mean", "EM_MMV", "1s_Mean_L", "EM_Mean_L", "EM_MMV_L"]
 
 dropout = 0.5
-
 
 class TRANSFORMATION(object):
     """
@@ -133,10 +132,16 @@ class TRANSFORMATION(object):
     min_filter = 'minimum_filter'
     max_filter = 'maximum_filter'
 
-
     """
     compression
     """
+    compress_jpeg_quality_80 = 'compress_jpeg_quality_80'
+    compress_jpeg_quality_50 = 'compress_jpeg_quality_50'
+    compress_jpeg_quality_30 = 'compress_jpeg_quality_30'
+    compress_jpeg_quality_10 = 'compress_jpeg_quality_10'
+    compress_png_compression_1 = 'compress_png_compression_1'
+    compress_png_compression_8 = 'compress_png_compression_8'
+    compress_png_compression_5 = 'compress_png_compression_5'
 
     ROTATE = [rotate90, rotate180, rotate270]
     SHIFT = [shift_left, shift_right, shift_up, shift_down,
@@ -155,7 +160,9 @@ class TRANSFORMATION(object):
     NOISES =[noise_gaussian, noise_localvar, noise_poisson, noise_salt,
              noise_pepper, noise_saltNpepper, noise_speckle]
     FILTERS = [sobel, gaussian_filter, rank_filter, median_filter, min_filter, max_filter]
-    COMPRESSION = []
+    COMPRESSION = [compress_jpeg_quality_80, compress_jpeg_quality_50,
+                   compress_jpeg_quality_30, compress_jpeg_quality_10,
+                   compress_png_compression_1, compress_png_compression_8, compress_png_compression_5]
 
     @classmethod
     def supported_types(cls):
@@ -172,6 +179,7 @@ class TRANSFORMATION(object):
         transformations.extend(cls.DISTORTIONS)
         transformations.extend(cls.NOISES)
         transformations.extend(cls.FILTERS)
+        transformations.extend(cls.COMPRESSION)
 
         return transformations
 

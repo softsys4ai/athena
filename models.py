@@ -181,6 +181,7 @@ def cnn_mnist(input_shape, nb_classes):
         print(model.summary())
     return model
 
+
 # --------------------------------------------
 # OPERATIONS
 # --------------------------------------------

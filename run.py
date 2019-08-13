@@ -1,17 +1,7 @@
-import os
 import sys
-import time
 
-from sklearn.cluster import KMeans
-from tensorflow.keras.models import load_model
-from tensorflow.keras.models import Model
+from defense.util import *
 
-import numpy as np
-import cv2
-
-from config import *
-from util import *
-from transformation import transform_images
 
 def usage():
     print("===================================================================")
@@ -144,10 +134,10 @@ for foldIdx in range(1, 1+kFold):
         labelsTe       = labels[testingIndices]
 
 
-        # Clustering-and-voting based defenses
+        # Clustering-and-voting based defense
         # 2: AE-accuracy, AE-time cost
         #testResults : (numOfCVDefenses, 2)
-        print("\t==== clustering and voting based defenses ====")
+        print("\t==== clustering and voting based defense ====")
         AETestResultsCAV, BSTestResultCAV = clusteringDefensesEvaluation(
             curExprDir,
             predProbAETr,
@@ -157,8 +147,8 @@ for foldIdx in range(1, 1+kFold):
             predLCBS,
             labelsBS)
 
-        # Weighted-confidence based defenses
-        print("\t==== weighted-confidence based defenses")
+        # Weighted-confidence based defense
+        print("\t==== weighted-confidence based defense")
         AETestResultsWC, BSTestResultsWC = weightedConfDefenseEvaluation(
                 curExprDir,
                 predProbAETr,

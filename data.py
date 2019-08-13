@@ -11,7 +11,10 @@ from keras.datasets import mnist, cifar10, fashion_mnist, cifar100
 
 from config import DATA, MODE
 
-# set random seed for replication
+"""
+set random seed for replication
+"""
+np.random.seed(1000)
 tf.set_random_seed(1000)
 
 def load_data(dataset):
@@ -81,17 +84,23 @@ def load_data(dataset):
     X_train = X_train.reshape(-1, img_rows, img_cols, nb_channels)
     X_test = X_test.reshape(-1, img_rows, img_cols, nb_channels)
 
-    # cast pixels to floats, normalize to [0, 1] range
+    """
+    cast pixels to floats, normalize to [0, 1] range
+    """
     X_train = X_train.astype('float32')
     X_test = X_test.astype('float32')
     X_train /= 255.
     X_test /= 255.
 
-    # one-hot-encode the labels
+    """
+    one-hot-encode the labels
+    """
     Y_train = keras.utils.to_categorical(Y_train, nb_classes)
     Y_test = keras.utils.to_categorical(Y_test, nb_classes)
 
-    # summarize mnist data set
+    """
+    summarize data set
+    """
     print('Dataset({}) Summary:'.format(dataset.upper()))
     print('Train set: {}, {}'.format(X_train.shape, Y_train.shape))
     print('Test set: {}, {}'.format(X_test.shape, Y_test.shape))

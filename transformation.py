@@ -3,10 +3,9 @@ Implement transformations.
 @auther: Ying Meng (y(dot)meng201011(at)gmail(dot)com)
 """
 import cv2
-from scipy import ndimage, misc
+from scipy import ndimage
 
 from keras.preprocessing.image import ImageDataGenerator
-import PIL.Image
 import skimage
 from sklearn.cluster import MiniBatchKMeans
 
@@ -677,10 +676,41 @@ def add_noise(original_images, transformation):
     return transformed_images
 
 def compress(original_images, transformation):
-    pass
+    """
 
-def autoencoder():
-    pass
+    :param original_images:
+    :param transformation:
+    :return:
+    """
+    original_images *= 255.
+    compress_rate = int(transformation.split('_')[-1])
+    format = '.{}'.format(transformation.split('_')[1])
+    print(compress_rate, format)
+    nb_images, img_rows, img_cols, nb_channels = original_images.shape
+    transformed_images = []
+    encode_param = [int(cv2.IMWRITE_JPEG_QUALITY), compress_rate]
+
+    if (format == '.png'):
+        encode_param = [cv2.IMWRITE_PNG_COMPRESSION, compress_rate]
+
+    for img in original_images:
+        # encode an image
+        result, encoded_img = cv2.imencode(format, img, encode_param)
+        if False == result:
+            print('Failed to encode image to jpeg format.')
+            quit()
+
+        # decode the image from encoded image
+        decoded_img = cv2.imdecode(encoded_img, 1)
+        if (nb_channels == 1):
+            decoded_img = cv2.cvtColor(decoded_img, cv2.COLOR_RGB2GRAY)
+        transformed_images.append(decoded_img/255.)
+
+    transformed_images = np.stack(transformed_images, axis=0)
+
+    if (nb_channels == 1):
+        transformed_images = transformed_images.reshape((nb_images, img_rows, img_cols, nb_channels))
+    return transformed_images
 
 def transform_images(X, transformation_type):
     """
@@ -733,4 +763,4 @@ def main(*args):
 
 if __name__ == "__main__":
     MODE.debug_on()
-    main(DATA.cifar_10, TRANSFORMATION.noise_gaussian)
+    main(DATA.cifar_10, TRANSFORMATION.compress_jpeg_quality_10)

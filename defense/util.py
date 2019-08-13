@@ -8,7 +8,7 @@ from tensorflow.keras.models import load_model
 from tensorflow.keras.models import Model
 
 from config import *
-from process.transformation import transform_images
+from transformation import transform_images
 
 
 def randomChoiceBasedDefense(predProb, measureTC=False):
@@ -312,7 +312,7 @@ def wcdefenses(pred, expertiseMat, defenseName, measureTC=False):
         predLabels = wc_mv_defense(pred, expertiseMat)
     else:
         errMsg = "Unknown weighted-confidence based defense - defense name is {}.\n".format(defenseName)
-        supDefsMsg = "Currently, only support defenses names) - 1s_SM, EM_SM and EM_MMV."
+        supDefsMsg = "Currently, only support defense names) - 1s_SM, EM_SM and EM_MMV."
         raise ValueError(errMsg+supDefsMsg)
 
     if measureTC:
@@ -665,7 +665,7 @@ def postAnalysis(
         sampleTypes):
 
     AETypes = sampleTypes[1:]
-    # for weighted-condience based defenses,
+    # for weighted-condience based defense,
     # there are two groups. One uses probability, the other uses logit.
     numOfDefenses = numOfCVDefenses + numOfWCDefenses*2 
     numOfAETypes = len(AETypes)
@@ -683,7 +683,7 @@ def postAnalysis(
             AEType = AETypes[AETypeIdx]
             curExprDir = os.path.join(foldDirs[foldIdx], AEType)
 
-            # clustering-and-voting based defenses
+            # clustering-and-voting based defense
             ensembleModelsCVDefenses = np.load(os.path.join(curExprDir, "ensemble_models_clustering_based_defenses.npy"))
             TrainAccs[foldIdx, AETypeIdx, 0:numOfCVDefenses] = ensembleModelsCVDefenses[:, 1]
 
@@ -695,7 +695,7 @@ def postAnalysis(
 
             defenseTCs[foldIdx, AETypeIdx, 0:numOfCVDefenses] = AETestResultsCAV[:, 1]
             
-            # weighted-confidence baased defenses
+            # weighted-confidence baased defense
             TrainAccs[foldIdx, AETypeIdx, numOfCVDefenses]   = np.load(os.path.join(curExprDir, "train_best_accuracy_1s_SM.npy"))[0]
             TrainAccs[foldIdx, AETypeIdx, numOfCVDefenses+1] = np.load(os.path.join(curExprDir, "train_best_accuracy_EM_SM.npy"))[0]
             TrainAccs[foldIdx, AETypeIdx, numOfCVDefenses+2] = np.load(os.path.join(curExprDir, "train_best_accuracy_EM_MMV.npy"))[0]

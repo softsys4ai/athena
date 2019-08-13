@@ -5,7 +5,7 @@ Script to train models.
 import models
 from config import *
 from data import load_data
-from process.transformation import transform_images
+from transformation import transform_images
 
 def train_model_batch(dataset):
     """

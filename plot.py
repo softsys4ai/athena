@@ -54,7 +54,8 @@ def draw_comparisons(controls, treatments, title="None"):
         os.path.join(PATH.FIGURES, '{}.pdf'.format(title)),
         bbox_inches='tight'
     )
-    plt.close()
+    if (MODE.DEBUG):
+        plt.close()
 
 def plotTrainingResult(history, model_name):
     # Plot training & validation accuracy values
