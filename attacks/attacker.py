@@ -1,10 +1,9 @@
 """
-Entrance generating adversarial examples.
+Entrance of generating adversarial examples.
 @author: Ying Meng (y(dot)meng201011(at)gmail(dot)com)
 """
 import logging
 
-from cleverhans.utils_keras import KerasModelWrapper
 import time
 
 from config import *
@@ -13,13 +12,11 @@ import attacks.whitebox as whitebox
 logger = logging.getLogger('defence_transformers')
 logger.setLevel(logging.INFO)
 
-def get_adversarial_examples(model, attack_method, X, Y, **kwargs):
-    # wrap keras model
-    wrap_model = KerasModelWrapper(model)
+def get_adversarial_examples(model_name, attack_method, X, Y, **kwargs):
     logger.info('Crafting adversarial examples using {} method...'.format(attack_method.upper()))
+    X_adv = None
 
     if (attack_method == ATTACK.FGSM):
-        X = (X - 0.5) * 0.5
         eps = kwargs.get('eps', 0.25)
         attack_params = {
             'eps': eps,
@@ -28,26 +25,26 @@ def get_adversarial_examples(model, attack_method, X, Y, **kwargs):
         logger.info('{}: (eps={})'.format(attack_method.upper(), eps))
 
         start_time = time.time()
-        X_adv, Y = whitebox.generate(wrap_model, attack_method, X, Y, attack_params)
+        X_adv, Y = whitebox.generate(model_name, X, Y, attack_method, attack_params)
         duration = time.time() - start_time
         logger.info('Time cost: {}'.format(duration))
 
-        X_adv *= 2.
-
     elif (attack_method == ATTACK.BIM):
-        X = (X - 0.5) * 0.5
         # iterative fast gradient method
         eps = kwargs.get('eps', 0.25)
         nb_iter = kwargs.get('nb_iter', 100)
         ord = kwargs.get('ord', np.inf)
 
+        """
+        Cleverhans requires an eps_iter that is smaller than the eps. 
+        By default, eps_iter=0.05, so, update eps_iter for small epsilons.
+        """
         if eps < 0.005:
-            raise ValueError('eps must be no less than 0.005.')
+            eps_iter = 0.001
         elif eps < 0.05:
-            # update eps_iter for small epsilons
-            eps_iter = 0.003
+            eps_iter = 0.005
         else:
-            # otherwise, use the default setting
+            # for big enough eps, use the default setting
             eps_iter = 0.05
         attack_params = {
             'eps': eps,
@@ -58,14 +55,10 @@ def get_adversarial_examples(model, attack_method, X, Y, **kwargs):
 
         logger.info('{}: (ord={}, nb_iter={}, eps={})'.format(attack_method.upper(), ord, nb_iter, eps))
         start_time = time.time()
-        X_adv, Y = whitebox.generate(wrap_model, attack_method, X, Y, attack_params)
+        X_adv, Y = whitebox.generate(model_name, attack_method, X, Y, attack_params)
 
         duration = time.time() - start_time
         print('Time cost: {}'.format(duration))
-
-        if eps < 0.01:
-            X_adv *= 2.
-
     elif (attack_method == ATTACK.DEEPFOOL):
         # Images for inception classifier are normalized to be in [0, 255] interval.
         X *= 255.
@@ -80,7 +73,7 @@ def get_adversarial_examples(model, attack_method, X, Y, **kwargs):
 
         logger.info('{}: (max_iterations={})'.format(attack_method.upper(), max_iterations))
         start_time = time.time()
-        X_adv, Y = whitebox.generate(wrap_model, attack_method, X, Y, attack_params)
+        X_adv, Y = whitebox.generate(model_name, attack_method, X, Y, attack_params)
         duration = time.time() - start_time
         print('Time cost: {}'.format(duration))
 
@@ -97,12 +90,11 @@ def get_adversarial_examples(model, attack_method, X, Y, **kwargs):
         logger.info('{}: (ord={}, max_iterations={})'.format(attack_method.upper(), ord, max_iterations))
 
         start_time = time.time()
-        X_adv, Y = whitebox.generate(wrap_model, attack_method, X, Y, attack_params)
+        X_adv, Y = whitebox.generate(model_name, attack_method, X, Y, attack_params)
         duration = time.time() - start_time
         logger.info('Time cost: {}'.format(duration))
 
     elif (attack_method == ATTACK.JSMA):
-        X = (X - 0.5) * 0.5
         theta = kwargs.get('theta', 0.6)
         gamma = kwargs.get('gamma', 0.5)
         attack_params = {
@@ -112,10 +104,8 @@ def get_adversarial_examples(model, attack_method, X, Y, **kwargs):
 
         logger.info('{}: (theta={}, gamma={})'.format(attack_method.upper(), theta, gamma))
         start_time = time.time()
-        X_adv, Y = whitebox.generate(wrap_model, attack_method, X, Y, attack_params)
+        X_adv, Y = whitebox.generate(model_name, attack_method, X, Y, attack_params)
         duration = time.time() - start_time
         logger.info('Time cost: {}'.format(duration))
-
-        X_adv *= 2
 
     return X_adv, Y
