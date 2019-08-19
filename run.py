@@ -1,7 +1,9 @@
 import sys
 
-from util import *
+import numpy as np
 
+from config import *
+from util import *
 
 def usage():
     print("===================================================================")
@@ -24,29 +26,47 @@ numOfSamples  = int(sys.argv[4])
 kFold = int(sys.argv[5])
 
 # Basic parameters for k-fold experiment setup
-#rootDir = "experiment"
 timeStamp=time.strftime("%Y-%m-%d_%H-%M-%S", time.gmtime())
 experimentRootDir=os.path.join(rootDir,timeStamp)
 createDirSafely(experimentRootDir)
 
 #kFold = 5
 isKFolderUponTestSet=True
-datasetName = DATA.DATASET
-architecture = MODEL.TYPE
-#modelsDir = "models"
-#numOfSamples  = 10000
-#samplesDir     = "samples_0808"
-numOfClasses = DATA.NB_CLASSES
+datasetName = DATA.mnist
+architecture = MODEL.ARCHITECTURE
+numOfClasses = 10
+
 
 #EPS = ATTACK.FGSM_EPS
 attackApproach = ATTACK.FGSM
 AETypes = []
-EPS = [0.25, 0.3, 0.5, 0.1, 0.05, 0.01, 0.005]
+#EPS = [0.25, 0.3, 0.5, 0.1, 0.05, 0.01, 0.005]
+EPS = [0.25]
 for eps in EPS:
     epsInt = int(1000*eps)
     AETypes.append(attackApproach+"_eps"+str(epsInt))
-    if len(AETypes) >= 1:
-        break
+    #if len(AETypes) >= 1:
+    #    break
+'''
+
+AETypes = [
+        "bim_ord2_nbIter100_eps100",
+        "bim_ord2_nbIter100_eps250",
+        "bim_ord2_nbIter100_eps500",
+        "bim_ord2_nbIter100_eps1000",
+        "bim_ordinf_nbIter100_eps5",
+        "bim_ordinf_nbIter100_eps10",
+        "bim_ordinf_nbIter100_eps50",
+        "bim_ordinf_nbIter100_eps100",
+        "bim_ordinf_nbIter100_eps250",
+        "bim_ordinf_nbIter100_eps500",
+        "fgsm_eps5",
+        "fgsm_eps10",
+        "fgsm_eps50",
+        "fgsm_eps100",
+        "fgsm_eps250",
+        "fgsm_eps300"]
+'''
 
 numOfAETypes = len(AETypes)
 sampleTypes =["BS"]
@@ -91,31 +111,41 @@ predLCBS[:, :, 0] = np.argmax(predProbBS, axis=2)
 predLCBS[:, :, 1] = np.max(predProbBS, axis=2)
 labelsBS    = labels
 
-for foldIdx in range(1, 1+kFold):
-    # foldIndices: testing samples' indices for this fold
-    print("fold " + str(foldIdx))
-    if foldIdx != kFold:
-        testingIndices  = np.array(range(
-            (foldIdx-1)*oneFoldAmount,
-            foldIdx*oneFoldAmount))
-        trainingIndices = np.hstack((
-            np.array(range(0, (foldIdx-1)*oneFoldAmount)),
-            np.array(range(foldIdx*oneFoldAmount, numOfSamples))))
-        trainingIndices = trainingIndices.astype(int)
-    else:
-        testingIndices  = np.array(range((foldIdx-1)*oneFoldAmount, numOfSamples))
-        trainingIndices = np.array(range(0, (foldIdx-1)*oneFoldAmount))
+trainModelDir = os.path.join(experimentRootDir, "train_models")
+
+for AETypeIdx in range(numOfAETypes):
+    bestAccCAV = np.zeros((numOfCVDefenses))
+    bestAccWC = np.zeros((2, numOfWCDefenses)) # 0 - probability, 2 - logit
+    bestClusters = []
+    bestEMModel = {}
+
+    AEType = AETypes[AETypeIdx]
+    for foldIdx in range(1, 1+kFold):
+        # foldIndices: testing samples' indices for this fold
+        print("fold " + str(foldIdx))
+        if kFold == 1:
+            trainingIndices = np.array(range(0, numOfSamples))
+            testingIndices = np.copy(trainingIndices)
+        else:
+            if foldIdx != kFold:
+                testingIndices  = np.array(range(
+                    (foldIdx-1)*oneFoldAmount,
+                    foldIdx*oneFoldAmount))
+                trainingIndices = np.hstack((
+                    np.array(range(0, (foldIdx-1)*oneFoldAmount)),
+                    np.array(range(foldIdx*oneFoldAmount, numOfSamples))))
+                trainingIndices = trainingIndices.astype(int)
+            else:
+                testingIndices  = np.array(range((foldIdx-1)*oneFoldAmount, numOfSamples))
+                trainingIndices = np.array(range(0, (foldIdx-1)*oneFoldAmount))
 
 
-    if not isKFolderUponTestSet:
-        tempIndices = testingIndices
-        testingIndices = trainingIndices
-        trainingIndices = tempIndices
+            if not isKFolderUponTestSet:
+                tempIndices = testingIndices
+                testingIndices = trainingIndices
+                trainingIndices = tempIndices
 
-    foldDir = foldDirs[foldIdx-1]  
-    for AETypeIdx in range(numOfAETypes):
-
-        AEType = AETypes[AETypeIdx]
+        foldDir = foldDirs[foldIdx-1]  
         curExprDir = os.path.join(foldDir, AEType)
         curPredictionResultDir = os.path.join(predictionResultDir, AEType)
         createDirSafely(curExprDir)
@@ -124,7 +154,8 @@ for foldIdx in range(1, 1+kFold):
         predProbAE  = np.load(os.path.join(curPredictionResultDir, "predProb.npy"))
         predLogitAE = np.load(os.path.join(curPredictionResultDir, "predLogit.npy"))
 
-
+        print(trainingIndices)
+        print(trainingIndices.shape)
         predProbAETr   = predProbAE[:, trainingIndices, :]
         predLogitsAETr = predLogitAE[:, trainingIndices, :]
         labelsTr       = labels[trainingIndices]
@@ -137,8 +168,8 @@ for foldIdx in range(1, 1+kFold):
         # Clustering-and-voting based defense
         # 2: AE-accuracy, AE-time cost
         #testResults : (numOfCVDefenses, 2)
-        print("\t==== clustering and voting based defense ====")
-        AETestResultsCAV, BSTestResultCAV = clusteringDefensesEvaluation(
+        print("\t==== clustering and voting based defenses ====")
+        AETestResultsCAV, BSTestResultCAV, optimalClusters = clusteringDefensesEvaluation(
             curExprDir,
             predProbAETr,
             labelsTr,
@@ -147,9 +178,10 @@ for foldIdx in range(1, 1+kFold):
             predLCBS,
             labelsBS)
 
-        # Weighted-confidence based defense
-        print("\t==== weighted-confidence based defense")
-        AETestResultsWC, BSTestResultsWC = weightedConfDefenseEvaluation(
+
+        # Weighted-confidence based defenses
+        print("\t==== weighted-confidence based defenses")
+        AETestResultsWC, BSTestResultsWC, WCModels = weightedConfDefenseEvaluation(
                 curExprDir,
                 predProbAETr,
                 predLogitsAETr,
@@ -162,6 +194,60 @@ for foldIdx in range(1, 1+kFold):
                 predLogitBS,
                 labelsBS)
 
+        if foldIdx == 1:
+            bestAccCAV = AETestResultsCAV[:, 0]
+            bestClusters = optimalClusters
+            bestAccWC = AETestResultsWC[:, :, 0]
+            bestWCModels = WCModels
+            
+        else:
+            # update best CAV models : clusters
+            for defenseIdx in range(numOfCVDefenses):
+                if bestAccCAV[defenseIdx] < AETestResultsCAV[defenseIdx, 0]:
+                    bestAccCAV[defenseIdx] = AETestResultsCAV[defenseIdx, 0]
+                    bestClusters[defenseIdx] = optimalClusters[defenseIdx]
+
+            # update best WC models
+            for defenseIdx in range(numOfWCDefenses):
+                defenseName = wcDefenseNames[defenseIdx]
+                for plIdx in range(2):
+                    if bestAccWC[plIdx, defenseIdx] < AETestResultsWC[plIdx, defenseIdx, 0]:
+                        bestAccWC[plIdx, defenseIdx] = AETestResultsWC[plIdx, defenseIdx, 0]
+                        bestWCModels[plIdx][defenseName] = WCModels[plIdx][defenseName]
+
+
+
+
+
+
+    # Dump out models
+    curTrainModelDir = os.path.join(trainModelDir, AEType)
+    createDirSafely(curTrainModelDir)
+    for defenseIdx in range(numOfCVDefenses):
+        defenseName = cvDefenseNames[defenseIdx]
+        numOfClusters = len(bestClusters[defenseIdx])
+        clusters = bestClusters[defenseIdx]
+        with open(os.path.join(curTrainModelDir, defenseName+".txt"), "w") as fp:
+            for cluster in clusters:
+                for tranModelID in cluster:
+                    fp.write(str(tranModelID)+" ")
+                fp.write("\n")
+
+    # WCModels: dictionary. wc_defense_name / (expertise mattrix, array of model IDs)
+    for plIdx in range(2):
+        for defenseIdx in range(numOfWCDefenses):
+            defenseName = wcDefenseNames[defenseIdx]
+            WCModel = bestWCModels[plIdx][defenseName]
+            expertiseModelFP = defenseName+"_EM.npy"
+            modelIDsFP       = defenseName+"_modelIDs.npy"
+            if plIdx == 1:
+                expertiseModelFP = "LG_"+expertiseModelFP
+                modelIDsFP       = "LG_"+modelIDsFP
+            np.save(os.path.join(curTrainModelDir, expertiseModelFP), WCModel[0])
+            np.save(os.path.join(curTrainModelDir, modelIDsFP), WCModel[1])
+            
+
+# post analysis
 postAnalysis(
         experimentRootDir,
         kFold,
