@@ -8,56 +8,29 @@ from config import *
 from util import *
 
 def usage():
-    print("===================================================================")
-    print("python <this script> samplesDir experimentRootDir modelsDir numOfSamples")
-    print("===================================================================")
+    print("=============================================================================================")
+    print("python <this script> samplesDir experimentRootDir modelsDir numOfSamples testResultFoldName")
+    print("=============================================================================================")
 
-if len(sys.argv) != 5:
+if len(sys.argv) != 6:
     usage()
     exit(1)
 
 
-samplesDir = sys.argv[1]
-experimentRootDir = sys.argv[2]
-modelsDir = sys.argv[3]
-numOfSamples  = int(sys.argv[4])
+samplesDir          = sys.argv[1]
+experimentRootDir   = sys.argv[2]
+modelsDir           = sys.argv[3]
+numOfSamples        = int(sys.argv[4])
+testResultFoldName  = sys.argv[5]
 
 # Basic parameters for k-fold experiment setup
 datasetName = DATA.mnist
 architecture = MODEL.ARCHITECTURE
 numOfClasses = 10
-testDir = os.path.join(experimentRootDir, "test")
+testDir = os.path.join(experimentRootDir, testResultFoldName)
 
-#EPS = ATTACK.FGSM_EPS
-attackApproach = ATTACK.FGSM
-AETypes = []
-#EPS = [0.25, 0.3, 0.5, 0.1, 0.05, 0.01, 0.005]
-EPS = [0.25]
-for eps in EPS:
-    epsInt = int(1000*eps)
-    AETypes.append(attackApproach+"_eps"+str(epsInt))
-    #if len(AETypes) >= 1:
-    #    break
-'''
+AETypes = ATTACK.get_fgsm_AETypes()
 
-AETypes = [
-        "bim_ord2_nbIter100_eps100",
-        "bim_ord2_nbIter100_eps250",
-        "bim_ord2_nbIter100_eps500",
-        "bim_ord2_nbIter100_eps1000",
-        "bim_ordinf_nbIter100_eps5",
-        "bim_ordinf_nbIter100_eps10",
-        "bim_ordinf_nbIter100_eps50",
-        "bim_ordinf_nbIter100_eps100",
-        "bim_ordinf_nbIter100_eps250",
-        "bim_ordinf_nbIter100_eps500",
-        "fgsm_eps5",
-        "fgsm_eps10",
-        "fgsm_eps50",
-        "fgsm_eps100",
-        "fgsm_eps250",
-        "fgsm_eps300"]
-'''
 
 numOfAETypes = len(AETypes)
 sampleTypes =["BS"]
@@ -71,7 +44,7 @@ transformationList = transformConfig.supported_types()
 # Create fold directories for evaluation
 predictionResultDir = os.path.join(testDir, "prediction_result")
 
-'''
+
 # Prediction : needs a new prediction function
 predictionForTest(
         predictionResultDir,
@@ -84,7 +57,7 @@ predictionForTest(
         numOfSamples,
         AETypes,
         transformationList)
-'''
+
 
 numOfTrans = len(transformationList) - 1
 numOfModels = 1 + numOfTrans # clean model + transform models

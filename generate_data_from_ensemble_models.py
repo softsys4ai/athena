@@ -26,18 +26,7 @@ datasetName = DATA.mnist
 architecture = MODEL.ARCHITECTURE
 numOfClasses = 10
 
-
-#EPS = ATTACK.FGSM_EPS
-attackApproach = ATTACK.FGSM
-AETypes = [] # used to locate the group of ensemble models built upon a specific type of AE
-#EPS = [0.25, 0.3, 0.5, 0.1, 0.05, 0.01, 0.005]
-EPS = [0.25]
-for eps in EPS:
-    epsInt = int(1000*eps)
-    AETypes.append(attackApproach+"_eps"+str(epsInt))
-    #if len(AETypes) >= 1:
-    #    break
-
+AETypes = ATTACK.get_fgsm_AETypes()
 
 numOfAETypes = len(AETypes)
 
@@ -96,6 +85,7 @@ for AETypeIdx in range(numOfAETypes):
     # accuracy of clustering-and-voting based defenses
     for defenseIdx in range(numOfCVDefenses):
         defenseName = cvDefenseNames[defenseIdx] 
+        newLabelsFilename = defenseName+"_newLabels.npy"
         clusters = loadCAVModel(os.path.join(curTrainModelDir, defenseName+".txt"))
 
         # getting new labels
@@ -104,7 +94,8 @@ for AETypeIdx in range(numOfAETypes):
                 clusters,
                 vsac=cvDefenseNames[defenseIdx],
                 measureTC=False)
-        np.save(os.path.join(curNewLabelsDir, defenseName+"_newLabels.npy"), votedResults[:, 0])
+        newLabels = votedResults[:, 0]
+        np.save(os.path.join(curNewLabelsDir, newLabelsFilename), newLabels)
 
 
     # accuracy of weithed-confidence based defenses
@@ -131,5 +122,6 @@ for AETypeIdx in range(numOfAETypes):
             predLabels,  _ = wcdefenses(
                     curPred, wcMat, defenseName, measureTC=False)
 
-            np.save(os.path.join(curNewLabelsDir, newLabelsFilename), predLabels)
+            newLabels = predLabels
+            np.save(os.path.join(curNewLabelsDir, newLabelsFilename), newLabels)
 

@@ -1,4 +1,6 @@
+import os
 import sys
+import time
 
 import numpy as np
 
@@ -29,6 +31,8 @@ kFold = int(sys.argv[5])
 timeStamp=time.strftime("%Y-%m-%d_%H-%M-%S", time.gmtime())
 experimentRootDir=os.path.join(rootDir,timeStamp)
 createDirSafely(experimentRootDir)
+with open("current_experiment_root_dir_name.txt", "w") as fp:
+    fp.write(experimentRootDir)
 
 #kFold = 5
 isKFolderUponTestSet=True
@@ -36,37 +40,7 @@ datasetName = DATA.mnist
 architecture = MODEL.ARCHITECTURE
 numOfClasses = 10
 
-
-#EPS = ATTACK.FGSM_EPS
-attackApproach = ATTACK.FGSM
-AETypes = []
-#EPS = [0.25, 0.3, 0.5, 0.1, 0.05, 0.01, 0.005]
-EPS = [0.25]
-for eps in EPS:
-    epsInt = int(1000*eps)
-    AETypes.append(attackApproach+"_eps"+str(epsInt))
-    #if len(AETypes) >= 1:
-    #    break
-'''
-
-AETypes = [
-        "bim_ord2_nbIter100_eps100",
-        "bim_ord2_nbIter100_eps250",
-        "bim_ord2_nbIter100_eps500",
-        "bim_ord2_nbIter100_eps1000",
-        "bim_ordinf_nbIter100_eps5",
-        "bim_ordinf_nbIter100_eps10",
-        "bim_ordinf_nbIter100_eps50",
-        "bim_ordinf_nbIter100_eps100",
-        "bim_ordinf_nbIter100_eps250",
-        "bim_ordinf_nbIter100_eps500",
-        "fgsm_eps5",
-        "fgsm_eps10",
-        "fgsm_eps50",
-        "fgsm_eps100",
-        "fgsm_eps250",
-        "fgsm_eps300"]
-'''
+AETypes = ATTACK.get_fgsm_AETypes()
 
 numOfAETypes = len(AETypes)
 sampleTypes =["BS"]
@@ -165,7 +139,7 @@ for AETypeIdx in range(numOfAETypes):
         labelsTe       = labels[testingIndices]
 
 
-        # Clustering-and-voting based defense
+        # Clustering-and-voting based defenses
         # 2: AE-accuracy, AE-time cost
         #testResults : (numOfCVDefenses, 2)
         print("\t==== clustering and voting based defenses ====")
