@@ -36,6 +36,39 @@ def train_model(dataset, transform_type):
 
     models.train(model_name, X_train, Y_train, require_preprocess)
 
+def train_models_with_newLabels(
+        dataset_name,
+        AE_type_tag,
+        defense_tag,
+        transform_type,
+        num_of_samples,
+        X,
+        Y,
+        validation_rate=0.2,
+        need_argument=False):
+
+    print('Training model ({}) on {} {} new labels collected from ensemble ({}) built upon {}...'.format(transform_type, num_of_samples, dataset_name, defense_tag, AE_type_tag))
+
+    if transform_type != TRANSFORMATION.clean:
+        # transform images on demand.
+        X = transform_images(X, transform_type)
+
+    model_name = 'model-{}-cnn-{}-{}-{}-{}'.format(
+            dataset_name,
+            transform_type,
+            AE_type_tag,
+            defense_tag,
+            num_of_samples)
+
+    models.train_and_save(
+            model_name,
+            X,
+            Y,
+            validation_rate,
+            need_argument)
+
+
+
 """
 For testing
 """
