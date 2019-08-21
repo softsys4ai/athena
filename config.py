@@ -8,7 +8,7 @@ import numpy as np
 # [For defense]
 numOfWCDefenses=3
 numOfCVDefenses=2
-cvDefenseNames=["Majority", "Max"] # strategies used to decide the label across clusters
+cvDefenseNames=["CV_Maj", "CV_Max"] # strategies used to decide the label across clusters
 # EM    :   expertise matrix
 # 1s    :   every element in expertise matrix is 1
 # SM    :   sum weighted confidence across models for one sample,
@@ -180,7 +180,6 @@ class TRANSFORMATION(object):
         transformations.extend(cls.NOISES)
         transformations.extend(cls.FILTERS)
         transformations.extend(cls.COMPRESSION)
-
         return transformations
 
 class ATTACK(object):
@@ -209,8 +208,18 @@ class ATTACK(object):
     # ---------------------------
     @classmethod
     def get_fgsm_eps(cls):
-        # return [0.25, 0.3, 0.1, 0.05, 0.01, 0.005] # full set
-        return [0.25] # for test
+        return [0.25, 0.3, 0.1, 0.05, 0.01, 0.005] # full set
+        #return [0.25] # for test
+
+    @classmethod
+    def get_fgsm_AETypes(cls):
+        attackApproach = cls.FGSM
+        AETypes = []
+        EPS = cls.get_fgsm_eps().sort()
+        for eps in EPS:
+            epsInt = int(1000*eps)
+            AETypes.append(attackApproach+"_eps"+str(epsInt))
+        return AETypes
 
     # ---------------------------
     # i-FGSM/BIM Parameters
