@@ -215,7 +215,8 @@ class ATTACK(object):
     def get_fgsm_AETypes(cls):
         attackApproach = cls.FGSM
         AETypes = []
-        EPS = cls.get_fgsm_eps().sort()
+        EPS = cls.get_fgsm_eps()
+        EPS.sort()
         for eps in EPS:
             epsInt = int(1000*eps)
             AETypes.append(attackApproach+"_eps"+str(epsInt))
