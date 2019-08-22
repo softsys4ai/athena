@@ -40,7 +40,7 @@ datasetName = DATA.mnist
 architecture = MODEL.ARCHITECTURE
 numOfClasses = 10
 
-AETypes = ATTACK.get_fgsm_AETypes()
+AETypes = ATTACK.get_AETypes()
 
 numOfAETypes = len(AETypes)
 sampleTypes =["BS"]

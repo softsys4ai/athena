@@ -166,7 +166,38 @@ class TRANSFORMATION(object):
 
     @classmethod
     def supported_types(cls):
-        transformations = []
+        transformations = [
+                "clean",
+                "affine_both_compress",
+                "affine_both_stretch",
+                "affine_horizontal_compress",
+                "affine_horizontal_stretch",
+                "affine_vertical_compress",
+                "affine_vertical_stretch",
+                "both_flip",
+                "cartoon_mean_type1",
+                "cartoon_mean_type2",
+                "cartoon_mean_type3",
+                "cartoon_mean_type4",
+                "closing",
+                "dilation",
+                "erosion",
+                "gradient",
+                "horizontal_flip",
+                "opening",
+                "rotate180",
+                "rotate270",
+                "rotate90",
+                "shift_bottom_left",
+                "shift_bottom_right",
+                "shift_down",
+                "shift_left",
+                "shift_right",
+                "shift_top_left",
+                "shift_top_right",
+                "shift_up",
+                "vertical_flip"]
+        '''
         transformations.extend(['clean'])
         transformations.extend(cls.ROTATE)
         transformations.extend(cls.SHIFT)
@@ -180,6 +211,7 @@ class TRANSFORMATION(object):
         transformations.extend(cls.NOISES)
         transformations.extend(cls.FILTERS)
         transformations.extend(cls.COMPRESSION)
+        '''
         return transformations
 
 class ATTACK(object):
@@ -217,6 +249,7 @@ class ATTACK(object):
         AETypes = []
         EPS = cls.get_fgsm_eps()
         EPS.sort()
+        EPS=[0.1, 0.25]
         for eps in EPS:
             epsInt = int(1000*eps)
             AETypes.append(attackApproach+"_eps"+str(epsInt))
@@ -243,6 +276,25 @@ class ATTACK(object):
         elif order == np.inf:
             return [0.5, 0.25, 0.1, 0.05, 0.01, 0.005]
             # return [0.005, 0.01, 0.05]
+
+    @classmethod
+    def get_bim_AETypes(cls):
+        attackApproach = cls.BIM
+        AETypes = []
+        EPS=[0.1]
+        for distType in ["ord2", "ordinf"]:
+            for nbIter in [100]:
+                for eps in EPS:
+                    epsInt = int(1000*eps)
+                    AETypes.append(attackApproach+"_"+distType+"_nbIter"+str(nbIter)+"_eps"+str(epsInt))
+        return AETypes
+
+    @classmethod
+    def get_AETypes(cls):
+        AETypes = []
+        AETypes.extend(cls.get_fgsm_AETypes())
+        AETypes.extend(cls.get_bim_AETypes())
+        return AETypes
 
     # ----------------------------
     # Deepfool parameters

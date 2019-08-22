@@ -29,7 +29,7 @@ architecture = MODEL.ARCHITECTURE
 numOfClasses = 10
 testDir = os.path.join(experimentRootDir, testResultFoldName)
 
-AETypes = ATTACK.get_fgsm_AETypes()
+AETypes = ATTACK.get_AETypes()
 
 
 numOfAETypes = len(AETypes)
@@ -339,7 +339,7 @@ saveFP = os.path.join(testDir, "latency.pdf")
 xtickSize = 8
 boxPlot(totalTCsAE*1000, title, xLabel, yLabel, saveFP, xtickSize, 45)
 
-relativeTotTCAE = totalTCsAE / totalTCsAE[:, 0]
+relativeTotTCAE = totalTCsAE / totalTCsAE[:, 0][:, None]
 relativeTotTCAEFP = os.path.join(testDir, "relative_time_cost_of_each_ensemble_model.txt") 
 with open(relativeTotTCAEFP, "w") as fp:
     sformat = "{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\n"
