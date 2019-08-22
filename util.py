@@ -148,6 +148,7 @@ def clusteringBasedDefesTrain(
         clusters = loadClusteringResult(clusteringResultDir, numOfClusters)
         for defenseIdx in range(numOfCVDefenses):
             defenseName = cvDefenseNames[defenseIdx]
+            #print("[CAV defense training] "+defenseName)
             votedResultAE, timeCostAE = votingAsDefense(
                     AEPredLC,
                     clusters,
@@ -1111,10 +1112,12 @@ def predictionForTest(
 def loadModels(modelsDir, modelFilenamePrefix, transformationList):
     models=[]
     logitsModels=[]
-    for transformType in transformationList:
-        modelName = modelFilenamePrefix+"-"+transformType
+    print("Number of transformations: {}".format(len(transformationList)))
+    for tIdx in range(len(transformationList)):
+        transformType = transformationList[tIdx]
+        modelName = "model-"+modelFilenamePrefix+"-"+transformType
         modelNameFP = os.path.join(modelsDir, modelName+".h5")
-        print("load model {}".format(modelName))
+        print("loading model {}".format(modelName))
         model = load_model(modelNameFP)
         models.append(model)
         # Create corresponding model for outputing logits
@@ -1123,7 +1126,8 @@ def loadModels(modelsDir, modelFilenamePrefix, transformationList):
                 inputs=model.input,
                 outputs=model.get_layer(layerName).output)
         logitsModels.append(logitsModel)
-
+    
+    print("Number of loaded models: {}".format(len(models)))
     return models, logitsModels
 
 
@@ -1288,7 +1292,7 @@ def votingAsDefense(predLC, clusters, vsac="CV_Maj", measureTC=False):
     elif vsac == "CV_Max":
         votedResult = maxConfidenceVote(clusterRepresentatives)
     else:
-        raise ValueError("The given across-clusters voting strategy, {}, is not supported. By now, only support 'Majority' and 'Max'".format(vsac))
+        raise ValueError("The given across-clusters voting strategy, {}, is not supported. By now, only support 'CV_Maj' and 'CV_Max'".format(vsac))
 
     if measureTC:
         timeCost = (time.monotonic() - startTime) / numOfSamples
