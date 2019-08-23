@@ -8,12 +8,9 @@ testSamplesDir="testing_samples"
 numOfTestSamples=10000
 testResultFoldName="test"
 
+rootDir="detectionExperiment"
 
-experimentRootDir="detectionExperiment"
-
-
-
-python detection_as_defense.py "$testSamplesDir" "$experimentRootDir" "$modelsDir" "$numOfTestSamples" "$testResultFoldName"
+python detection_as_defense.py "$testSamplesDir" "$rootDir" "$modelsDir" "$numOfTestSamples" "$testResultFoldName"
 
 
 

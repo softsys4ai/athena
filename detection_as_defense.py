@@ -4,7 +4,7 @@ import time
 
 import numpy as np
 from scipy.spatial import distance_matrix
-    
+
 import seaborn as sns; sns.set()
 
 import util
@@ -13,7 +13,7 @@ from util import *
 
 def usage():
     print("=============================================================================================")
-    print("python <this script> samplesDir experimentRootDir modelsDir numOfSamples testResultFoldName")
+    print("python <this script> samplesDir rootDir modelsDir numOfSamples testResultFoldName")
     print("=============================================================================================")
 
 if len(sys.argv) != 6:
@@ -22,12 +22,16 @@ if len(sys.argv) != 6:
 
 
 samplesDir          = sys.argv[1]
-experimentRootDir   = sys.argv[2]
+rootDir             = sys.argv[2]
 modelsDir           = sys.argv[3]
 numOfSamples        = int(sys.argv[4])
 testResultFoldName  = sys.argv[5]
 
 # Basic parameters for k-fold experiment setup
+timeStamp=time.strftime("%Y-%m-%d_%H-%M-%S", time.gmtime())
+experimentRootDir=os.path.join(rootDir,timeStamp)
+createDirSafely(experimentRootDir)
+
 datasetName = DATA.mnist
 architecture = MODEL.ARCHITECTURE
 numOfClasses = 10
@@ -47,6 +51,7 @@ transformationList = transformConfig.supported_types()
 
 # Create fold directories for evaluation
 predictionResultDir = os.path.join(testDir, "prediction_result")
+
 
 # Prediction : needs a new prediction function
 predictionForTest(
@@ -126,7 +131,7 @@ def saveDATable(sampleTypes, dA, vA, cA, filepath):
                 cA[sIdx]))
 
 # calculate the accuracy of each model for all type of samples
-accEachModelEachSampleType = np.zeros((numOfModels, numOfSampleType))
+accEachModelEachSampleType = np.zeros((numOfModels, numOfSampleTypes))
 for sampleTypeIdx in range(numOfSampleTypes):
     sampleType = sampleTypes[sampleTypeIdx]
     curPredictionResultDir = os.path.join(predictionResultDir, sampleType)
@@ -142,7 +147,7 @@ with open(os.path.join(testDir, "acc_each_model_each_sample_type.txt"), "w") as 
     for mIdx in range(numOfModels):
         fp.write(transformationList[mIdx])
         for sampleTypeIdx in range(numOfSampleTypes):
-            fp.write("\t"+accEachModelEachSampleType[mIdx, sampleTypeIdx])
+            fp.write("\t"+str(accEachModelEachSampleType[mIdx, sampleTypeIdx]))
         fp.write("\n")
 
 
@@ -156,6 +161,7 @@ for _ in AETypes:
 
 for thresholdRatio in thresholdRatios:
     threshold = int(thresholdRatio*numOfModels)
+    print("Threshold Ratio: "+str(thresholdRatio))
     # the 1st dimension maps to a kind of ensemble model trained on the specific type of AE
     detectionAccs = np.zeros((numOfSampleTypes))
     votingAccs = np.zeros((numOfSampleTypes))
@@ -166,7 +172,7 @@ for thresholdRatio in thresholdRatios:
         sampleKind = sampleKinds[sampleTypeIdx] # True - BS, False - AE
         curPredictionResultDir = os.path.join(predictionResultDir, sampleType)
         
-        print("Testing sample type: "+sampleType)
+        print("\tTesting sample type: "+sampleType)
         predProb  = np.load(os.path.join(curPredictionResultDir, "predProb.npy"))
         predLogit = np.load(os.path.join(curPredictionResultDir, "predLogit.npy"))
         predProbLC = np.zeros((numOfModels, numOfSamples, 2))
@@ -195,7 +201,7 @@ for thresholdRatio in thresholdRatios:
     filepath = os.path.join(testDir, "detection_acc_"+str(thresholdRatio)+".txt")
     saveDATable(sampleTypes, detectionAccs, votingAccs, cleanAccs, filepath)
         # distance matrix - heatmap
-    print("threshold of number of Models that have the same vote: "+str(threshold))
+    print("\tThreshold of number of Models that have the same vote: "+str(threshold))
     print("\t"+str(sampleTypes))
     print("\tdetection accuracy: "+str(detectionAccs))
     print("\tvoting accuracy: "+str(votingAccs))
@@ -210,7 +216,7 @@ def distMatrx(groupOfPoints, metric="l2"):
     nPoints = groupOfPoints.shape[0]
     dms = np.zeros((nGroups, nPoints, nPoints))
     for gIdx in range(nGroups):
-        points = groupsOfPoints[gIdx]
+        points = groupOfPoints[:, gIdx, :]
         dms[gIdx]=distance_matrix(points, points, p=2)
     meanDM = dms.mean(axis=0)
     stdDM = dms.std(axis=0)
@@ -228,7 +234,7 @@ for sampleTypeIdx in range(numOfSampleTypes):
     sampleKind = sampleKinds[sampleTypeIdx] # True - BS, False - AE
     curPredictionResultDir = os.path.join(predictionResultDir, sampleType)
     
-    print("Testing sample type: "+sampleType)
+    print("[DM] Testing sample type: "+sampleType)
     predProb  = np.load(os.path.join(curPredictionResultDir, "predProb.npy"))
     predLogit = np.load(os.path.join(curPredictionResultDir, "predLogit.npy"))
 
@@ -237,12 +243,16 @@ for sampleTypeIdx in range(numOfSampleTypes):
     dumpMat(stdDM, os.path.join(testDir, "stdDM_"+sampleType+"_Prob.txt"))
 
     ax = sns.heatmap(meanDM) 
-    ax.savefigure(os.path.join(testDir, "DM_"+sampleType+"_Prob.pdf"))
+    fig = ax.get_figure()
+    fig.savefig(os.path.join(testDir, "DM_"+sampleType+"_Prob.pdf"))
+    fig.clf()
 
 
-    meanDM, stdDM = distMatrx(PredLogit, metric="l2")
+    meanDM, stdDM = distMatrx(predLogit, metric="l2")
     dumpMat(meanDM, os.path.join(testDir, "meanDM_"+sampleType+"_Logit.txt"))
     dumpMat(stdDM, os.path.join(testDir, "stdDM_"+sampleType+"_Logit.txt"))
 
     ax = sns.heatmap(meanDM) 
-    ax.savefigure(os.path.join(testDir, "DM_"+sampleType+"_Logit.pdf"))
+    fig = ax.get_figure()
+    fig.savefig(os.path.join(testDir, "DM_"+sampleType+"_Logit.pdf"))
+    fig.clf()
