@@ -184,13 +184,13 @@ class TRANSFORMATION(object):
                 "cartoon_mean_type3",
                 "cartoon_mean_type4",
                 "closing",
-                "compress_jpeg_quality_10",
-                "compress_jpeg_quality_30",
-                "compress_jpeg_quality_50",
-                "compress_jpeg_quality_80",
-                "compress_png_compression_1",
-                "compress_png_compression_5",
-                "compress_png_compression_8",
+                #"compress_jpeg_quality_10",
+                #"compress_jpeg_quality_30",
+                #"compress_jpeg_quality_50",
+                #"compress_jpeg_quality_80",
+                #"compress_png_compression_1",
+                #"compress_png_compression_5",
+                #"compress_png_compression_8",
                 "dilation",
                 "distortion_x",
                 "distortion_y",
@@ -212,7 +212,7 @@ class TRANSFORMATION(object):
                 #"quant_16_clusters",
                 #"quant_2_clusters",
                 #"quant_32_clusters",
-                "quant_4_clusters",
+                #"quant_4_clusters",
                 #"quant_8_clusters",
                 "rank_filter",
                 "rotate180",
@@ -280,7 +280,7 @@ class ATTACK(object):
         AETypes = []
         EPS = cls.get_fgsm_eps()
         EPS.sort()
-        EPS=[0.005, 0.01, 0.05, 0.1, 0.25, 0.3]
+        EPS=[0.25]
         for eps in EPS:
             epsInt = int(1000*eps)
             AETypes.append(attackApproach+"_eps"+str(epsInt))
@@ -314,8 +314,8 @@ class ATTACK(object):
         AETypes = []
         EPS=[0.1]
         EPS={}
-        EPS["ord2"] = [0.1, 0.25, 0.5, 1.0]
-        EPS["ordinf"] = [0.005, 0.01, 0.05, 0.1, 0.25, 0.5]
+        EPS["ord2"] = [0.25]
+        EPS["ordinf"] = [0.01]
         for distType in ["ord2", "ordinf"]:
             curEPS = EPS[distType]
             for nbIter in [100]:
@@ -327,9 +327,9 @@ class ATTACK(object):
     @classmethod
     def get_jsma_AETypes(cls):
         AETypes = [
-                "jsma_theta10_gamma30",
-                "jsma_theta10_gamma70",
-                "jsma_theta30_gamma50",
+                #"jsma_theta10_gamma30",
+                #"jsma_theta10_gamma70",
+                #"jsma_theta30_gamma50",
                 "jsma_theta50_gamma50"]
         return AETypes
 
