@@ -685,7 +685,8 @@ def compress(original_images, transformation):
     original_images *= 255.
     compress_rate = int(transformation.split('_')[-1])
     format = '.{}'.format(transformation.split('_')[1])
-    print(compress_rate, format)
+    if MODE.DEBUG:
+        print(compress_rate, format)
     nb_images, img_rows, img_cols, nb_channels = original_images.shape
     transformed_images = []
     encode_param = [int(cv2.IMWRITE_JPEG_QUALITY), compress_rate]
