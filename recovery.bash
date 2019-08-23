@@ -7,7 +7,7 @@ modelsDir="models"
 # [Training parameters]
 trainSamplesDir="training_samples"
 numOfTrainSamples=12000
-kFold=2
+kFold=5
 
 # [Testing paramters]
 testSamplesDir="testing_samples"

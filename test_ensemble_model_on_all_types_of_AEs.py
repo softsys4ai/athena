@@ -58,6 +58,7 @@ predictionForTest(
         AETypes,
         transformationList)
 
+
 numOfTrans = len(transformationList) - 1
 numOfModels = 1 + numOfTrans # clean model + transform models
 
@@ -84,6 +85,7 @@ numOfSampleTypes = len(sampleTypes)
 
 
 # the 1st dimension maps to a kind of ensemble model trained on the specific type of AE
+# numOfAETypes: each type of AE builds a group of ensemble models
 defenseAccs = np.zeros((numOfAETypes, numOfSampleTypes,  numOfDefenses))
 defenseTCs = np.zeros((numOfAETypes, numOfSampleTypes, numOfDefenses))
 
@@ -123,7 +125,7 @@ for sampleTypeIdx in range(numOfSampleTypes):
             defenseName = cvDefenseNames[defenseIdx] 
             clusters = loadCAVModel(os.path.join(curTrainModelDir, defenseName+".txt"))
 
-            # testing AE
+            # testing
             votedResults, defenseTCs[AETypeIdx, sampleTypeIdx, defenseIdx] = votingAsDefense(
                     predProbLC[1:, :, :],
                     clusters,
@@ -151,7 +153,7 @@ for sampleTypeIdx in range(numOfSampleTypes):
                 curPred = pred[mIDs] 
                 dIdx = numOfCVDefenses + plIdx * numOfWCDefenses + defenseIdx
 
-                # testing AE
+                # testing
                 predLabels,  defenseTCs[AETypeIdx, sampleTypeIdx, dIdx] = wcdefenses(
                         curPred, wcMat, defenseName, measureTC=True)
                 defenseAccs[AETypeIdx, sampleTypeIdx, dIdx] = calAccuracy(predLabels, labels)
@@ -210,9 +212,11 @@ saveAccTable(sampleTypes, meanDefenseAccs, os.path.join(testDir, "mean_acc_of_en
 saveAccTable(sampleTypes, stdDefenseAccs, os.path.join(testDir, "std_acc_of_ensembles.txt"))
 
 
-'''
+# averaging defense time cost across different sample types
+defenseTCs = defenseTCs.mean(axis=1) 
+
 # Report latency
-# defenseTCBSs , defenseTCAEs : (numOfAETypes, numofDefenses)
+# defenseTCs : (numOfAETypes, numofDefenses)
 # predTCs: (numOfSampleTypes, numOfModels, 3)
 predTCs = np.load(os.path.join(predictionResultDir, "predTCs.npy"))
 predAndTransTCs = np.zeros((predTCs.shape[0], predTCs.shape[1], 2))
@@ -239,27 +243,27 @@ with open(maxTCTransModelsFP, "w") as fp:
 
 predAndTransTCs = np.max(predAndTransTCs[:, 1:, :], axis=1) # find the largest time cost of transformation and inference across models
 CAVEnsembleTCs = np.zeros((numOfAETypes, 2))
-CAVEnsembleTCs[:, 0] = predAndTransTCs[1:, 0] + defenseTCAEs[:, 0]
-CAVEnsembleTCs[:, 1] = predAndTransTCs[1:, 0] + defenseTCAEs[:, 1]
+CAVEnsembleTCs[:, 0] = predAndTransTCs[1:, 0] + defenseTCs[:, 0]
+CAVEnsembleTCs[:, 1] = predAndTransTCs[1:, 0] + defenseTCs[:, 1]
 WCEnsemblesTCs = np.zeros((numOfAETypes, 6))
-WCEnsemblesTCs[:, 0] = predAndTransTCs[1:, 0] + defenseTCAEs[:, 2]
-WCEnsemblesTCs[:, 1] = predAndTransTCs[1:, 0] + defenseTCAEs[:, 3]
-WCEnsemblesTCs[:, 2] = predAndTransTCs[1:, 0] + defenseTCAEs[:, 4]
-WCEnsemblesTCs[:, 3] = predAndTransTCs[1:, 1] + defenseTCAEs[:, 5]
-WCEnsemblesTCs[:, 4] = predAndTransTCs[1:, 1] + defenseTCAEs[:, 6]
-WCEnsemblesTCs[:, 5] = predAndTransTCs[1:, 1] + defenseTCAEs[:, 7]
+WCEnsemblesTCs[:, 0] = predAndTransTCs[1:, 0] + defenseTCs[:, 2]
+WCEnsemblesTCs[:, 1] = predAndTransTCs[1:, 0] + defenseTCs[:, 3]
+WCEnsemblesTCs[:, 2] = predAndTransTCs[1:, 0] + defenseTCs[:, 4]
+WCEnsemblesTCs[:, 3] = predAndTransTCs[1:, 1] + defenseTCs[:, 5]
+WCEnsemblesTCs[:, 4] = predAndTransTCs[1:, 1] + defenseTCs[:, 6]
+WCEnsemblesTCs[:, 5] = predAndTransTCs[1:, 1] + defenseTCs[:, 7]
 
 # probability inference on clean model
 # defense time costs
-totalTCsAE = np.zeros((numOfAETypes, 1 + numOfDefenses))
-totalTCsAE[:, 0]   = predTCs[1:, 0, 1]
-totalTCsAE[:, 1:3] = CAVEnsembleTCs
-totalTCsAE[:, 3:]  = WCEnsemblesTCs
-totalTCAEFP = os.path.join(testDir, "time_cost_of_each_ensemble_model.txt") 
-with open(totalTCAEFP, "w") as fp:
+totalTCs = np.zeros((numOfAETypes, 1 + numOfDefenses))
+totalTCs[:, 0]   = predTCs[1:, 0, 1]
+totalTCs[:, 1:3] = CAVEnsembleTCs
+totalTCs[:, 3:]  = WCEnsemblesTCs
+totalTCFP = os.path.join(testDir, "time_cost_of_each_ensemble_model.txt") 
+with open(totalTCFP, "w") as fp:
     sformat = "{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\n"
     fp.write(sformat.format(
-        "Type",
+        "TrainDataType",
         "Clean",
         "CV_Maj",
         "CV_Max",
@@ -272,15 +276,15 @@ with open(totalTCAEFP, "w") as fp:
     for AETypeIdx in range(numOfAETypes):
         fp.write(sformat.format(
             AETypes[AETypeIdx],
-            totalTCsAE[AETypeIdx, 0],
-            totalTCsAE[AETypeIdx, 1],
-            totalTCsAE[AETypeIdx, 2],
-            totalTCsAE[AETypeIdx, 3],
-            totalTCsAE[AETypeIdx, 4],
-            totalTCsAE[AETypeIdx, 5],
-            totalTCsAE[AETypeIdx, 6],
-            totalTCsAE[AETypeIdx, 7],
-            totalTCsAE[AETypeIdx, 8]))
+            totalTCs[AETypeIdx, 0],
+            totalTCs[AETypeIdx, 1],
+            totalTCs[AETypeIdx, 2],
+            totalTCs[AETypeIdx, 3],
+            totalTCs[AETypeIdx, 4],
+            totalTCs[AETypeIdx, 5],
+            totalTCs[AETypeIdx, 6],
+            totalTCs[AETypeIdx, 7],
+            totalTCs[AETypeIdx, 8]))
 ensembleModelNames = [
         "CV_Maj",
         "CV_Max",
@@ -296,14 +300,14 @@ yLabel = "Latency (ms)"
 title = "Latency of clean model and ensemble models"
 saveFP = os.path.join(testDir, "latency.pdf")
 xtickSize = 8
-boxPlot(totalTCsAE*1000, title, xLabel, yLabel, saveFP, xtickSize, 45)
+boxPlot(totalTCs*1000, title, xLabel, yLabel, saveFP, xtickSize, 45)
 
-relativeTotTCAE = totalTCsAE / totalTCsAE[:, 0][:, None]
-relativeTotTCAEFP = os.path.join(testDir, "relative_time_cost_of_each_ensemble_model.txt") 
-with open(relativeTotTCAEFP, "w") as fp:
+relativeTotTC = totalTCs / totalTCs[:, 0][:, None]
+relativeTotTCFP = os.path.join(testDir, "relative_time_cost_of_each_ensemble_model.txt") 
+with open(relativeTotTCFP, "w") as fp:
     sformat = "{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\n"
     fp.write(sformat.format(
-        "Type",
+        "TrainDataType",
         "CV_Maj",
         "CV_Max",
         "1s_Mean",
@@ -315,25 +319,23 @@ with open(relativeTotTCAEFP, "w") as fp:
     for AETypeIdx in range(numOfAETypes):
         fp.write(sformat.format(
             AETypes[AETypeIdx],
-            relativeTotTCAE[AETypeIdx, 1],
-            relativeTotTCAE[AETypeIdx, 2],
-            relativeTotTCAE[AETypeIdx, 3],
-            relativeTotTCAE[AETypeIdx, 4],
-            relativeTotTCAE[AETypeIdx, 5],
-            relativeTotTCAE[AETypeIdx, 6],
-            relativeTotTCAE[AETypeIdx, 7],
-            relativeTotTCAE[AETypeIdx, 8]))
+            relativeTotTC[AETypeIdx, 1],
+            relativeTotTC[AETypeIdx, 2],
+            relativeTotTC[AETypeIdx, 3],
+            relativeTotTC[AETypeIdx, 4],
+            relativeTotTC[AETypeIdx, 5],
+            relativeTotTC[AETypeIdx, 6],
+            relativeTotTC[AETypeIdx, 7],
+            relativeTotTC[AETypeIdx, 8]))
 
 xLabel = ensembleModelNames
 yLabel = "Latency Percentage"
 title = "Latency of ensemble models relative to clean model"
 saveFP = os.path.join(testDir, "relative_latency.pdf")
-boxPlot(relativeTotTCAE[:, 1:], title, xLabel, yLabel, saveFP, xtickSize, 45)
+boxPlot(relativeTotTC[:, 1:], title, xLabel, yLabel, saveFP, xtickSize, 45)
 
 # backup raw data of time cost
-np.save(os.path.join(testDir, "defenseTC_BS.npy"), defenseTCBSs)
-np.save(os.path.join(testDir, "defenseTC_AE.npy"), defenseTCAEs)
+np.save(os.path.join(testDir, "defenseTCs.npy"), defenseTCs)
 
 # backup accuracy of BS and AEs on clean models and all transform models
 np.save(os.path.join(testDir, "acc1Model.npy"), acc1Model)
-'''
