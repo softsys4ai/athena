@@ -166,7 +166,7 @@ class TRANSFORMATION(object):
 
     @classmethod
     def supported_types(cls):
-        transformations = [
+        transformations =[
                 "clean",
                 "affine_both_compress",
                 "affine_both_stretch",
@@ -175,16 +175,46 @@ class TRANSFORMATION(object):
                 "affine_vertical_compress",
                 "affine_vertical_stretch",
                 "both_flip",
+                "cartoon_gaussian_type1",
+                "cartoon_gaussian_type2",
+                "cartoon_gaussian_type3",
+                "cartoon_gaussian_type4",
                 "cartoon_mean_type1",
                 "cartoon_mean_type2",
                 "cartoon_mean_type3",
                 "cartoon_mean_type4",
                 "closing",
+                "compress_jpeg_quality_10",
+                "compress_jpeg_quality_30",
+                "compress_jpeg_quality_50",
+                "compress_jpeg_quality_80",
+                "compress_png_compression_1",
+                "compress_png_compression_5",
+                "compress_png_compression_8",
                 "dilation",
+                "distortion_x",
+                "distortion_y",
                 "erosion",
+                "gaussian_filter",
                 "gradient",
                 "horizontal_flip",
+                "maximum_filter",
+                "median_filter",
+                "minimum_filter",
+                "noise_gaussian",
+                "noise_localvar",
+                "noise_pepper",
+                #"noise_poisson",
+                "noise_salt",
+                "noise_speckle",
+                "noise_s&p",
                 "opening",
+                #"quant_16_clusters",
+                #"quant_2_clusters",
+                #"quant_32_clusters",
+                "quant_4_clusters",
+                #"quant_8_clusters",
+                "rank_filter",
                 "rotate180",
                 "rotate270",
                 "rotate90",
@@ -197,6 +227,7 @@ class TRANSFORMATION(object):
                 "shift_top_right",
                 "shift_up",
                 "vertical_flip"]
+
         '''
         transformations.extend(['clean'])
         transformations.extend(cls.ROTATE)
@@ -249,7 +280,7 @@ class ATTACK(object):
         AETypes = []
         EPS = cls.get_fgsm_eps()
         EPS.sort()
-        EPS=[0.1, 0.25]
+        EPS=[0.005, 0.01, 0.05, 0.1, 0.25, 0.3]
         for eps in EPS:
             epsInt = int(1000*eps)
             AETypes.append(attackApproach+"_eps"+str(epsInt))
@@ -282,18 +313,33 @@ class ATTACK(object):
         attackApproach = cls.BIM
         AETypes = []
         EPS=[0.1]
+        EPS={}
+        EPS["ord2"] = [0.1, 0.25, 0.5, 1.0]
+        EPS["ordinf"] = [0.005, 0.01, 0.05, 0.1, 0.25, 0.5]
         for distType in ["ord2", "ordinf"]:
+            curEPS = EPS[distType]
             for nbIter in [100]:
-                for eps in EPS:
+                for eps in curEPS:
                     epsInt = int(1000*eps)
                     AETypes.append(attackApproach+"_"+distType+"_nbIter"+str(nbIter)+"_eps"+str(epsInt))
         return AETypes
 
     @classmethod
+    def get_jsma_AETypes(cls):
+        AETypes = [
+                "jsma_theta10_gamma30",
+                "jsma_theta10_gamma70",
+                "jsma_theta30_gamma50",
+                "jsma_theta50_gamma50"]
+        return AETypes
+
+    @classmethod
     def get_AETypes(cls):
         AETypes = []
+        AETypes.extend(cls.get_jsma_AETypes())
         AETypes.extend(cls.get_fgsm_AETypes())
         AETypes.extend(cls.get_bim_AETypes())
+
         return AETypes
 
     # ----------------------------
