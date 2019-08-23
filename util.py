@@ -1115,6 +1115,8 @@ def loadModels(modelsDir, modelFilenamePrefix, transformationList):
     print("Number of transformations: {}".format(len(transformationList)))
     for tIdx in range(len(transformationList)):
         transformType = transformationList[tIdx]
+        if transformType == 'noise_s&p':
+            transformType = 'noise_s_p'
         modelName = "model-"+modelFilenamePrefix+"-"+transformType
         modelNameFP = os.path.join(modelsDir, modelName+".h5")
         print("loading model {}".format(modelName))
