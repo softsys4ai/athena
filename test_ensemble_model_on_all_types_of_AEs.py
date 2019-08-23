@@ -58,7 +58,6 @@ predictionForTest(
         AETypes,
         transformationList)
 
-
 numOfTrans = len(transformationList) - 1
 numOfModels = 1 + numOfTrans # clean model + transform models
 
@@ -173,7 +172,7 @@ with open(rdCleanUPAccFP, "w") as fp:
             rdCleanUPAcc[sampleTypeIdx, 1],
             rdCleanUPAcc[sampleTypeIdx, 2]))
 
-def saveAccTable(sampleTypes, accMat, filepath:
+def saveAccTable(sampleTypes, accMat, filepath):
     with open(filepath, "w") as fp:
         sformat = "{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\n"
         fp.write(sformat.format(
@@ -204,8 +203,8 @@ for AETypeIdx in range(numOfAETypes):
     defenseAccsFP = os.path.join(testDir, "acc_of_ensembles_built_on_"+AEType+".txt")
     saveAccTable(sampleTypes, defenseAccs[AETypeIdx], defenseAccsFP)
 
-meanDefenseAccs = defenseAccs.mean(axis=0)
-stdDefenseAccs  = defenseAccs.std(axis=0)
+meanDefenseAccs = np.round(defenseAccs.mean(axis=0), decimals=4)
+stdDefenseAccs  = np.round(defenseAccs.std(axis=0), decimals=4)
 
 saveAccTable(sampleTypes, meanDefenseAccs, os.path.join(testDir, "mean_acc_of_ensembles.txt"))
 saveAccTable(sampleTypes, stdDefenseAccs, os.path.join(testDir, "std_acc_of_ensembles.txt"))
