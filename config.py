@@ -131,6 +131,7 @@ class TRANSFORMATION(object):
     median_filter = 'median_filter'
     min_filter = 'minimum_filter'
     max_filter = 'maximum_filter'
+    entropy = 'entropy'
 
     """
     compression
@@ -161,6 +162,12 @@ class TRANSFORMATION(object):
     iradon = 'irandon'
     iradon_sart = 'iradon_sart'
 
+    """
+    segmentation
+    """
+    gradient = 'gradient'
+    watershed = 'watershed'
+
 
     ROTATE = [rotate90, rotate180, rotate270]
     SHIFT = [shift_left, shift_right, shift_up, shift_down,
@@ -184,6 +191,7 @@ class TRANSFORMATION(object):
                    compress_png_compression_1, compress_png_compression_8, compress_png_compression_5]
     DENOISING = [tv_chambolle, tv_bregman, bilateral, wavelet, nl, nl_fast]
     GEOMETRIC = [swirl, randon, iradon, iradon_sart]
+    SEGMENTATION = [gradient, watershed]
 
     @classmethod
     def supported_types(cls):

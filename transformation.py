@@ -8,8 +8,11 @@ from scipy import ndimage
 from keras.preprocessing.image import ImageDataGenerator
 import skimage
 from sklearn.cluster import MiniBatchKMeans
-from skimage.restoration import (denoise_bilateral,denoise_nl_means,denoise_tv_bregman,denoise_tv_chambolle,denoise_wavelet,estimate_sigma)
-from skimage.transform import (warp,swirl,radon,iradon,iradon_sart)
+from skimage.restoration import (denoise_bilateral, denoise_nl_means, denoise_tv_bregman, denoise_tv_chambolle, denoise_wavelet, estimate_sigma)
+from skimage.transform import (warp, swirl, radon, iradon, iradon_sart)
+from skimage.morphology import disk, watershed
+from skimage.filters.rank import entropy
+from skimage.filters import rank
 
 from config import *
 from data import load_data
@@ -649,6 +652,10 @@ def filter(original_images, transformation):
         for img in original_images:
             img_trans = ndimage.rank_filter(img, rank=15, size=3)
             transformed_images.append(img_trans)
+    elif (transformation == TRANSFORMATION.entropy):
+        for img in original_images:
+            img_trans = entropy(img, disk(5))
+            transformed_images.append(img_trans)
     else:
         raise ValueError('{} is not supported.'.format(transformation))
 
@@ -803,6 +810,41 @@ def geometric_transformations(original_images, transformation):
 
     return transform_images
 
+def segmentations(original_images, transformation):
+    """
+        Segmentation of objects¶
+        :param original_images:
+        :param transformation:
+        :return:
+        """
+    nb_images, img_rows, img_cols, nb_channels = original_images.shape
+    # TODO: checking number of channels and some customization for datasets
+    # TODO: more variations, after testing is done
+    transformed_images = []
+
+    if (transformation == TRANSFORMATION.gradient):
+        for img in original_images:
+            # denoise image
+            denoised = rank.median(img, disk(2))
+            img_trans = rank.gradient(denoised, disk(2))
+            transformed_images.append(img_trans)
+    elif (transformation == TRANSFORMATION.watershed):
+        for img in original_images:
+            # denoise image
+            denoised = rank.median(img, disk(2))
+            # find continuous region (low gradient -
+            # where less than 10 for this image) --> markers
+            markers = rank.gradient(denoised, disk(5)) < 10
+            markers = ndimage.label(markers)[0]
+            # local gradient (disk(2) is used to keep edges thin)
+            gradient = rank.gradient(denoised, disk(2))
+            img_trans = watershed(gradient, markers)
+            transformed_images.append(img_trans)
+    else:
+        raise ValueError('{} is not supported.'.format(transformation))
+
+    return transform_images
+
 def transform_images(X, transformation_type):
     """
     Main entrance applying transformations on images.
@@ -843,6 +885,8 @@ def transform_images(X, transformation_type):
         return denoising(X, transformation_type)
     elif (transformation_type in TRANSFORMATION.GEOMETRIC):
         return geometric_transformations(X, transformation_type)
+    elif (transformation_type in TRANSFORMATION.SEGMENTATION):
+        return segmentations(X, transformation_type)
     else:
         raise ValueError('Transformation type {} is not supported.'.format(transformation_type.upper()))
 
