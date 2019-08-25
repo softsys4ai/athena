@@ -106,7 +106,7 @@ def generate(model_name, X, Y, attack_method, attack_params):
         attacker = SaliencyMapMethod(wrap_model, sess=sess)
     elif (attack_method == ATTACK.CW):
         """
-        Untageted attack
+        Untargeted attack
         """
         y = tf.placeholder(tf.float32, shape=(None, nb_classes))
         ord = attack_params['ord']
@@ -152,6 +152,15 @@ def generate(model_name, X, Y, attack_method, attack_params):
         link: https://arxiv.org/abs/1607.02533
         """
         attacker = BasicIterativeMethod(wrap_model, back='tf', sess=sess)
+
+    elif (attack_method == ATTACK.ONE_PIXEL):
+        population = attack_params['population']
+        max_iterations = attack_params['max_iterations']
+        target = attack_params['target'] is not None
+
+
+
+
     else:
         raise ValueError('{} attack is not supported.'.format(attack_method.upper()))
 

@@ -270,6 +270,11 @@ class ATTACK(object):
         # return [1, 10, 100, 1000, 10000, 100000] # full set
         return [100]
 
+
+
+
+
+
 class DATA(object):
     """
     Configuration for data.

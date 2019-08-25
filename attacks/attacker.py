@@ -8,6 +8,7 @@ import time
 
 from config import *
 import attacks.whitebox as whitebox
+import attacks.one_pixel as one_pixel
 
 logger = logging.getLogger('defence_transformers')
 logger.setLevel(logging.INFO)
@@ -107,5 +108,34 @@ def get_adversarial_examples(model_name, attack_method, X, Y, **kwargs):
         X_adv, Y = whitebox.generate(model_name, attack_method, X, Y, attack_params)
         duration = time.time() - start_time
         logger.info('Time cost: {}'.format(duration))
+
+    elif (attack_method == ATTACK.ONE_PIXEL):
+        # pixel format (x, y, r, g, b)
+        samples = kwargs.get('samples', 500)
+        pixel_counts = kwargs.get('pixel_counts', tuple([1]))
+        max_iterations = kwargs.get('max_iterations', 100)
+        targeted = kwargs.get('targeted', False)
+        population = kwargs.get('population', 400)
+        attack_params = {
+            'samples': samples,
+            'pixel_counts': pixel_counts,
+            'max_iterations':max_iterations,
+            'targeted': targeted,
+            'population': population
+        }
+
+        logger.info('{}: (samples={}, pixel_counts={}, max_iterations={}, target={}, population={})'.format(attack_method.upper(),
+                                                                                                            samples,
+                                                                                                            pixel_counts,
+                                                                                                            max_iterations,
+                                                                                                            targeted,
+                                                                                                            population
+                                                                                        )
+                    )
+        start_time = time.time()
+        X_adv, Y = one_pixel.generate(model_name, attack_method, X, Y, attack_params)
+        duration = time.time() - start_time
+        logger.info('Time cost: {}'.format(duration))
+
 
     return X_adv, Y
