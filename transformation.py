@@ -10,7 +10,7 @@ import skimage
 from sklearn.cluster import MiniBatchKMeans
 from skimage.restoration import (denoise_bilateral, denoise_nl_means, denoise_tv_bregman, denoise_tv_chambolle, denoise_wavelet, estimate_sigma)
 from skimage.transform import (warp, swirl, radon, iradon, iradon_sart)
-from skimage.morphology import disk, watershed
+from skimage.morphology import disk, watershed, skeletonize, thin
 from skimage.filters.rank import entropy
 from skimage.filters import (rank, roberts, scharr, prewitt, meijering, sato, frangi, hessian)
 
@@ -293,6 +293,14 @@ def morph_trans(original_images, transformation):
         # keep the outline of the object
         for img in original_images:
             transformed_images.append(cv2.morphologyEx(img, cv2.MORPH_GRADIENT, kernel))
+    elif (transformation == TRANSFORMATION.skeletonize):
+        for img in original_images:
+            img_trans = skeletonize(img)
+            transformed_images.append(img_trans)
+    elif (transformation == TRANSFORMATION.thin):
+        for img in original_images:
+            img_trans = thin(img)
+            transformed_images.append(img_trans, max_iter=25)
     else:
         raise ValueError('{} is not supported.'.format(transformation))
 

@@ -139,6 +139,9 @@ class TRANSFORMATION(object):
     sato = 'sato'
     frangi = 'frangi'
     hessian = 'hessian'
+    skeletonize = 'skeletonize'
+    thin = 'thin'
+
 
     """
     compression
@@ -183,7 +186,7 @@ class TRANSFORMATION(object):
     AFFINE_TRANS = [affine_vertical_compress, affine_vertical_stretch,
                     affine_horizontal_compress, affine_horizontal_stretch,
                     affine_both_compress, affine_both_stretch]
-    MORPH_TRANS = [erosion, dilation, opening, closing, gradient]
+    MORPH_TRANS = [erosion, dilation, opening, closing, gradient, skeletonize, thin]
     AUGMENT = [samplewise_std_norm, feature_std_norm, zca_whitening]
     CARTOONS = [cartoon_mean_type1, cartoon_mean_type2, cartoon_mean_type3, cartoon_mean_type4,
                 cartoon_gaussian_type1, cartoon_gaussian_type2, cartoon_gaussian_type3, cartoon_gaussian_type4]
