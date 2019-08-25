@@ -12,7 +12,7 @@ from skimage.restoration import (denoise_bilateral, denoise_nl_means, denoise_tv
 from skimage.transform import (warp, swirl, radon, iradon, iradon_sart)
 from skimage.morphology import disk, watershed
 from skimage.filters.rank import entropy
-from skimage.filters import rank
+from skimage.filters import (rank, roberts, scharr, prewitt, meijering, sato, frangi, hessian)
 
 from config import *
 from data import load_data
@@ -656,6 +656,35 @@ def filter(original_images, transformation):
         for img in original_images:
             img_trans = entropy(img, disk(5))
             transformed_images.append(img_trans)
+    elif (transformation == TRANSFORMATION.roberts):
+        for img in original_images:
+            img_trans = roberts(img)
+            transformed_images.append(img_trans)
+    elif (transformation == TRANSFORMATION.scharr):
+        for img in original_images:
+            img_trans = scharr(img)
+            transformed_images.append(img_trans)
+    elif (transformation == TRANSFORMATION.prewitt):
+        for img in original_images:
+            img_trans = prewitt(img)
+            transformed_images.append(img_trans)
+    elif (transformation == TRANSFORMATION.meijering):
+        for img in original_images:
+            img_trans = meijering(img)
+            transformed_images.append(img_trans)
+    elif (transformation == TRANSFORMATION.sato):
+        for img in original_images:
+            img_trans = sato(img)
+            transformed_images.append(img_trans)
+    elif (transformation == TRANSFORMATION.frangi):
+        for img in original_images:
+            img_trans = frangi(img)
+            transformed_images.append(img_trans)
+    elif (transformation == TRANSFORMATION.hessian):
+        for img in original_images:
+            img_trans = hessian(img)
+            transformed_images.append(img_trans)
+
     else:
         raise ValueError('{} is not supported.'.format(transformation))
 

@@ -132,6 +132,13 @@ class TRANSFORMATION(object):
     min_filter = 'minimum_filter'
     max_filter = 'maximum_filter'
     entropy = 'entropy'
+    roberts = 'roberts'
+    scharr = 'scharr'
+    prewitt = 'prewitt'
+    meijering = 'meijering'
+    sato = 'sato'
+    frangi = 'frangi'
+    hessian = 'hessian'
 
     """
     compression
@@ -185,7 +192,8 @@ class TRANSFORMATION(object):
     DISTORTIONS = [distortion_x, distortion_y]
     NOISES =[noise_gaussian, noise_localvar, noise_poisson, noise_salt,
              noise_pepper, noise_saltNpepper, noise_speckle]
-    FILTERS = [sobel, gaussian_filter, rank_filter, median_filter, min_filter, max_filter]
+    FILTERS = [sobel, gaussian_filter, rank_filter, median_filter, min_filter, max_filter, entropy, roberts, scharr,
+               prewitt, meijering, sato, frangi, hessian]
     COMPRESSION = [compress_jpeg_quality_80, compress_jpeg_quality_50,
                    compress_jpeg_quality_30, compress_jpeg_quality_10,
                    compress_png_compression_1, compress_png_compression_8, compress_png_compression_5]
