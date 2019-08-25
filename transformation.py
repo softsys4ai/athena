@@ -8,6 +8,7 @@ from scipy import ndimage
 from keras.preprocessing.image import ImageDataGenerator
 import skimage
 from sklearn.cluster import MiniBatchKMeans
+from skimage.restoration import (denoise_bilateral,denoise_nl_means,denoise_tv_bregman,denoise_tv_chambolle,denoise_wavelet,estimate_sigma)
 
 from config import *
 from data import load_data
@@ -713,6 +714,58 @@ def compress(original_images, transformation):
         transformed_images = transformed_images.reshape((nb_images, img_rows, img_cols, nb_channels))
     return transformed_images
 
+def denoising(original_images, transformation):
+    """
+    denoising transformation
+    :param original_images:
+    :param transformation:
+    :return:
+    """
+    nb_images, img_rows, img_cols, nb_channels = original_images.shape
+    # TODO: checking number of channels and some customization for datasets
+    transformed_images = []
+
+    if (transformation == TRANSFORMATION.wavelet):
+        for img in original_images:
+            img_trans = denoise_wavelet(img, multichannel=True)
+            transformed_images.append(img_trans)
+    elif (transformation == TRANSFORMATION.tv_chambolle):
+        for img in original_images:
+            # TODO: better to consider different variations of weights
+            img_trans = denoise_tv_chambolle(weight=0.1, multichannel=True)
+            transformed_images.append(img_trans)
+    elif (transformation == TRANSFORMATION.tv_bregman):
+        for img in original_images:
+            img_trans = denoise_tv_bregman(eps=1e-3, max_iter=100, weight=100)
+            transformed_images.append(img_trans)
+    elif (transformation == TRANSFORMATION.bilateral):
+        for img in original_images:
+            img_trans = denoise_bilateral(img, sigma_color=0.05, sigma_spatial=15,
+                multichannel=True)
+            transformed_images.append(img_trans)
+    elif (transformation == TRANSFORMATION.nl):
+        patch_kw = dict(patch_size=5,  # 5x5 patches
+                        patch_distance=6,  # 13x13 search area
+                        multichannel=True)
+        for img in original_images:
+            sigma_est = np.mean(estimate_sigma(img, multichannel=True))
+            img_trans = denoise_nl_means(img, h=0.8 * sigma_est, sigma=sigma_est,
+                            fast_mode=False, **patch_kw)
+            transformed_images.append(img_trans)
+    elif (transformation == TRANSFORMATION.nl_fast):
+        patch_kw = dict(patch_size=5,  # 5x5 patches
+                        patch_distance=6,  # 13x13 search area
+                        multichannel=True)
+        for img in original_images:
+            sigma_est = np.mean(estimate_sigma(img, multichannel=True))
+            img_trans = denoise_nl_means(img, h=0.6 * sigma_est, sigma=sigma_est,
+                                 fast_mode=True, **patch_kw)
+            transformed_images.append(img_trans)
+    else:
+        raise ValueError('{} is not supported.'.format(transformation))
+
+    return transform_images
+
 def transform_images(X, transformation_type):
     """
     Main entrance applying transformations on images.
@@ -749,6 +802,8 @@ def transform_images(X, transformation_type):
         return add_noise(X, transformation_type)
     elif (transformation_type in TRANSFORMATION.COMPRESSION):
         return compress(X, transformation_type)
+    elif (transformation_type in TRANSFORMATION.DENOISING):
+        return denoising(X, transformation_type)
     else:
         raise ValueError('Transformation type {} is not supported.'.format(transformation_type.upper()))
 
