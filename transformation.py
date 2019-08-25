@@ -9,6 +9,7 @@ from keras.preprocessing.image import ImageDataGenerator
 import skimage
 from sklearn.cluster import MiniBatchKMeans
 from skimage.restoration import (denoise_bilateral,denoise_nl_means,denoise_tv_bregman,denoise_tv_chambolle,denoise_wavelet,estimate_sigma)
+from skimage.transform import (warp,swirl,radon,iradon,iradon_sart)
 
 from config import *
 from data import load_data
@@ -732,11 +733,11 @@ def denoising(original_images, transformation):
     elif (transformation == TRANSFORMATION.tv_chambolle):
         for img in original_images:
             # TODO: better to consider different variations of weights
-            img_trans = denoise_tv_chambolle(weight=0.1, multichannel=True)
+            img_trans = denoise_tv_chambolle(img, weight=0.1, multichannel=True)
             transformed_images.append(img_trans)
     elif (transformation == TRANSFORMATION.tv_bregman):
         for img in original_images:
-            img_trans = denoise_tv_bregman(eps=1e-3, max_iter=100, weight=100)
+            img_trans = denoise_tv_bregman(img, eps=1e-3, max_iter=100, weight=100)
             transformed_images.append(img_trans)
     elif (transformation == TRANSFORMATION.bilateral):
         for img in original_images:
@@ -760,6 +761,42 @@ def denoising(original_images, transformation):
             sigma_est = np.mean(estimate_sigma(img, multichannel=True))
             img_trans = denoise_nl_means(img, h=0.6 * sigma_est, sigma=sigma_est,
                                  fast_mode=True, **patch_kw)
+            transformed_images.append(img_trans)
+    else:
+        raise ValueError('{} is not supported.'.format(transformation))
+
+    return transform_images
+
+def geometric_transformations(original_images, transformation):
+    """
+    geometric transformations
+    :param original_images:
+    :param transformation:
+    :return:
+    """
+    nb_images, img_rows, img_cols, nb_channels = original_images.shape
+    # TODO: checking number of channels and some customization for datasets
+    # TODO: more variations, after testing is done
+    transformed_images = []
+
+    if (transformation == TRANSFORMATION.randon):
+        for img in original_images:
+            theta = np.linspace(0., 180., max(img.shape), endpoint=False)
+            img_trans = radon(img, theta=theta, circle=True)
+            transformed_images.append(img_trans)
+    elif (transformation == TRANSFORMATION.iradon):
+        for img in original_images:
+            theta = np.linspace(0., 180., max(img.shape), endpoint=False)
+            img_trans = iradon(img, theta=theta, circle=True)
+            transformed_images.append(img_trans)
+    elif (transformation == TRANSFORMATION.iradon_sart):
+        for img in original_images:
+            theta = np.linspace(0., 180., max(img.shape), endpoint=False)
+            img_trans = iradon_sart(img, theta=theta, circle=True)
+            transformed_images.append(img_trans)
+    elif (transformation == TRANSFORMATION.swirl):
+        for img in original_images:
+            img_trans = swirl(img, rotation=0, strength=10, radius=120)
             transformed_images.append(img_trans)
     else:
         raise ValueError('{} is not supported.'.format(transformation))
@@ -804,6 +841,8 @@ def transform_images(X, transformation_type):
         return compress(X, transformation_type)
     elif (transformation_type in TRANSFORMATION.DENOISING):
         return denoising(X, transformation_type)
+    elif (transformation_type in TRANSFORMATION.GEOMETRIC):
+        return geometric_transformations(X, transformation_type)
     else:
         raise ValueError('Transformation type {} is not supported.'.format(transformation_type.upper()))
 

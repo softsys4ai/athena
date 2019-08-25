@@ -153,6 +153,15 @@ class TRANSFORMATION(object):
     nl = 'denoise_nl_means'
     nl_fast = 'denoise_nl_means_fast'
 
+    """
+    geometric
+    """
+    swirl = 'swirl'
+    randon = 'randon'
+    iradon = 'irandon'
+    iradon_sart = 'iradon_sart'
+
+
     ROTATE = [rotate90, rotate180, rotate270]
     SHIFT = [shift_left, shift_right, shift_up, shift_down,
              shift_top_left, shift_top_right, shift_bottom_left, shift_bottom_right]
@@ -174,6 +183,7 @@ class TRANSFORMATION(object):
                    compress_jpeg_quality_30, compress_jpeg_quality_10,
                    compress_png_compression_1, compress_png_compression_8, compress_png_compression_5]
     DENOISING = [tv_chambolle, tv_bregman, bilateral, wavelet, nl, nl_fast]
+    GEOMETRIC = [swirl, randon, iradon, iradon_sart]
 
     @classmethod
     def supported_types(cls):
