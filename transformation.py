@@ -620,12 +620,13 @@ def filter(original_images, transformation):
     transformed_images = []
 
     if (transformation == TRANSFORMATION.sobel):
-        if (nb_channels == 1):
-            print('This transformation type ({}) does not support grayscale.'.format(transformation))
-            return
-
         for img in original_images:
-            img_trans = ndimage.sobel(img)
+            if (nb_channels == 3):
+                img = cv2.cvtColor(img, cv2.COLOR_RGB2GRAY)
+            img = img.reshape(img_rows, img_cols)
+            img_trans = skimage.filters.sobel(img)
+            if (nb_channels == 3):
+                img_trans = cv2.cvtColor(img_trans, cv2.COLOR_GRAY2RGB)
             transformed_images.append(img_trans)
     elif (transformation == TRANSFORMATION.median_filter):
         for img in original_images:
@@ -757,10 +758,12 @@ for testing
 def main(*args):
     print('Transform --- {}'.format(args))
     _, (X, _) = load_data(args[0])
+    # X = np.load('{}/{}.npy'.format(PATH.ADVERSARIAL_FILE, args[0]))
     X_orig = np.copy(X[10:20])
     X_trans = transform_images(X_orig, args[1])
     draw_comparisons(X[10:20], X_trans, '{}-{}'.format(args[0], args[1]))
 
 if __name__ == "__main__":
     MODE.debug_on()
-    main(DATA.cifar_10, TRANSFORMATION.compress_png_compression_5)
+    file = 'test_AE-mnist-cnn-clean-jsma_theta10_gamma30'
+    main(DATA.cifar_10, TRANSFORMATION.sobel)
