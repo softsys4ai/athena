@@ -331,8 +331,8 @@ class ATTACK(object):
     # ---------------------------
     @classmethod
     def get_bim_nbIter(cls):
-        # return [1000, 100, 10000, 10, 1, 100000] # full set
-        return [100] # for test
+        return [1, 10, 100, 1000, 10000, 100000] # full set
+        # return [100] # for test
 
     @classmethod
     def get_bim_norm(cls):
@@ -342,11 +342,11 @@ class ATTACK(object):
     @classmethod
     def get_bim_eps(cls, order):
         if order == 2:
-            return [0.5, 1, 0.25, 0.1]
+            return [0.1, 0.25, 0.5, 1]
             # return [0.5, 0.25]
         elif order == np.inf:
-            return [0.5, 0.25, 0.1, 0.05, 0.01, 0.005]
-            # return [0.005, 0.01, 0.05]
+            return [0.005, 0.01, 0.05, 0.1, 0.25, 0.5]
+            # return [0.01, 0.005]
 
     @classmethod
     def get_bim_AETypes(cls):
@@ -387,8 +387,8 @@ class ATTACK(object):
     # ----------------------------
     @classmethod
     def get_df_maxIter(cls):
-        # return [1000, 100, 10000, 10, 1, 100000] # full set
-        return [100]
+        return [1, 10, 100, 1000, 10000, 100000] # full set
+        # return [10]
 
     # ----------------------------
     # JSMA parameters
@@ -396,14 +396,14 @@ class ATTACK(object):
     @classmethod
     def get_jsma_theta(cls):
         # theta: Perturbation introduced to modified components (can be positive or negative)
-        # return [0.1, 0.3, 0.5, 0,7, 1.] # full set
-        return [0.1]
+        return [0.1, 0.3, 0.5, 0,7, 1.] # full set
+        # return [0.3, 0.5]
 
     @classmethod
     def get_jsma_gamma(cls):
         # gamma: Maximum percentage of perturbed features
-        # return [0.05, 0.1, 0.3, 0.5, 0.7, 1.] # full set.
-        return [0.7, 0.3]
+        return [0.05, 0.1, 0.3, 0.5, 0.7, 1.] # full set.
+        # return [0.5]
 
     # ----------------------------
     # CW parameters

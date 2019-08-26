@@ -55,7 +55,7 @@ def get_adversarial_examples(model_name, attack_method, X, Y, **kwargs):
 
         logger.info('{}: (ord={}, nb_iter={}, eps={})'.format(attack_method.upper(), ord, nb_iter, eps))
         start_time = time.time()
-        X_adv, Y = whitebox.generate(model_name, attack_method, X, Y, attack_params)
+        X_adv, Y = whitebox.generate(model_name, X, Y, attack_method, attack_params)
 
         duration = time.time() - start_time
         print('Time cost: {}'.format(duration))
@@ -73,7 +73,7 @@ def get_adversarial_examples(model_name, attack_method, X, Y, **kwargs):
 
         logger.info('{}: (max_iterations={})'.format(attack_method.upper(), max_iterations))
         start_time = time.time()
-        X_adv, Y = whitebox.generate(model_name, attack_method, X, Y, attack_params)
+        X_adv, Y = whitebox.generate(model_name, X, Y, attack_method, attack_params)
         duration = time.time() - start_time
         print('Time cost: {}'.format(duration))
 
@@ -90,7 +90,7 @@ def get_adversarial_examples(model_name, attack_method, X, Y, **kwargs):
         logger.info('{}: (ord={}, max_iterations={})'.format(attack_method.upper(), ord, max_iterations))
 
         start_time = time.time()
-        X_adv, Y = whitebox.generate(model_name, attack_method, X, Y, attack_params)
+        X_adv, Y = whitebox.generate(model_name, X, Y, attack_method, attack_params)
         duration = time.time() - start_time
         logger.info('Time cost: {}'.format(duration))
 
@@ -104,8 +104,9 @@ def get_adversarial_examples(model_name, attack_method, X, Y, **kwargs):
 
         logger.info('{}: (theta={}, gamma={})'.format(attack_method.upper(), theta, gamma))
         start_time = time.time()
-        X_adv, Y = whitebox.generate(model_name, attack_method, X, Y, attack_params)
+        X_adv, Y = whitebox.generate(model_name, X, Y, attack_method, attack_params)
         duration = time.time() - start_time
         logger.info('Time cost: {}'.format(duration))
 
+    print('*** SHAPE: {}'.format(X_adv.shape))
     return X_adv, Y

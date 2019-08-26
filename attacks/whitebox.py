@@ -13,6 +13,7 @@ import os
 import tensorflow as tf
 from tensorflow import keras
 from tensorflow.python.platform import flags
+from tensorflow.keras import optimizers
 # import keras.backend as K
 
 import data
@@ -58,8 +59,8 @@ def generate(model_name, X, Y, attack_method, attack_params):
     nb_classes = Y.shape[1]
 
     # Force TensorFlow to use single thread to improve reproducibility
-    config = tf.ConfigProto(intra_op_parallelism_threads=1,
-                            inter_op_parallelism_threads=1)
+    config = tf.ConfigProto(intra_op_parallelism_threads=4,
+                            inter_op_parallelism_threads=4)
     sess = tf.Session(config=config)
     keras.backend.set_session(sess)
 
@@ -161,12 +162,23 @@ def generate(model_name, X, Y, attack_method, attack_params):
     # define custom loss
     adv_accuracy_metric = get_adversarial_metric(model, attacker, attack_params)
 
+    augment = False
+    compile_params = {
+        'optimizer': keras.optimizers.Adam(lr=0.001),
+        'metrics': adv_accuracy_metric
+    }
+    if (DATA.cifar_10 == dataset):
+        augment = True
+        compile_params = {
+            'optimizer': keras.optimizers.RMSprop(lr=0.001, decay=1e-6),
+            'metrics': adv_accuracy_metric
+        }
+
+    # train_model(model, dataset, model_name, need_augment=False, **kwargs)
     if (train_new_model):
-        augment = False
-        if (DATA.cifar_10 == dataset):
-            augment = True
-        model = train_model(model, dataset, model_name, need_augment=augment,
-                            metrics=adv_accuracy_metric)
+        model = train_model(model, dataset, model_name,
+                            augment,
+                            **compile_params)
 
     # define the graph
     adv_x = attacker.generate(model.input, **attack_params)
@@ -187,9 +199,9 @@ def generate(model_name, X, Y, attack_method, attack_params):
         so that the adversarial attacks are required for model evaluation. 
         """
         model.compile(
-            optimizer=keras.optimizers.Adam(0.001),
+            optimizer=compile_params['optimizer'],
             loss='categorical_crossentropy',
-            metrics=['accuracy']
+            metrics=compile_params['metrics']
         )
         model.save('{}/{}.h5'.format(PATH.MODEL, model_name), overwrite=True, include_optimizer=True)
     sess.close()

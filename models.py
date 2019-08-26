@@ -35,7 +35,7 @@ def create_model(dataset, input_shape, nb_classes):
     MODEL.set_dataset(DATA.cifar_10)
     MODEL.set_learning_rate(0.01)
     MODEL.set_batch_size(64)
-    MODEL.set_epochs(100)
+    MODEL.set_epochs(1)
     return cnn_cifar(input_shape, nb_classes)
 
 def cnn_cifar(input_shape, nb_classes):
@@ -258,6 +258,7 @@ def train(model, X, Y, model_name, need_augment=False, **kwargs):
   """
   compile data
   """
+
   if ('default' == metrics):
     model.compile(optimizer=optimizer, loss=loss_func, metrics=['accuracy'])
   else:
