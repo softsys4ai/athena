@@ -153,13 +153,13 @@ def flip(original_images, transformation):
 
     # set flipping direction
     flip_direction = 0
-    if (transformation == TRANSFORMATION.vertical_flip):
+    if (transformation == TRANSFORMATION.flip_vertical):
         # flip around the x-axis
         flip_direction = 0
-    elif (transformation == TRANSFORMATION.horizontal_flip):
+    elif (transformation == TRANSFORMATION.flip_horizontal):
         # flip around the y-axis
         flip_direction = 1
-    elif (transformation == TRANSFORMATION.both_flip):
+    elif (transformation == TRANSFORMATION.flip_both):
         # flip around both axes
         flip_direction = -1
     else:
@@ -263,7 +263,7 @@ def morph_trans(original_images, transformation):
     kernel = np.ones((2, 2),np.uint8)
 
     transformed_images = []
-    if (transformation == TRANSFORMATION.dilation):
+    if (transformation == TRANSFORMATION.morph_dilation):
         # min filter (Graphics Mill)
         # It's opposite of erosion (max filter)
         # In dilation, a pixel element is '1' if at least one pixel
@@ -271,7 +271,7 @@ def morph_trans(original_images, transformation):
         # in the image or size of foreground object increases.
         for img in original_images:
             transformed_images.append(cv2.dilate(img, kernel, iterations=1))
-    elif (transformation == TRANSFORMATION.erosion):
+    elif (transformation == TRANSFORMATION.morph_erosion):
         # max filter (Graphic Mill)
         # The basic idea of erosion is like soil erosion.
         # It erodes away the boundaries of foreground object
@@ -281,15 +281,15 @@ def morph_trans(original_images, transformation):
         # all the pixels under the kernel is 1, otherwise, it's eroded.
         for img in original_images:
             transformed_images.append(cv2.erode(img, kernel, iterations=1))
-    elif (transformation == TRANSFORMATION.opening):
+    elif (transformation == TRANSFORMATION.morph_opening):
         # erosion followed by dilation
         for img in original_images:
             transformed_images.append(cv2.morphologyEx(img, cv2.MORPH_OPEN, kernel))
-    elif (transformation == TRANSFORMATION.closing):
+    elif (transformation == TRANSFORMATION.morph_closing):
         # erosion followed by dilation
         for img in original_images:
             transformed_images.append(cv2.morphologyEx(img, cv2.MORPH_CLOSE, kernel))
-    elif (transformation == TRANSFORMATION.gradient):
+    elif (transformation == TRANSFORMATION.morph_gradient):
         # keep the outline of the object
         for img in original_images:
             transformed_images.append(cv2.morphologyEx(img, cv2.MORPH_GRADIENT, kernel))
@@ -624,7 +624,7 @@ def filter(original_images, transformation):
     nb_images, img_rows, img_cols, nb_channels = original_images.shape
     transformed_images = []
 
-    if (transformation == TRANSFORMATION.sobel):
+    if (transformation == TRANSFORMATION.filter_sobel):
         for img in original_images:
             if (nb_channels == 3):
                 img = cv2.cvtColor(img, cv2.COLOR_RGB2GRAY)
@@ -633,55 +633,55 @@ def filter(original_images, transformation):
             if (nb_channels == 3):
                 img_trans = cv2.cvtColor(img_trans, cv2.COLOR_GRAY2RGB)
             transformed_images.append(img_trans)
-    elif (transformation == TRANSFORMATION.median_filter):
+    elif (transformation == TRANSFORMATION.filter_median):
         for img in original_images:
             img_trans = ndimage.median_filter(img, size=3)
             transformed_images.append(img_trans)
-    elif (transformation == TRANSFORMATION.min_filter):
+    elif (transformation == TRANSFORMATION.filter_minimum):
         for img in original_images:
             img_trans = ndimage.minimum_filter(img, size=3)
             transformed_images.append(img_trans)
-    elif (transformation == TRANSFORMATION.max_filter):
+    elif (transformation == TRANSFORMATION.filter_maximum):
         for img in original_images:
             img_trans = ndimage.maximum_filter(img, size=3)
             transformed_images.append(img_trans)
-    elif (transformation == TRANSFORMATION.gaussian_filter):
+    elif (transformation == TRANSFORMATION.filter_gaussian):
         for img in original_images:
             img_trans = ndimage.gaussian_filter(img, sigma=1)
             transformed_images.append(img_trans)
-    elif (transformation == TRANSFORMATION.rank_filter):
+    elif (transformation == TRANSFORMATION.filter_rank):
         for img in original_images:
             img_trans = ndimage.rank_filter(img, rank=15, size=3)
             transformed_images.append(img_trans)
-    elif (transformation == TRANSFORMATION.entropy):
+    elif (transformation == TRANSFORMATION.filter_entropy):
         for img in original_images:
             img_trans = entropy(img, disk(5))
             transformed_images.append(img_trans)
-    elif (transformation == TRANSFORMATION.roberts):
+    elif (transformation == TRANSFORMATION.filter_roberts):
         for img in original_images:
             img_trans = roberts(img)
             transformed_images.append(img_trans)
-    elif (transformation == TRANSFORMATION.scharr):
+    elif (transformation == TRANSFORMATION.filter_scharr):
         for img in original_images:
             img_trans = scharr(img)
             transformed_images.append(img_trans)
-    elif (transformation == TRANSFORMATION.prewitt):
+    elif (transformation == TRANSFORMATION.filter_prewitt):
         for img in original_images:
             img_trans = prewitt(img)
             transformed_images.append(img_trans)
-    elif (transformation == TRANSFORMATION.meijering):
+    elif (transformation == TRANSFORMATION.filter_meijering):
         for img in original_images:
             img_trans = meijering(img)
             transformed_images.append(img_trans)
-    elif (transformation == TRANSFORMATION.sato):
+    elif (transformation == TRANSFORMATION.filter_sato):
         for img in original_images:
             img_trans = sato(img)
             transformed_images.append(img_trans)
-    elif (transformation == TRANSFORMATION.frangi):
+    elif (transformation == TRANSFORMATION.filter_frangi):
         for img in original_images:
             img_trans = frangi(img)
             transformed_images.append(img_trans)
-    elif (transformation == TRANSFORMATION.hessian):
+    elif (transformation == TRANSFORMATION.filter_hessian):
         for img in original_images:
             img_trans = hessian(img)
             transformed_images.append(img_trans)
@@ -762,25 +762,25 @@ def denoising(original_images, transformation):
     # TODO: checking number of channels and some customization for datasets
     transformed_images = []
 
-    if (transformation == TRANSFORMATION.wavelet):
+    if (transformation == TRANSFORMATION.denoise_wavelet):
         for img in original_images:
             img_trans = denoise_wavelet(img, multichannel=True)
             transformed_images.append(img_trans)
-    elif (transformation == TRANSFORMATION.tv_chambolle):
+    elif (transformation == TRANSFORMATION.denoise_tv_chambolle):
         for img in original_images:
             # TODO: better to consider different variations of weights
             img_trans = denoise_tv_chambolle(img, weight=0.1, multichannel=True)
             transformed_images.append(img_trans)
-    elif (transformation == TRANSFORMATION.tv_bregman):
+    elif (transformation == TRANSFORMATION.denoise_tv_bregman):
         for img in original_images:
             img_trans = denoise_tv_bregman(img, eps=1e-3, max_iter=100, weight=100)
             transformed_images.append(img_trans)
-    elif (transformation == TRANSFORMATION.bilateral):
+    elif (transformation == TRANSFORMATION.denoise_bilateral):
         for img in original_images:
             img_trans = denoise_bilateral(img, sigma_color=0.05, sigma_spatial=15,
                 multichannel=True)
             transformed_images.append(img_trans)
-    elif (transformation == TRANSFORMATION.nl):
+    elif (transformation == TRANSFORMATION.denoise_nl_means):
         patch_kw = dict(patch_size=5,  # 5x5 patches
                         patch_distance=6,  # 13x13 search area
                         multichannel=True)
@@ -789,7 +789,7 @@ def denoising(original_images, transformation):
             img_trans = denoise_nl_means(img, h=0.8 * sigma_est, sigma=sigma_est,
                             fast_mode=False, **patch_kw)
             transformed_images.append(img_trans)
-    elif (transformation == TRANSFORMATION.nl_fast):
+    elif (transformation == TRANSFORMATION.denoise_nl_fast):
         patch_kw = dict(patch_size=5,  # 5x5 patches
                         patch_distance=6,  # 13x13 search area
                         multichannel=True)
@@ -815,22 +815,22 @@ def geometric_transformations(original_images, transformation):
     # TODO: more variations, after testing is done
     transformed_images = []
 
-    if (transformation == TRANSFORMATION.randon):
+    if (transformation == TRANSFORMATION.geo_random):
         for img in original_images:
             theta = np.linspace(0., 180., max(img.shape), endpoint=False)
             img_trans = radon(img, theta=theta, circle=True)
             transformed_images.append(img_trans)
-    elif (transformation == TRANSFORMATION.iradon):
+    elif (transformation == TRANSFORMATION.geo_iradon):
         for img in original_images:
             theta = np.linspace(0., 180., max(img.shape), endpoint=False)
             img_trans = iradon(img, theta=theta, circle=True)
             transformed_images.append(img_trans)
-    elif (transformation == TRANSFORMATION.iradon_sart):
+    elif (transformation == TRANSFORMATION.geo_iradon_sart):
         for img in original_images:
             theta = np.linspace(0., 180., max(img.shape), endpoint=False)
             img_trans = iradon_sart(img, theta=theta, circle=True)
             transformed_images.append(img_trans)
-    elif (transformation == TRANSFORMATION.swirl):
+    elif (transformation == TRANSFORMATION.geo_swirl):
         for img in original_images:
             img_trans = swirl(img, rotation=0, strength=10, radius=120)
             transformed_images.append(img_trans)
@@ -851,13 +851,13 @@ def segmentations(original_images, transformation):
     # TODO: more variations, after testing is done
     transformed_images = []
 
-    if (transformation == TRANSFORMATION.gradient):
+    if (transformation == TRANSFORMATION.seg_gradient):
         for img in original_images:
             # denoise image
             denoised = rank.median(img, disk(2))
             img_trans = rank.gradient(denoised, disk(2))
             transformed_images.append(img_trans)
-    elif (transformation == TRANSFORMATION.watershed):
+    elif (transformation == TRANSFORMATION.seg_watershed):
         for img in original_images:
             # denoise image
             denoised = rank.median(img, disk(2))
@@ -932,5 +932,5 @@ def main(*args):
 
 if __name__ == "__main__":
     MODE.debug_on()
-    file = 'test_AE-mnist-cnn-clean-jsma_theta10_gamma30'
-    main(DATA.cifar_10, TRANSFORMATION.sobel)
+    # file = 'test_AE-mnist-cnn-clean-jsma_theta10_gamma30'
+    main(DATA.cifar_10, TRANSFORMATION.seg_watershed)

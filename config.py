@@ -52,9 +52,9 @@ class TRANSFORMATION(object):
     """
     flipping
     """
-    horizontal_flip = 'horizontal_flip'
-    vertical_flip = 'vertical_flip'
-    both_flip = 'both_flip'
+    flip_horizontal = 'flip_horizontal'
+    flip_vertical = 'flip_vertical'
+    flip_both = 'flip_both'
 
     """
     stretch/compress
@@ -69,11 +69,11 @@ class TRANSFORMATION(object):
     """
     morphology
     """
-    erosion = 'erosion'
-    dilation = 'dilation'
-    opening = 'opening'
-    closing = 'closing'
-    gradient = 'gradient'
+    morph_erosion = 'morph_erosion'
+    morph_dilation = 'morph_dilation'
+    morph_opening = 'morph_opening'
+    morph_closing = 'morph_closing'
+    morph_gradient = 'morph_gradient'
 
     """
     augmentation
@@ -81,7 +81,7 @@ class TRANSFORMATION(object):
     samplewise_std_norm = 'samplewise_std_norm'
     feature_std_norm = 'feature_std_norm'
     zca_whitening = 'zca_whitening'
-    pca_whitening = 'pca_whitening'
+    #pca_whitening = 'pca_whitening'
 
     """
     cartoonify
@@ -125,22 +125,22 @@ class TRANSFORMATION(object):
     """
     filter
     """
-    sobel = 'sobel'
-    gaussian_filter = 'gaussian_filter'
-    rank_filter = 'rank_filter'
-    median_filter = 'median_filter'
-    min_filter = 'minimum_filter'
-    max_filter = 'maximum_filter'
-    entropy = 'entropy'
-    roberts = 'roberts'
-    scharr = 'scharr'
-    prewitt = 'prewitt'
-    meijering = 'meijering'
-    sato = 'sato'
-    frangi = 'frangi'
-    hessian = 'hessian'
-    skeletonize = 'skeletonize'
-    thin = 'thin'
+    filter_sobel = 'filter_sobel'
+    filter_gaussian = 'filter_gaussian'
+    filter_rank = 'filter_rank'
+    filter_median = 'filter_median'
+    filter_minimum = 'filter_minimum'
+    filter_maximum = 'filter_maximum'
+    filter_entropy = 'filter_entropy'
+    filter_roberts = 'filter_roberts'
+    filter_scharr = 'filter_scharr'
+    filter_prewitt = 'filter_prewitt'
+    filter_meijering = 'filter_meijering'
+    filter_sato = 'filter_sato'
+    filter_frangi = 'filter_frangi'
+    filter_hessian = 'filter_hessian'
+    filter_skeletonize = 'filter_skeletonize'
+    filter_thin = 'filter_thin'
 
 
     """
@@ -157,36 +157,36 @@ class TRANSFORMATION(object):
     """
     denoising
     """
-    tv_chambolle = 'denoise_tv_chambolle'
-    tv_bregman = 'denoise_tv_bregman'
-    bilateral = 'denoise_bilateral'
-    wavelet = 'denoise_wavelet'
-    nl = 'denoise_nl_means'
-    nl_fast = 'denoise_nl_means_fast'
+    denoise_tv_chambolle = 'denoise_tv_chambolle'
+    denoise_tv_bregman = 'denoise_tv_bregman'
+    denoise_bilateral = 'denoise_bilateral'
+    denoise_wavelet = 'denoise_wavelet'
+    denoise_nl_means = 'denoise_nl_means'
+    denoise_nl_fast = 'denoise_nl_means_fast'
 
     """
     geometric
     """
-    swirl = 'swirl'
-    randon = 'randon'
-    iradon = 'irandon'
-    iradon_sart = 'iradon_sart'
+    geo_swirl = 'geo_swirl'
+    geo_random = 'geo_random'
+    geo_iradon = 'geo_iradon'
+    geo_iradon_sart = 'geo_iradon_sart'
 
     """
     segmentation
     """
-    gradient = 'gradient'
-    watershed = 'watershed'
+    seg_gradient = 'seg_gradient'
+    seg_watershed = 'seg_watershed'
 
 
     ROTATE = [rotate90, rotate180, rotate270]
     SHIFT = [shift_left, shift_right, shift_up, shift_down,
              shift_top_left, shift_top_right, shift_bottom_left, shift_bottom_right]
-    FLIP = [horizontal_flip, vertical_flip, both_flip]
+    FLIP = [flip_horizontal, flip_vertical, flip_both]
     AFFINE_TRANS = [affine_vertical_compress, affine_vertical_stretch,
                     affine_horizontal_compress, affine_horizontal_stretch,
                     affine_both_compress, affine_both_stretch]
-    MORPH_TRANS = [erosion, dilation, opening, closing, gradient, skeletonize, thin]
+    MORPH_TRANS = [morph_erosion, morph_dilation, morph_opening, morph_closing, morph_gradient, filter_skeletonize, filter_thin]
     AUGMENT = [samplewise_std_norm, feature_std_norm, zca_whitening]
     CARTOONS = [cartoon_mean_type1, cartoon_mean_type2, cartoon_mean_type3, cartoon_mean_type4,
                 cartoon_gaussian_type1, cartoon_gaussian_type2, cartoon_gaussian_type3, cartoon_gaussian_type4]
@@ -195,80 +195,20 @@ class TRANSFORMATION(object):
     DISTORTIONS = [distortion_x, distortion_y]
     NOISES =[noise_gaussian, noise_localvar, noise_poisson, noise_salt,
              noise_pepper, noise_saltNpepper, noise_speckle]
-    FILTERS = [sobel, gaussian_filter, rank_filter, median_filter, min_filter, max_filter, entropy, roberts, scharr,
-               prewitt, meijering, sato, frangi, hessian]
+    FILTERS = [filter_sobel, filter_gaussian, filter_rank, filter_median, filter_minimum,
+               filter_maximum, filter_entropy, filter_roberts, filter_scharr,
+               filter_prewitt, filter_meijering, filter_sato, filter_frangi, filter_hessian,
+               filter_skeletonize, filter_thin]
     COMPRESSION = [compress_jpeg_quality_80, compress_jpeg_quality_50,
                    compress_jpeg_quality_30, compress_jpeg_quality_10,
                    compress_png_compression_1, compress_png_compression_8, compress_png_compression_5]
-    DENOISING = [tv_chambolle, tv_bregman, bilateral, wavelet, nl, nl_fast]
-    GEOMETRIC = [swirl, randon, iradon, iradon_sart]
-    SEGMENTATION = [gradient, watershed]
+    DENOISING = [denoise_tv_chambolle, denoise_tv_bregman, denoise_bilateral, denoise_wavelet, denoise_nl_means, denoise_nl_fast]
+    GEOMETRIC = [geo_swirl, geo_random, geo_iradon, geo_iradon_sart]
+    SEGMENTATION = [seg_gradient, seg_watershed]
 
     @classmethod
     def supported_types(cls):
-        transformations =[
-                "clean",
-                "affine_both_compress",
-                "affine_both_stretch",
-                "affine_horizontal_compress",
-                "affine_horizontal_stretch",
-                "affine_vertical_compress",
-                "affine_vertical_stretch",
-                "both_flip",
-                "cartoon_gaussian_type1",
-                "cartoon_gaussian_type2",
-                "cartoon_gaussian_type3",
-                "cartoon_gaussian_type4",
-                "cartoon_mean_type1",
-                "cartoon_mean_type2",
-                "cartoon_mean_type3",
-                "cartoon_mean_type4",
-                "closing",
-                #"compress_jpeg_quality_10",
-                #"compress_jpeg_quality_30",
-                #"compress_jpeg_quality_50",
-                #"compress_jpeg_quality_80",
-                #"compress_png_compression_1",
-                #"compress_png_compression_5",
-                #"compress_png_compression_8",
-                "dilation",
-                "distortion_x",
-                "distortion_y",
-                "erosion",
-                "gaussian_filter",
-                "gradient",
-                "horizontal_flip",
-                "maximum_filter",
-                "median_filter",
-                "minimum_filter",
-                "noise_gaussian",
-                "noise_localvar",
-                "noise_pepper",
-                #"noise_poisson",
-                "noise_salt",
-                "noise_speckle",
-                "noise_s&p",
-                "opening",
-                #"quant_16_clusters",
-                #"quant_2_clusters",
-                #"quant_32_clusters",
-                #"quant_4_clusters",
-                #"quant_8_clusters",
-                "rank_filter",
-                "rotate180",
-                "rotate270",
-                "rotate90",
-                "shift_bottom_left",
-                "shift_bottom_right",
-                "shift_down",
-                "shift_left",
-                "shift_right",
-                "shift_top_left",
-                "shift_top_right",
-                "shift_up",
-                "vertical_flip"]
-
-        '''
+        transformations =[]
         transformations.extend(['clean'])
         transformations.extend(cls.ROTATE)
         transformations.extend(cls.SHIFT)
@@ -282,7 +222,10 @@ class TRANSFORMATION(object):
         transformations.extend(cls.NOISES)
         transformations.extend(cls.FILTERS)
         transformations.extend(cls.COMPRESSION)
-        '''
+        transformations.extend(cls.DENOISING)
+        transformations.extend(cls.GEOMETRIC)
+        transformations.extend(cls.SEGMENTATION)
+
         return transformations
 
 class ATTACK(object):
@@ -352,7 +295,6 @@ class ATTACK(object):
     def get_bim_AETypes(cls):
         attackApproach = cls.BIM
         AETypes = []
-        EPS=[0.1]
         EPS={}
         EPS["ord2"] = [0.25]
         EPS["ordinf"] = [0.01]
