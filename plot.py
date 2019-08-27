@@ -48,14 +48,45 @@ def draw_comparisons(controls, treatments, title="None"):
             plt.imshow(treatments[i - 1].reshape(img_rows, img_cols, nb_channels))
         pos += 1
 
-    if (MODE.DEBUG):
-        plt.show()
     fig.savefig(
         os.path.join(PATH.FIGURES, '{}.pdf'.format(title)),
         bbox_inches='tight'
     )
-    if (MODE.DEBUG):
-        plt.close()
+    plt.show()
+    plt.close()
+
+def plot_training_history(history, model_name):
+    fig = plt.figure(figsize=(1, 2))
+    plt.subplots_adjust(left=0.05, right=0.95,
+                        top=0.90, bottom=0.05,
+                        wspace=0.01, hspace=0.01)
+
+    # plot accuracies
+    fig_acc = fig.add_subplot(111)
+    fig_acc.plot(history['acc'])
+    fig_acc.plot(history['val_acc'])
+    fig_acc.plot(history['adv_acc'])
+    fig_acc.plot(history['adv_val_acc'])
+    fig_acc.title('Accuracy History')
+    fig_acc.ylabel('Accuracy')
+    fig_acc.xlabel('Epoch')
+    fig_acc.legend(['train (legitimates), test (legitimates), train (adversarial), test (adversarial)'],
+                   loc='upper left')
+
+    # plot loss
+    fig_loss = fig.add_subplot(122)
+    fig_loss.plot(history['loss'])
+    fig_loss.plot(history['val_loss'])
+    fig_loss.plot(history['adv_loss'])
+    fig_loss.plot(history['adv_val_loss'])
+    fig_loss.title('Loss History')
+    fig_loss.ylabel('Loss')
+    fig_loss.xlabel('Epoch')
+    fig_loss.legend(['train (legitimates), test (legitimates), train (adversarial), test (adversarial)'],
+                   loc='upper left')
+
+    # save the figure to a pdf
+    fig.savefig(os.path.join(PATH.FIGURES, 'hist_{}.pdf'.format(model_name)), bbox_inches='tight')
 
 def plotTrainingResult(history, model_name):
     # Plot training & validation accuracy values
