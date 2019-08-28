@@ -42,10 +42,10 @@ def draw_comparisons(controls, treatments, title="None"):
         ax2.grid(b=None)
         ax2.set_aspect('equal')
         # show a transformed/perturbed images
-        if (nb_channels == 1):
+        if (treatments.shape[3] == 1) or ((nb_channels > 1) and (treatments.shape[3] == 1)):
             plt.imshow(treatments[i - 1].reshape(img_rows, img_cols), cmap='gray')
         else:
-            plt.imshow(treatments[i - 1].reshape(img_rows, img_cols, nb_channels))
+            plt.imshow(treatments[i - 1].reshape(img_rows, img_cols, treatments.shape[3]))
         pos += 1
 
     fig.savefig(

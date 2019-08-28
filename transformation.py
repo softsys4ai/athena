@@ -13,6 +13,9 @@ from skimage.transform import (warp, swirl, radon, iradon, iradon_sart)
 from skimage.morphology import disk, watershed, skeletonize, thin
 from skimage.filters.rank import entropy
 from skimage.filters import (rank, roberts, scharr, prewitt, meijering, sato, frangi, hessian)
+from skimage.util import invert
+
+import matplotlib.pyplot as plt
 
 from config import *
 from data import load_data
@@ -263,6 +266,7 @@ def morph_trans(original_images, transformation):
     kernel = np.ones((2, 2),np.uint8)
 
     transformed_images = []
+
     if (transformation == TRANSFORMATION.morph_dilation):
         # min filter (Graphics Mill)
         # It's opposite of erosion (max filter)
@@ -293,6 +297,17 @@ def morph_trans(original_images, transformation):
         # keep the outline of the object
         for img in original_images:
             transformed_images.append(cv2.morphologyEx(img, cv2.MORPH_GRADIENT, kernel))
+    elif (transformation == TRANSFORMATION.filter_skeletonize):
+        for img in original_images:
+            img = invert(img)
+            img = img.reshape((img_rows, img_cols))
+            img = skeletonize(img)
+            transformed_images.append(img)
+    elif (transformation == TRANSFORMATION.filter_thin):
+        for img in original_images:
+            img = img.reshape(img_rows, img_cols)
+            img = thin(img, max_iter=100)
+            transformed_images.append(img)
     else:
         raise ValueError('{} is not supported.'.format(transformation))
 
@@ -623,11 +638,8 @@ def filter(original_images, transformation):
     """
     nb_images, img_rows, img_cols, nb_channels = original_images.shape
     transformed_images = []
-
     if (transformation == TRANSFORMATION.filter_sobel):
         for img in original_images:
-            if (nb_channels == 3):
-                img = cv2.cvtColor(img, cv2.COLOR_RGB2GRAY)
             img = img.reshape(img_rows, img_cols)
             img_trans = skimage.filters.sobel(img)
             if (nb_channels == 3):
@@ -655,18 +667,22 @@ def filter(original_images, transformation):
             transformed_images.append(img_trans)
     elif (transformation == TRANSFORMATION.filter_entropy):
         for img in original_images:
+            img = img.reshape(img_rows, img_cols)
             img_trans = entropy(img, disk(5))
             transformed_images.append(img_trans)
     elif (transformation == TRANSFORMATION.filter_roberts):
         for img in original_images:
+            img = img.reshape(img_rows, img_cols)
             img_trans = roberts(img)
             transformed_images.append(img_trans)
     elif (transformation == TRANSFORMATION.filter_scharr):
         for img in original_images:
+            img = img.reshape(img_rows, img_cols)
             img_trans = scharr(img)
             transformed_images.append(img_trans)
     elif (transformation == TRANSFORMATION.filter_prewitt):
         for img in original_images:
+            img = img.reshape(img_rows, img_cols)
             img_trans = prewitt(img)
             transformed_images.append(img_trans)
     elif (transformation == TRANSFORMATION.filter_meijering):
@@ -685,6 +701,17 @@ def filter(original_images, transformation):
         for img in original_images:
             img_trans = hessian(img)
             transformed_images.append(img_trans)
+    elif (transformation == TRANSFORMATION.filter_skeletonize):
+        for img in original_images:
+            img = invert(img)
+            img = img.reshape((img_rows, img_cols))
+            img = skeletonize(img)
+            transformed_images.append(img)
+    elif (transformation == TRANSFORMATION.filter_thin):
+        for img in original_images:
+            img = img.reshape(img_rows, img_cols)
+            img = thin(img, max_iter=100)
+            transformed_images.append(img)
 
     else:
         raise ValueError('{} is not supported.'.format(transformation))
@@ -774,10 +801,13 @@ def denoising(original_images, transformation):
     elif (transformation == TRANSFORMATION.denoise_tv_bregman):
         for img in original_images:
             img_trans = denoise_tv_bregman(img, eps=1e-3, max_iter=100, weight=100)
+            img_trans = np.expand_dims(img_trans, axis=-1)
             transformed_images.append(img_trans)
     elif (transformation == TRANSFORMATION.denoise_bilateral):
         for img in original_images:
-            img_trans = denoise_bilateral(img, sigma_color=0.05, sigma_spatial=15,
+            sigma_color = np.double(0.05)
+            sigma_spatial = np.double(15.0)
+            img_trans = denoise_bilateral(img, sigma_color=sigma_color, sigma_spatial=sigma_spatial,
                 multichannel=True)
             transformed_images.append(img_trans)
     elif (transformation == TRANSFORMATION.denoise_nl_means):
@@ -788,6 +818,7 @@ def denoising(original_images, transformation):
             sigma_est = np.mean(estimate_sigma(img, multichannel=True))
             img_trans = denoise_nl_means(img, h=0.8 * sigma_est, sigma=sigma_est,
                             fast_mode=False, **patch_kw)
+            img_trans = np.expand_dims(img_trans, axis=-1)
             transformed_images.append(img_trans)
     elif (transformation == TRANSFORMATION.denoise_nl_fast):
         patch_kw = dict(patch_size=5,  # 5x5 patches
@@ -797,11 +828,12 @@ def denoising(original_images, transformation):
             sigma_est = np.mean(estimate_sigma(img, multichannel=True))
             img_trans = denoise_nl_means(img, h=0.6 * sigma_est, sigma=sigma_est,
                                  fast_mode=True, **patch_kw)
+            img_trans = np.expand_dims(img_trans, axis=-1)
             transformed_images.append(img_trans)
     else:
         raise ValueError('{} is not supported.'.format(transformation))
 
-    return transform_images
+    return np.array(transformed_images)
 
 def geometric_transformations(original_images, transformation):
     """
@@ -810,25 +842,28 @@ def geometric_transformations(original_images, transformation):
     :param transformation:
     :return:
     """
+
     nb_images, img_rows, img_cols, nb_channels = original_images.shape
     # TODO: checking number of channels and some customization for datasets
     # TODO: more variations, after testing is done
     transformed_images = []
-
     if (transformation == TRANSFORMATION.geo_random):
         for img in original_images:
+            img = img.reshape((img_rows, img_cols))
             theta = np.linspace(0., 180., max(img.shape), endpoint=False)
             img_trans = radon(img, theta=theta, circle=True)
             transformed_images.append(img_trans)
     elif (transformation == TRANSFORMATION.geo_iradon):
         for img in original_images:
+            img = img.reshape((img_rows, img_cols))
             theta = np.linspace(0., 180., max(img.shape), endpoint=False)
             img_trans = iradon(img, theta=theta, circle=True)
             transformed_images.append(img_trans)
     elif (transformation == TRANSFORMATION.geo_iradon_sart):
         for img in original_images:
+            img = img.reshape((img_rows, img_cols))
             theta = np.linspace(0., 180., max(img.shape), endpoint=False)
-            img_trans = iradon_sart(img, theta=theta, circle=True)
+            img_trans = iradon_sart(img, theta=theta)
             transformed_images.append(img_trans)
     elif (transformation == TRANSFORMATION.geo_swirl):
         for img in original_images:
@@ -837,7 +872,7 @@ def geometric_transformations(original_images, transformation):
     else:
         raise ValueError('{} is not supported.'.format(transformation))
 
-    return transform_images
+    return np.array(transformed_images)
 
 def segmentations(original_images, transformation):
     """
@@ -854,11 +889,13 @@ def segmentations(original_images, transformation):
     if (transformation == TRANSFORMATION.seg_gradient):
         for img in original_images:
             # denoise image
+            img = img.reshape(((img_rows, img_cols)))
             denoised = rank.median(img, disk(2))
             img_trans = rank.gradient(denoised, disk(2))
             transformed_images.append(img_trans)
     elif (transformation == TRANSFORMATION.seg_watershed):
         for img in original_images:
+            img = img.reshape((img_rows, img_cols))
             # denoise image
             denoised = rank.median(img, disk(2))
             # find continuous region (low gradient -
@@ -872,7 +909,7 @@ def segmentations(original_images, transformation):
     else:
         raise ValueError('{} is not supported.'.format(transformation))
 
-    return transform_images
+    return np.array(transformed_images)
 
 def transform_images(X, transformation_type):
     """
@@ -881,6 +918,7 @@ def transform_images(X, transformation_type):
     :param transformation_type:
     :return: the transformed images.
     """
+
     if (transformation_type == TRANSFORMATION.clean):
         """
         Do not apply any transformation for 'clean' images.
@@ -923,14 +961,66 @@ def transform_images(X, transformation_type):
 for testing
 """
 def main(*args):
+    color_transformations = [TRANSFORMATION.filter_meijering,
+                             TRANSFORMATION.filter_sato,
+                             TRANSFORMATION.filter_frangi,
+                             TRANSFORMATION.filter_hessian]
+
+    gray_scale_transformations = [TRANSFORMATION.filter_entropy,
+                                  TRANSFORMATION.filter_roberts,
+                                  TRANSFORMATION.filter_scharr,
+                                  TRANSFORMATION.filter_prewitt,
+                                  TRANSFORMATION.filter_skeletonize,
+                                  TRANSFORMATION.filter_thin,
+                                  TRANSFORMATION.filter_skeletonize,
+                                  TRANSFORMATION.filter_thin,
+                                  TRANSFORMATION.geo_random,
+                                  TRANSFORMATION.geo_iradon,
+                                  TRANSFORMATION.geo_iradon_sart,
+                                  TRANSFORMATION.seg_gradient,
+                                  TRANSFORMATION.seg_watershed]
+
     print('Transform --- {}'.format(args))
     _, (X, _) = load_data(args[0])
     # X = np.load('{}/{}.npy'.format(PATH.ADVERSARIAL_FILE, args[0]))
     X_orig = np.copy(X[10:20])
-    X_trans = transform_images(X_orig, args[1])
+    if args[1] in gray_scale_transformations:
+        X_trans = transformation_gray(X_orig, args[1])
+    elif args[1] in color_transformations:
+        X_trans = transformation_color(X_orig, args[1])
+    else:
+        X_trans = transform_images(X_orig, args[1])
     draw_comparisons(X[10:20], X_trans, '{}-{}'.format(args[0], args[1]))
+
+# Processing for transformatios that require rgb
+def transformation_color(X_orig, transformation):
+    # Converting gray scale image to rgb
+    if X_orig.shape[3] == 1:
+        color_X_orig = np.array([cv2.cvtColor(img, cv2.COLOR_GRAY2RGB)
+                                for img in X_orig])
+        X_trans = transform_images(color_X_orig, transformation)
+        # Converting back from rgb to gray scale
+        X_trans = np.array([cv2.cvtColor(img, cv2.COLOR_RGB2GRAY)
+                            for img in X_trans])
+    else:
+        X_trans = transform_images(X_orig, transformation)
+    return X_trans
+
+# Processing for transformations that require gray
+def transformation_gray(X_orig, transformation):
+    if X_orig.shape[3] > 1:
+        gray_X_orig = np.array([cv2.cvtColor(img, cv2.COLOR_RGB2GRAY)
+                                for img in X_orig])
+        gray_X_orig = np.expand_dims(gray_X_orig, axis=-1)
+        X_trans = transform_images(gray_X_orig, transformation)
+    else:
+        X_trans = transform_images(X_orig, transformation)
+    if len(X_trans.shape) < 4:
+        X_trans = np.expand_dims(X_trans, -1)
+    return X_trans
+
 
 if __name__ == "__main__":
     MODE.debug_on()
     # file = 'test_AE-mnist-cnn-clean-jsma_theta10_gamma30'
-    main(DATA.cifar_10, TRANSFORMATION.seg_watershed)
+    main(DATA.mnist, TRANSFORMATION.filter_roberts)
