@@ -35,7 +35,7 @@ def create_model(dataset, input_shape, nb_classes):
     MODEL.set_dataset(DATA.cifar_10)
     MODEL.set_learning_rate(0.01)
     MODEL.set_batch_size(64)
-    MODEL.set_epochs(1)
+    MODEL.set_epochs(100)
     return cnn_cifar(input_shape, nb_classes)
 
 def cnn_cifar(input_shape, nb_classes):
@@ -98,7 +98,7 @@ def cnn_cifar(input_shape, nb_classes):
     print(model.summary())
   return model
 
-def cnn_cifar_with_dropout(input_shape, nb_classes):
+def cnn_cifar10(input_shape, nb_classes):
   """
   a cnn for cifar
   :param input_shape:
@@ -108,34 +108,46 @@ def cnn_cifar_with_dropout(input_shape, nb_classes):
   MODEL.ARCHITECTURE = 'cnn'
 
   struct = [
-    layers.Conv2D(96, (3, 3), input_shape=input_shape),
-    layers.Activation('relu'),
-    layers.Conv2D(96, (3, 3)),
-    layers.Activation('relu'),
-    layers.Conv2D(96, (3, 3)),
-    layers.Activation('relu'),
+    layers.Conv2D(32, (3, 3), activation='relu',
+                  kernel_initializer='he_uniform',
+                  padding='same',
+                  input_shape=input_shape),
+    layers.BatchNormalization(),
+    layers.Conv2D(32, (3, 3), activation='relu',
+                  kernel_initializer='he_uniform',
+                  padding='same'),
+    layers.BatchNormalization(),
     layers.MaxPooling2D(pool_size=(2, 2)),
+    layers.Dropout(rate=0.2),
 
-    layers.Conv2D(192, (3, 3)),
-    layers.Activation('relu'),
-    layers.Conv2D(192, (3, 3)),
-    layers.Activation('relu'),
-    layers.Conv2D(192, (3, 3)),
-    layers.Activation('relu'),
+    layers.Conv2D(64, (3, 3), activation='relu',
+                  kernel_initializer='he_uniform',
+                  padding='same'),
+    layers.BatchNormalization(),
+    layers.Conv2D(64, (3, 3), activation='relu',
+                  kernel_initializer='he_uniform',
+                  padding='same'),
+    layers.BatchNormalization(),
     layers.MaxPooling2D(pool_size=(2, 2)),
+    layers.Dropout(rate=0.3),
 
-    layers.Conv2D(192, (3, 3)),
-    layers.Activation('relu'),
-    layers.Conv2D(192, (1, 1)),
-    layers.Activation('relu'),
-    layers.Conv2D(10, (1, 1)),
-    layers.Activation('relu'),
-    layers.AveragePooling2D(pool_size=1),
-    layers.Flatten(),
-    layers.Dense(100),
+    layers.Conv2D(128, (3, 3), activation='relu',
+                  kernel_initializer='he_uniform',
+                  padding='same'),
+    layers.BatchNormalization(),
+    layers.Conv2D(128, (3, 3), activation='relu',
+                  kernel_initializer='he_uniform',
+                  padding='same'),
+    layers.BatchNormalization(),
+    layers.MaxPooling2D(pool_size=(2, 2)),
     layers.Dropout(rate=0.4),
-    layers.Dense(nb_classes),
-    layers.Activation('softmax')
+
+    layers.Flatten(),
+    layers.Dense(128, activation='relu',
+                 kernel_initializer='he_uniform'),
+    layers.BatchNormalization(),
+    layers.Dropout(rate=0.5),
+    layers.Dense(nb_classes, activation='softmax')
   ]
 
   model = models.Sequential()
@@ -222,7 +234,7 @@ def train(model, X, Y, model_name, need_augment=False, **kwargs):
   prefix, dataset, architect, trans_type = model_name.split('-')
 
   optimizer = kwargs.get('optimizer', keras.optimizers.Adam(lr=learning_rate))
-  loss_func = kwargs.get('loss', 'categorical_crossentropy')
+  loss_func = kwargs.get('loss', keras.losses.categorical_crossentropy)
   metrics = kwargs.get('metrics', 'default')
 
   print('INFO: compiler')
@@ -242,10 +254,8 @@ def train(model, X, Y, model_name, need_augment=False, **kwargs):
   augment data
   """
   datagen = None
-  if (need_augment):
-    # normalize data
-    train_examples = data.normalize(train_examples)
-    val_examples = data.normalize(val_examples)
+  if (DATA.cifar_10 == dataset):
+    # normalize data (has been handled when loading the data)
     # data augmentation
     datagen = ImageDataGenerator(
       rotation_range=15,
@@ -267,7 +277,7 @@ def train(model, X, Y, model_name, need_augment=False, **kwargs):
   """
   train the model
   """
-  if (need_augment):
+  if (DATA.cifar_10 == dataset):
     history = model.fit_generator(datagen.flow(train_examples, train_labels, batch_size=MODEL.BATCH_SIZE),
                                   steps_per_epoch=nb_training // MODEL.BATCH_SIZE, epochs=MODEL.EPOCHS,
                                   verbose=2, validation_data=(val_examples, val_labels),
@@ -368,7 +378,7 @@ def train_and_save(model_name, X, Y, validation_rate=0.2, need_augment=False):
 
   # save the trained model
   model.save('{}/{}.h5'.format(PATH.MODEL, model_name))
-  # model.save_model('{}/{}.h5'.format(PATH.MODEL, model_name))
+  keras.models.save_model(model, '{}/{}_2.h5'.format(PATH.MODEL, model_name))
   # report
   print('Trained model has been saved to data/{}'.format(model_name))
   print('Test accuracy: {:.4f}; loss: {:.4f}'.format(scores[1], scores[0]))
@@ -376,7 +386,7 @@ def train_and_save(model_name, X, Y, validation_rate=0.2, need_augment=False):
   file.dict2csv(history.history, '{}/{}'.format(PATH.RESULTS, file_name))
   plotTrainingResult(history, model_name)
   # delete the model after it's been saved.
-  # del model
+  del model
 
 def lr_schedule(epoch):
   """
@@ -426,6 +436,32 @@ def evaluate_model(model, X, Y):
   ave_conf_miss = conf_misclassified / (nb_examples - nb_corrections)
 
   return test_acc, ave_conf_correct, ave_conf_miss
+
+def save_to_json(model, model_name):
+  file_name = '{}/{}.json'.format(PATH.MODEL, model_name)
+  model_json = model.to_json()
+  with open(file_name, 'w') as json_file:
+    json_file.write(model_json)
+
+  model.save_weigths('{}/weights_{}.h5'.format(PATH.MODEL, model_name))
+
+def load_from_json(model_name,
+                   optimizer=keras.optimizers.RMSprop(lr=0.001, decay=1e-6)):
+  json_file = open('{}/{}.json'.format(PATH.MODEL, model_name), 'r')
+  loaded_model_json = json_file.read()
+  json_file.close()
+
+  model = keras.models.model_from_json(loaded_model_json)
+  model.load_weights('{}/weights_{}.h5'.format(PATH.MODEL, model_name))
+
+  model.compile(
+    optimizer=optimizer,
+    loss=keras.losses.categorical_crossentropy,
+    metrics=['accuracy']
+  )
+
+  return model
+
 
 def main():
   from data import load_data

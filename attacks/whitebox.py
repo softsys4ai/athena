@@ -11,7 +11,7 @@ from __future__ import unicode_literals
 import os
 
 import tensorflow as tf
-from tensorflow import keras
+from tensorflow.keras.models import model_from_json
 from tensorflow.python.platform import flags
 from tensorflow.keras import optimizers
 # import keras.backend as K
@@ -80,7 +80,10 @@ def generate(model_name, X, Y, attack_method, attack_params):
         model = create_model(dataset, input_shape=input_shape, nb_classes=nb_classes)
     else:
         # load model
-        model = keras.models.load_model('{}/{}.h5'.format(PATH.MODEL, model_name))
+        if (dataset == DATA.mnist):
+            model = keras.models.load_model('{}/{}.h5'.format(PATH.MODEL, model_name))
+        elif (dataset == DATA.cifar_10):
+            model = load_from_json(model_name)
 
     # to be able to call the model in the custom loss, we need to call it once before.
     # see https://github.com/tensorflow/tensorflow/issues/23769
@@ -153,6 +156,12 @@ def generate(model_name, X, Y, attack_method, attack_params):
         link: https://arxiv.org/abs/1607.02533
         """
         attacker = BasicIterativeMethod(wrap_model, back='tf', sess=sess)
+    elif (attack_method == ATTACK.PGD):
+        """
+        The Projected Gradient Descent approch.
+        
+        """
+        attacker = ProjectedGradientDescent(wrap_model)
     else:
         raise ValueError('{} attack is not supported.'.format(attack_method.upper()))
 
@@ -196,14 +205,34 @@ def generate(model_name, X, Y, attack_method, attack_params):
     if (train_new_model):
         """
         recompile the trained model using default metrics,
-        so that the adversarial attacks are required for model evaluation. 
+        for the metrics related to adversarial approaches 
+        are NOT required for model evaluation.
         """
         model.compile(
             optimizer=compile_params['optimizer'],
-            loss='categorical_crossentropy',
-            metrics=compile_params['metrics']
+            loss=keras.losses.categorical_crossentropy,
+            metrics=['accuracy']
         )
-        model.save('{}/{}.h5'.format(PATH.MODEL, model_name), overwrite=True, include_optimizer=True)
+
+        # save to disk
+        if (DATA.cifar_10 == dataset):
+            save_to_json(model, model_name)
+
+            # for test, evaluate the saved model
+            loaded_model = load_from_json(model_name)
+            scores = loaded_model.evaluate(X, Y, verbose=2)
+            print('*** Evaluating the new model: {}'.format(scores))
+            del loaded_model
+        elif (DATA.mnist == dataset):
+            model.save('{}/{}.h5'.format(PATH.MODEL, model_name),
+                       overwrite=True, include_optimizer=True)
+            # for test
+            # evaluate the saved model
+            loaded_model = models.load_model('{}/{}.h5'.format(PATH.MODEL, model_name))
+            scores = loaded_model.evaluate(X, Y, verbose=2)
+            print('*** Evaluating the new model: {}'.format(scores))
+            del loaded_model
+    del model
     sess.close()
 
     return adv_examples, Y

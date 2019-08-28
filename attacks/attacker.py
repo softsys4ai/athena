@@ -108,5 +108,22 @@ def get_adversarial_examples(model_name, attack_method, X, Y, **kwargs):
         duration = time.time() - start_time
         logger.info('Time cost: {}'.format(duration))
 
+    elif (attack_method == ATTACK.PGD):
+        eps = kwargs.get('eps', 0.3)
+        nb_iter = kwargs.get('nb_iter', 40)
+        eps_iter = kwargs.get('eps_iter', 0.01)
+
+        attack_params = {
+            'eps': eps,
+            'clip_min': 0.,
+            'clip_max': 1.,
+            'nb_iter': nb_iter,
+            'eps_iter': eps_iter
+        }
+
+        start_time = time.time()
+        X_adv, Y = whitebox.generate(model_name, X, Y, attack_method, attack_params)
+        duration = time.time() - start_time
+
     print('*** SHAPE: {}'.format(X_adv.shape))
     return X_adv, Y
