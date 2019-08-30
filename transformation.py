@@ -6,19 +6,16 @@ import cv2
 from scipy import ndimage
 
 from keras.preprocessing.image import ImageDataGenerator
-import skimage
+from skimage import filters, util
 from sklearn.cluster import MiniBatchKMeans
 from skimage.restoration import (denoise_bilateral, denoise_nl_means, denoise_tv_bregman, denoise_tv_chambolle, denoise_wavelet, estimate_sigma)
 from skimage.transform import (warp, swirl, radon, iradon, iradon_sart)
 from skimage.morphology import disk, watershed, skeletonize, thin
-from skimage.filters.rank import entropy
 from skimage.filters import (rank, roberts, scharr, prewitt, meijering, sato, frangi, hessian)
 from skimage.util import invert
 
-import matplotlib.pyplot as plt
-
 from config import *
-from data import load_data
+from data import load_data, normalize
 from plot import draw_comparisons
 
 def rotate(original_images, transformation):
@@ -339,7 +336,8 @@ def augment(original_images, transformation):
         data_generator = ImageDataGenerator(featurewise_center=True,
                                             featurewise_std_normalization=True)
     elif transformation == TRANSFORMATION.zca_whitening:
-        data_generator = ImageDataGenerator(zca_whitening=True, brightness_range=(-200, 200))
+        data_generator = ImageDataGenerator(zca_whitening=True, zca_epsilon=1e-3,
+                                            brightness_range=(-100, 100))
     elif transformation == TRANSFORMATION.pca_whitening:
         raise NotImplementedError('{} is not ready yet.'.format(transformation))
     else:
@@ -640,8 +638,10 @@ def filter(original_images, transformation):
     transformed_images = []
     if (transformation == TRANSFORMATION.filter_sobel):
         for img in original_images:
+            if (nb_channels == 3):
+                img = cv2.cvtColor(img, cv2.COLOR_RGB2GRAY)
             img = img.reshape(img_rows, img_cols)
-            img_trans = skimage.filters.sobel(img)
+            img_trans = filters.sobel(img)
             if (nb_channels == 3):
                 img_trans = cv2.cvtColor(img_trans, cv2.COLOR_GRAY2RGB)
             transformed_images.append(img_trans)
@@ -667,8 +667,26 @@ def filter(original_images, transformation):
             transformed_images.append(img_trans)
     elif (transformation == TRANSFORMATION.filter_entropy):
         for img in original_images:
+            radius = 2
+            if (nb_channels == 3):
+                radius = 1
+                img = cv2.cvtColor(img, cv2.COLOR_RGB2GRAY)
             img = img.reshape(img_rows, img_cols)
-            img_trans = entropy(img, disk(5))
+            """
+            requires values in range [-1., 1.]
+            """
+            img = (img - 0.5) * 2.
+            """
+            skimage-entropy function returns values in float64,
+            however opencv only supports float32.
+            """
+            img_trans = np.float32(filters.rank.entropy(img, disk(radius=radius)))
+            """
+            rescale back into range [0. 1.]
+            """
+            img_trans = (img_trans / 2.) + 0.5
+            if (nb_channels == 3):
+                img_trans = cv2.cvtColor(img_trans, cv2.COLOR_GRAY2RGB)
             transformed_images.append(img_trans)
     elif (transformation == TRANSFORMATION.filter_roberts):
         for img in original_images:
@@ -734,7 +752,7 @@ def add_noise(original_images, transformation):
     noise_mode = transformation.split('_')[1]
 
     for img in original_images:
-        img_noised = skimage.util.random_noise(img, mode=noise_mode)
+        img_noised = util.random_noise(img, mode=noise_mode)
         transformed_images.append(img_noised)
     transformed_images = np.stack(transformed_images, axis=0)
     if (nb_channels == 1):
@@ -919,6 +937,12 @@ def transform_images(X, transformation_type):
     :return: the transformed images.
     """
 
+    """
+    Pre-processing
+    """
+    # X = pre_process(X, transformation_type)
+
+
     if (transformation_type == TRANSFORMATION.clean):
         """
         Do not apply any transformation for 'clean' images.
@@ -957,40 +981,40 @@ def transform_images(X, transformation_type):
     else:
         raise ValueError('Transformation type {} is not supported.'.format(transformation_type.upper()))
 
+
 """
 for testing
 """
 def main(*args):
-    color_transformations = [TRANSFORMATION.filter_meijering,
-                             TRANSFORMATION.filter_sato,
-                             TRANSFORMATION.filter_frangi,
-                             TRANSFORMATION.filter_hessian]
-
-    gray_scale_transformations = [TRANSFORMATION.filter_entropy,
-                                  TRANSFORMATION.filter_roberts,
-                                  TRANSFORMATION.filter_scharr,
-                                  TRANSFORMATION.filter_prewitt,
-                                  TRANSFORMATION.filter_skeletonize,
-                                  TRANSFORMATION.filter_thin,
-                                  TRANSFORMATION.filter_skeletonize,
-                                  TRANSFORMATION.filter_thin,
-                                  TRANSFORMATION.geo_random,
-                                  TRANSFORMATION.geo_iradon,
-                                  TRANSFORMATION.geo_iradon_sart,
-                                  TRANSFORMATION.seg_gradient,
-                                  TRANSFORMATION.seg_watershed]
+    # color_transformations = [TRANSFORMATION.filter_meijering,
+    #                          TRANSFORMATION.filter_sato,
+    #                          TRANSFORMATION.filter_frangi,
+    #                          TRANSFORMATION.filter_hessian]
+    #
+    # gray_scale_transformations = [TRANSFORMATION.filter_entropy,
+    #                               TRANSFORMATION.filter_roberts,
+    #                               TRANSFORMATION.filter_scharr,
+    #                               TRANSFORMATION.filter_prewitt,
+    #                               TRANSFORMATION.filter_skeletonize,
+    #                               TRANSFORMATION.filter_skeletonize,
+    #                               TRANSFORMATION.filter_thin,
+    #                               TRANSFORMATION.geo_random,
+    #                               TRANSFORMATION.geo_iradon,
+    #                               TRANSFORMATION.geo_iradon_sart,
+    #                               TRANSFORMATION.seg_gradient,
+    #                               TRANSFORMATION.seg_watershed]
 
     print('Transform --- {}'.format(args))
     _, (X, _) = load_data(args[0])
     # X = np.load('{}/{}.npy'.format(PATH.ADVERSARIAL_FILE, args[0]))
     X_orig = np.copy(X[10:20])
-    if args[1] in gray_scale_transformations:
-        X_trans = transformation_gray(X_orig, args[1])
-    elif args[1] in color_transformations:
-        X_trans = transformation_color(X_orig, args[1])
-    else:
-        X_trans = transform_images(X_orig, args[1])
-    draw_comparisons(X[10:20], X_trans, '{}-{}'.format(args[0], args[1]))
+    X_trans = transform_images(X_orig, args[1])
+
+    # if (DATA.cifar_10 == args[0]):
+    #     X_orig = normalize(X_orig)
+    #     X_trans = normalize(X_trans)
+
+    draw_comparisons(X_orig, X_trans, '{}-{}'.format(args[0], args[1]))
 
 # Processing for transformatios that require rgb
 def transformation_color(X_orig, transformation):
@@ -1023,4 +1047,4 @@ def transformation_gray(X_orig, transformation):
 if __name__ == "__main__":
     MODE.debug_on()
     # file = 'test_AE-mnist-cnn-clean-jsma_theta10_gamma30'
-    main(DATA.mnist, TRANSFORMATION.filter_roberts)
+    main(DATA.mnist, TRANSFORMATION.filter_entropy)
