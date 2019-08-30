@@ -94,3 +94,11 @@ ENV/
 
 # Rope project settings
 .ropeproject
+/data/
+/bk/
+/old_scripts/
+/my_scripts.py
+/my_test.py
+/my_voting_system.py
+/Testing_All_SampleTypes/
+/Detection_Voting_Result/
