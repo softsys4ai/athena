@@ -16,7 +16,7 @@ from skimage.util import invert
 
 from config import *
 from data import load_data, normalize
-from plot import plot_comparisons
+from plot import plot_comparisons, plot_difference
 
 def rotate(original_images, transformation):
     """
@@ -954,6 +954,14 @@ def geometric_transformations(original_images, transformation):
     else:
         raise ValueError('{} is not supported.'.format(transformation))
 
+    """
+    stack images
+    """
+    transformed_images = np.stack(transformed_images, axis=0)
+
+    if (nb_channels == 1):
+        transformed_images = transformed_images.reshape((nb_images, img_rows, img_cols, nb_channels))
+
     return np.array(transformed_images)
 
 def segmentations(original_images, transformation):
@@ -994,6 +1002,14 @@ def segmentations(original_images, transformation):
             transformed_images.append(img_trans)
     else:
         raise ValueError('{} is not supported.'.format(transformation))
+
+    """
+    stack images
+    """
+    transformed_images = np.stack(transformed_images, axis=0)
+
+    if (nb_channels == 1):
+        transformed_images = transformed_images.reshape((nb_images, img_rows, img_cols, nb_channels))
 
     return np.array(transformed_images)
 
@@ -1053,9 +1069,10 @@ def main(*args):
     X_orig = np.copy(X[10:20])
     X_trans = transform_images(X_orig, args[1])
 
-    plot_comparisons(X_orig, X_trans, '{}-{}'.format(args[0], args[1]))
+    # plot_comparisons(X_orig, X_trans, '{}-{}'.format(args[0], args[1]))
+    plot_difference(X_orig[:5], X_trans[:5], 'Diff-{}-{}'.format(args[0], args[1]))
 
 if __name__ == "__main__":
     MODE.debug_on()
     # file = 'test_AE-mnist-cnn-clean-jsma_theta10_gamma30'
-    main(DATA.mnist, TRANSFORMATION.seg_gradient)
+    main(DATA.cifar_10, TRANSFORMATION.rotate270)
