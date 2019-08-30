@@ -3,15 +3,10 @@ This is the script to craft adversarial examples.
 @author: Ying Meng (y(dot)meng201011(at)gmail(dot)com)
 """
 
-import models
 from config import *
-from data import load_data, normalize
+from data import load_data
 from file import save_adv_examples
-from plot import draw_comparisons
-from transformation import transform_images
 from attacks.attacker import get_adversarial_examples
-import tensorflow.keras.models as keras_models
-import tensorflow as tf
 
 import numpy as np
 
@@ -40,7 +35,6 @@ def craft(dataset, method):
   model_name = 'model-{}-cnn-clean'.format(dataset)
 
   X_adv = None
-
   if (method == ATTACK.FGSM):
     for eps in ATTACK.get_fgsm_eps():
       print('{}: (eps={})'.format(method.upper(), eps))
@@ -95,7 +89,6 @@ def craft(dataset, method):
                           attack_method=method, attack_params=attack_params)
 
   elif (method == ATTACK.PGD):
-    eps = 0.5
     nb_iter = 100
     eps_iter = 0.01
     for eps in ATTACK.get_pgd_eps():
