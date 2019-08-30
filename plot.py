@@ -4,10 +4,74 @@ Implement methods plotting and drawing figures.
         Jianhai Su
 """
 import os
+import numpy as np
 import matplotlib.pyplot as plt
 from config import PATH, MODE
 
-def draw_comparisons(controls, treatments, title="None"):
+def plot_difference(controls, treatments, title="None"):
+    """
+    Plot the original image, corresponding perturbed image, and their difference.
+    :param controls:
+    :param treatments:
+    :param title:
+    :return:
+    """
+    img_rows, img_cols, nb_channels = controls.shape[1:4]
+    print('shapes: control_set - {}; treatment_set - {}'.format(controls.shape, treatments.shape))
+    print('rows/cols/channels: {}/{}/{}'.format(img_rows, img_cols, nb_channels))
+
+    pos = 1
+    fig = plt.figure(figsize=(8, 8))
+    plt.subplots_adjust(left=0.05, right=0.95, top=0.92, bottom=0.02, wspace=0.001, hspace=0.015)
+
+    fig.suptitle(title)
+    cols = 3
+    rows = 5
+
+    diffs = controls - treatments
+    for i in range(0, 5):
+        # original image
+        ax_orig = fig.add_subplot(rows, cols, pos)
+        ax_orig.axis('off')
+        ax_orig.grid(b=None)
+        ax_orig.set_aspect('equal')
+        if (nb_channels == 1):
+            plt.imshow(controls[i].reshape(img_rows, img_cols), cmap='gray')
+        else:
+            plt.imshow(controls[i].reshape(img_rows, img_cols, nb_channels))
+        pos += 1
+
+        # transformed/perturbed image
+        ax_changed = fig.add_subplot(rows, cols, pos)
+        ax_changed.axis('off')
+        ax_changed.grid(b=None)
+        ax_changed.set_aspect('equal')
+        if (nb_channels == 1):
+
+            plt.imshow(treatments[i].reshape(img_rows, img_cols), cmap='gray')
+        else:
+            plt.imshow(treatments[i].reshape(img_rows, img_cols, nb_channels))
+        pos += 1
+        # difference
+        ax_diff = fig.add_subplot(rows, cols, pos)
+        ax_diff.axis('off')
+        ax_diff.grid(b=None)
+        ax_diff.set_aspect('equal')
+        if (nb_channels == 1):
+            plt.imshow(diffs[i].reshape(img_rows, img_cols), cmap='gray')
+        else:
+            plt.imshow(diffs[i].reshape(img_rows, img_cols, nb_channels))
+        pos += 1
+
+    fig.savefig(
+        os.path.join(PATH.FIGURES, '{}.pdf'.format(title)),
+        bbox_inches='tight'
+    )
+    plt.show()
+    plt.close()
+
+
+def plot_comparisons(controls, treatments, title="None"):
     """
     Draw some comparisons of original images and transformed/perturbed images.
     :param controls: the original images
