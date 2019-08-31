@@ -8,7 +8,7 @@ import os
 
 from config import *
 from data import load_data
-from plot import draw_comparisons
+from plot import plot_comparisons
 
 def dict2csv(dictionary, file_name):
     """
@@ -45,6 +45,6 @@ def save_adv_examples(data, **kwargs):
   if MODE.DEBUG:
       title = '{}-{}'.format(model_info, attack_info)
       _, (bs_samples, _) = load_data(dataset)
-      draw_comparisons(bs_samples[10:20], data[10:20], title)
+      plot_comparisons(bs_samples[10:20], data[10:20], title)
 
   print('Adversarial examples saved to {}/{}.'.format(PATH.ADVERSARIAL_FILE, file_name))

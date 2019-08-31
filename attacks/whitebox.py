@@ -9,17 +9,12 @@ from __future__ import print_function
 from __future__ import unicode_literals
 
 import os
-
-import tensorflow as tf
-from tensorflow.keras.models import model_from_json
-from tensorflow.python.platform import flags
-from tensorflow.keras import optimizers
-# import keras.backend as K
+os.environ['KMP_DUPLICATE_LIB_OK'] = 'True'
 
 import data
 from models import *
 from config import *
-from plot import draw_comparisons
+from plot import plot_comparisons
 
 from cleverhans.attacks import FastGradientMethod
 from cleverhans.attacks import SaliencyMapMethod
@@ -50,7 +45,7 @@ def generate(model_name, X, Y, attack_method, attack_params):
 
     # flag - whether to train a clean model
     train_new_model = True
-    if (os.path.isfile('{}/{}.h5'.format(PATH.MODEL, model_name))):
+    if os.path.isfile('{}/{}.h5'.format(PATH.MODEL, model_name)):
         # found a trained model
         print('Found the trained model.')
         train_new_model = False
@@ -73,16 +68,16 @@ def generate(model_name, X, Y, attack_method, attack_params):
     Y -= label_smoothing_rate * (Y - 1. / nb_classes)
 
     model = None
-    if (train_new_model):
+    if train_new_model:
         print('INFO: train a new model then generate adversarial examples.')
         # create a new model
         input_shape = (img_rows, img_cols, nb_channels)
         model = create_model(dataset, input_shape=input_shape, nb_classes=nb_classes)
     else:
         # load model
-        if (dataset == DATA.mnist):
+        if dataset == DATA.mnist:
             model = keras.models.load_model('{}/{}.h5'.format(PATH.MODEL, model_name))
-        elif (dataset == DATA.cifar_10):
+        elif dataset == DATA.cifar_10:
             model = load_from_json(model_name)
 
     # to be able to call the model in the custom loss, we need to call it once before.
@@ -93,14 +88,14 @@ def generate(model_name, X, Y, attack_method, attack_params):
 
     # initialize the attack object
     attacker = None
-    if (attack_method == ATTACK.FGSM):
+    if attack_method == ATTACK.FGSM:
         """
         The Fast Gradient Sign Method,
         by Ian J. Goodfellow, Jonathon Shlens, Christian Szegedy 2014
         link: https://arxiv.org/abs/1412.6572
         """
         attacker = FastGradientMethod(wrap_model, sess=sess)
-    elif (attack_method == ATTACK.JSMA):
+    elif attack_method == ATTACK.JSMA:
         """
         The Jacobian-based Saliency Map Method
         by Nicolas Papernot, Patrick McDaniel, Somesh Jha, Matt Fredrikson, Z. Berkay Celik, Ananthram Swami 2016
@@ -108,7 +103,7 @@ def generate(model_name, X, Y, attack_method, attack_params):
         """
         batch_size = 64
         attacker = SaliencyMapMethod(wrap_model, sess=sess)
-    elif (attack_method == ATTACK.CW):
+    elif attack_method == ATTACK.CW:
         """
         Untageted attack
         """
@@ -129,7 +124,7 @@ def generate(model_name, X, Y, attack_method, attack_params):
         else:
             raise ValueError('CW supports only l0, l2, and l-inf norms.')
 
-    elif (attack_method == ATTACK.DEEPFOOL):
+    elif attack_method == ATTACK.DEEPFOOL:
         """
         The DeepFool Method, is an untargeted & iterative attack
         which is based on an iterative linearization of the classifier.
@@ -149,14 +144,14 @@ def generate(model_name, X, Y, attack_method, attack_params):
         else:
             raise ValueError('DeepFool supports only l2 and l-inf norms.')
 
-    elif (attack_method == ATTACK.BIM):
+    elif attack_method == ATTACK.BIM:
         """
         The Basic Iterative Method (also, iterative FGSM)
         by Alexey Kurakin, Ian Goodfellow, Samy Bengio, 2016
         link: https://arxiv.org/abs/1607.02533
         """
         attacker = BasicIterativeMethod(wrap_model, back='tf', sess=sess)
-    elif (attack_method == ATTACK.PGD):
+    elif attack_method == ATTACK.PGD:
         """
         The Projected Gradient Descent approch.
         
@@ -176,7 +171,7 @@ def generate(model_name, X, Y, attack_method, attack_params):
         'optimizer': keras.optimizers.Adam(lr=0.001),
         'metrics': adv_accuracy_metric
     }
-    if (DATA.cifar_10 == dataset):
+    if DATA.cifar_10 == dataset:
         augment = True
         compile_params = {
             'optimizer': keras.optimizers.RMSprop(lr=0.001, decay=1e-6),
@@ -184,7 +179,7 @@ def generate(model_name, X, Y, attack_method, attack_params):
         }
 
     # train_model(model, dataset, model_name, need_augment=False, **kwargs)
-    if (train_new_model):
+    if train_new_model:
         model = train_model(model, dataset, model_name,
                             augment,
                             **compile_params)
@@ -198,11 +193,11 @@ def generate(model_name, X, Y, attack_method, attack_params):
     adv_examples, = batch_eval(sess, [model.input, model(adv_x)], [adv_x],
                         [X, Y], batch_size=batch_size)
 
-    if (MODE.DEBUG):
+    if MODE.DEBUG:
         title = '{}-{}'.format(dataset, attack_method)
-        draw_comparisons(X[:10], adv_examples[:10], title)
+        plot_comparisons(X[:10], adv_examples[:10], title)
 
-    if (train_new_model):
+    if train_new_model:
         """
         recompile the trained model using default metrics,
         for the metrics related to adversarial approaches 
@@ -215,7 +210,7 @@ def generate(model_name, X, Y, attack_method, attack_params):
         )
 
         # save to disk
-        if (DATA.cifar_10 == dataset):
+        if DATA.cifar_10 == dataset:
             save_to_json(model, model_name)
 
             # for test, evaluate the saved model
@@ -223,7 +218,7 @@ def generate(model_name, X, Y, attack_method, attack_params):
             scores = loaded_model.evaluate(X, Y, verbose=2)
             print('*** Evaluating the new model: {}'.format(scores))
             del loaded_model
-        elif (DATA.mnist == dataset):
+        elif DATA.mnist == dataset:
             model.save('{}/{}.h5'.format(PATH.MODEL, model_name),
                        overwrite=True, include_optimizer=True)
             # for test

@@ -16,7 +16,7 @@ def get_adversarial_examples(model_name, attack_method, X, Y, **kwargs):
     logger.info('Crafting adversarial examples using {} method...'.format(attack_method.upper()))
     X_adv = None
 
-    if (attack_method == ATTACK.FGSM):
+    if attack_method == ATTACK.FGSM:
         eps = kwargs.get('eps', 0.25)
         attack_params = {
             'eps': eps,
@@ -29,7 +29,7 @@ def get_adversarial_examples(model_name, attack_method, X, Y, **kwargs):
         duration = time.time() - start_time
         logger.info('Time cost: {}'.format(duration))
 
-    elif (attack_method == ATTACK.BIM):
+    elif attack_method == ATTACK.BIM:
         # iterative fast gradient method
         eps = kwargs.get('eps', 0.25)
         nb_iter = kwargs.get('nb_iter', 100)
@@ -59,7 +59,7 @@ def get_adversarial_examples(model_name, attack_method, X, Y, **kwargs):
 
         duration = time.time() - start_time
         print('Time cost: {}'.format(duration))
-    elif (attack_method == ATTACK.DEEPFOOL):
+    elif attack_method == ATTACK.DEEPFOOL:
         # Images for inception classifier are normalized to be in [0, 255] interval.
         X *= 255.
 
@@ -78,7 +78,7 @@ def get_adversarial_examples(model_name, attack_method, X, Y, **kwargs):
         print('Time cost: {}'.format(duration))
 
         X_adv /= 255.
-    elif (attack_method == ATTACK.CW):
+    elif attack_method == ATTACK.CW:
         max_iterations = kwargs.get('max_iterations', 100)
         ord = kwargs.get('ord', 2)
 
@@ -94,7 +94,7 @@ def get_adversarial_examples(model_name, attack_method, X, Y, **kwargs):
         duration = time.time() - start_time
         logger.info('Time cost: {}'.format(duration))
 
-    elif (attack_method == ATTACK.JSMA):
+    elif attack_method == ATTACK.JSMA:
         theta = kwargs.get('theta', 0.6)
         gamma = kwargs.get('gamma', 0.5)
         attack_params = {
@@ -108,7 +108,7 @@ def get_adversarial_examples(model_name, attack_method, X, Y, **kwargs):
         duration = time.time() - start_time
         logger.info('Time cost: {}'.format(duration))
 
-    elif (attack_method == ATTACK.PGD):
+    elif attack_method == ATTACK.PGD:
         eps = kwargs.get('eps', 0.3)
         nb_iter = kwargs.get('nb_iter', 40)
         eps_iter = kwargs.get('eps_iter', 0.01)
