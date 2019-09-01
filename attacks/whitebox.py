@@ -10,6 +10,9 @@ from __future__ import unicode_literals
 
 import os
 
+os.environ['KMP_DUPLICATE_LIB_OK'] = 'True'
+
+import data
 from models import *
 from config import *
 from plot import plot_comparisons
@@ -121,7 +124,7 @@ def generate(model_name, X, Y, attack_method, attack_params):
             pass
         elif (ord == np.inf):
             # TODO
-            attacker = cw_linf.CarliniLi(sess, model)
+            pass
         else:
             raise ValueError('CW supports only l0, l2, and l-inf norms.')
 

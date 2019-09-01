@@ -6,17 +6,17 @@ Define global configurations.
 import numpy as np
 
 # [For defense]
-numOfWCDefenses=3
-numOfCVDefenses=2
-cvDefenseNames=["CV_Maj", "CV_Max"] # strategies used to decide the label across clusters
+numOfWCDefenses = 3
+numOfCVDefenses = 2
+cvDefenseNames = ["CV_Maj", "CV_Max"]  # strategies used to decide the label across clusters
 # EM    :   expertise matrix
 # 1s    :   every element in expertise matrix is 1
 # SM    :   sum weighted confidence across models for one sample,
 #           then return the label with largest sum of weighted confidence
 # MMV   :   find the label with largest confidence for the input sample for each model
 #           then run a majority vote across models to determine final label
-wcDefenseNames=["1s_Mean", "EM_Mean", "EM_MXMV"]
-kmeansResultFoldName="KMeans_result"
+wcDefenseNames = ["1s_Mean", "EM_Mean", "EM_MXMV"]
+kmeansResultFoldName = "KMeans_result"
 defensesList = ["CV_Maj", "CV_Max", "1s_Mean", "EM_Mean", "EM_MXMV", "1s_Mean_L", "EM_Mean_L", "EM_MXMV_L"]
 
 dropout = 0.5
@@ -176,7 +176,7 @@ class TRANSFORMATION(object):
     segmentation
     """
     seg_gradient = 'seg_gradient'
-    seg_watershed = 'seg_watershed' # TODO: bug fix
+    seg_watershed = 'seg_watershed'
 
 
     ROTATE = [rotate90, rotate180, rotate270]
@@ -200,8 +200,9 @@ class TRANSFORMATION(object):
     #            filter_prewitt, filter_meijering, filter_sato, filter_frangi, filter_hessian,
     #            filter_skeletonize, filter_thin] # TODO: full set
     FILTERS = [filter_sobel, filter_gaussian, filter_rank, filter_median, filter_minimum,
-                   filter_maximum, filter_entropy, filter_roberts, filter_scharr,
-                   filter_prewitt]
+               filter_maximum, filter_entropy, filter_roberts, filter_scharr,
+               filter_prewitt, filter_meijering, filter_sato, filter_frangi, filter_hessian,
+               filter_skeletonize, filter_thin]
     COMPRESSION = [compress_jpeg_quality_80, compress_jpeg_quality_50,
                    compress_jpeg_quality_30, compress_jpeg_quality_10,
                    compress_png_compression_1, compress_png_compression_8, compress_png_compression_5]
@@ -259,7 +260,7 @@ class ATTACK(object):
     # ---------------------------
     @classmethod
     def get_fgsm_eps(cls):
-        return [0.3, 0.25, 0.1, 0.05, 0.025, 0.01] # full set
+        return [0.25, 0.3, 0.1, 0.05, 0.01, 0.005] # full set
         #return [0.25] # for test
 
     @classmethod
@@ -279,8 +280,8 @@ class ATTACK(object):
     # ---------------------------
     @classmethod
     def get_bim_nbIter(cls):
-        # return [1, 10, 100, 1000, 10000, 100000] # full set
-        return [1, 1000] # for test
+        return [1, 10, 100, 1000, 10000, 100000] # full set
+        # return [100] # for test
 
     @classmethod
     def get_bim_norm(cls):
@@ -290,11 +291,11 @@ class ATTACK(object):
     @classmethod
     def get_bim_eps(cls, order):
         if order == 2:
-            # return [0.1, 0.25, 0.5, 1]
-            return [0.5, 1.]
+            return [0.1, 0.25, 0.5, 1]
+            # return [0.5, 0.25]
         elif order == np.inf:
-            # return [0.005, 0.01, 0.05, 0.1, 0.25, 0.5]
-            return [0.1, 0.25, 0.5]
+            return [0.005, 0.01, 0.05, 0.1, 0.25, 0.5]
+            # return [0.01, 0.005]
 
     @classmethod
     def get_bim_AETypes(cls):
@@ -334,8 +335,8 @@ class ATTACK(object):
     # ----------------------------
     @classmethod
     def get_df_maxIter(cls):
-        # return [1, 10, 100, 1000, 10000, 100000] # full set
-        return [10000]
+        return [1, 10, 100, 1000, 10000, 100000] # full set
+        # return [10]
 
     # ----------------------------
     # JSMA parameters

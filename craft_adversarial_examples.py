@@ -35,7 +35,7 @@ def craft(dataset, method):
   model_name = 'model-{}-cnn-clean'.format(dataset)
 
   X_adv = None
-  if (method == ATTACK.FGSM):
+  if method == ATTACK.FGSM:
     for eps in ATTACK.get_fgsm_eps():
       print('{}: (eps={})'.format(method.upper(), eps))
       X_adv, _ = get_adversarial_examples(model_name, method, X, Y, eps=eps)
@@ -43,7 +43,7 @@ def craft(dataset, method):
       attack_params = 'eps{}'.format(int(1000 * eps))
       save_adv_examples(X_adv, prefix=prefix, dataset=dataset, transformation='clean',
                         attack_method=method, attack_params=attack_params)
-  elif (method == ATTACK.BIM):
+  elif method == ATTACK.BIM:
     for ord in ATTACK.get_bim_norm():
       for nb_iter in ATTACK.get_bim_nbIter():
         for eps in ATTACK.get_bim_eps(ord):
@@ -58,26 +58,27 @@ def craft(dataset, method):
           attack_params = 'ord{}_nbIter{}_eps{}'.format(norm, nb_iter, int(1000 * eps))
           save_adv_examples(X_adv, prefix=prefix, dataset=dataset, transformation='clean',
                             attack_method=method, attack_params=attack_params)
-  elif (method == ATTACK.DEEPFOOL):
+  elif method == ATTACK.DEEPFOOL:
     for max_iter in ATTACK.get_df_maxIter():
-      print('{}: (max_iterations={})'.format(method.upper(), max_iter))
-      X_adv, _ = get_adversarial_examples(model_name, method, X, Y, max_iterations=max_iter)
+      for clip_max in ATTACK.get_df_clip_max():
+        print('{}: (max_iterations={})'.format(method.upper(), max_iter))
+        X_adv, _ = get_adversarial_examples(model_name, method, X, Y, max_iterations=max_iter, clip_max=clip_max)
 
       attack_params = 'maxIter{}'.format(max_iter)
       save_adv_examples(X_adv, prefix=prefix, dataset=dataset, transformation='clean',
                         attack_method=method, attack_params=attack_params)
-  elif (method == ATTACK.CW):
+  elif method == ATTACK.CW:
     for ord in ATTACK.get_cw_order():
       for max_iter in ATTACK.get_cw_maxIter():
         print('{}: (ord={}, max_iterations={})'.format(method.upper(), ord, max_iter))
-        if (ord == 2):
+        if ord == 2:
           X_adv, _ = get_adversarial_examples(model_name, method, X, Y,
                                               ord=ord, max_iterations=max_iter)
 
           attack_params = 'L{}_maxIter{}'.format(ord, max_iter)
           save_adv_examples(X_adv, prefix=prefix, dataset=dataset, transformation='clean',
                             attack_method=method, attack_params=attack_params)
-  elif (method == ATTACK.JSMA):
+  elif method == ATTACK.JSMA:
     for theta in ATTACK.get_jsma_theta():
       for gamma in ATTACK.get_jsma_gamma():
         print('{}: (theta={}, gamma={})'.format(method.upper(), theta, gamma))
@@ -88,7 +89,7 @@ def craft(dataset, method):
         save_adv_examples(X_adv, prefix=prefix, dataset=dataset, transformation='clean',
                           attack_method=method, attack_params=attack_params)
 
-  elif (method == ATTACK.PGD):
+  elif method == ATTACK.PGD:
     nb_iter = 100
     eps_iter = 0.01
     for eps in ATTACK.get_pgd_eps():
