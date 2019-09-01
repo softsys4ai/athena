@@ -28,7 +28,7 @@ def load_data(dataset):
     nb_channels = 0
     nb_classes = 0
 
-    if (dataset == DATA.mnist):
+    if (DATA.mnist == dataset):
         """
         Dataset of 60,000 28x28 grayscale images of the 10 digits,
         along with a test set of 10,000 images.
@@ -40,7 +40,7 @@ def load_data(dataset):
         nb_examples, img_rows, img_cols = X_test.shape
         nb_channels = 1
         nb_classes = 10
-    elif (dataset == DATA.fation_mnist):
+    elif (DATA.fation_mnist == dataset):
         """
         Dataset of 60,000 28x28 grayscale images of 10 fashion categories,
         along with a test set of 10,000 images. The class labels are:
@@ -63,7 +63,7 @@ def load_data(dataset):
         nb_examples, img_rows, img_cols = X_test.shape
         nb_channels = 1
         nb_classes = 10
-    elif (dataset == DATA.cifar_10):
+    elif (DATA.cifar_10 == dataset):
         """
         Dataset of 50,000 32x32 color training images, labeled over 10 categories, and 10,000 test images.
         """
@@ -73,7 +73,7 @@ def load_data(dataset):
             print('test - {}, {}'.format(X_test.shape, Y_test.shape))
         nb_examples, img_rows, img_cols, nb_channels = X_test.shape
         nb_classes = 10
-    elif (dataset == DATA.cifar_100):
+    elif (DATA.cifar_100 == dataset):
         (X_train, Y_train), (X_test, Y_test) = cifar100.load_data()
         if MODE.DEBUG:
             print('shapes:\ntrain - {}, {}'.format(X_train.shape, Y_train.shape))
@@ -92,6 +92,12 @@ def load_data(dataset):
     X_train /= 255.
     X_test /= 255.
 
+    """
+    mean-std normalization
+    """
+    # if (DATA.cifar_10 == dataset):
+    #     X_train = normalize(X_train)
+    #     X_test = normalize(X_test)
     """
     one-hot-encode the labels
     """

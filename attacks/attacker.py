@@ -6,6 +6,7 @@ import logging
 
 import time
 
+from data import normalize
 from config import *
 import attacks.whitebox as whitebox
 
@@ -61,14 +62,17 @@ def get_adversarial_examples(model_name, attack_method, X, Y, **kwargs):
         print('Time cost: {}'.format(duration))
     elif (attack_method == ATTACK.DEEPFOOL):
         # Images for inception classifier are normalized to be in [0, 255] interval.
-        X *= 255.
+        # X = normalize(X)
+        # X *= 255.
 
         max_iterations = kwargs.get('max_iterations', 1)
         ord = kwargs.get('ord', 2)
         attack_params = {
             'ord': ord,
             'max_iterations': max_iterations,
-            'nb_candidate': Y.shape[1]
+            'nb_candidate': Y.shape[1],
+            'clip_min': 0.,
+            'clip_max': 1.
         }
 
         logger.info('{}: (max_iterations={})'.format(attack_method.upper(), max_iterations))
@@ -77,7 +81,7 @@ def get_adversarial_examples(model_name, attack_method, X, Y, **kwargs):
         duration = time.time() - start_time
         print('Time cost: {}'.format(duration))
 
-        X_adv /= 255.
+        # X_adv /= 255.
     elif (attack_method == ATTACK.CW):
         max_iterations = kwargs.get('max_iterations', 100)
         ord = kwargs.get('ord', 2)
@@ -124,6 +128,7 @@ def get_adversarial_examples(model_name, attack_method, X, Y, **kwargs):
         start_time = time.time()
         X_adv, Y = whitebox.generate(model_name, X, Y, attack_method, attack_params)
         duration = time.time() - start_time
+        logger.info('Time cost: {}'.format(duration))
 
     print('*** SHAPE: {}'.format(X_adv.shape))
     return X_adv, Y

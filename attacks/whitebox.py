@@ -10,16 +10,9 @@ from __future__ import unicode_literals
 
 import os
 
-import tensorflow as tf
-from tensorflow.keras.models import model_from_json
-from tensorflow.python.platform import flags
-from tensorflow.keras import optimizers
-# import keras.backend as K
-
-import data
 from models import *
 from config import *
-from plot import draw_comparisons
+from plot import plot_comparisons
 
 from cleverhans.attacks import FastGradientMethod
 from cleverhans.attacks import SaliencyMapMethod
@@ -29,6 +22,8 @@ from cleverhans.attacks import BasicIterativeMethod
 from cleverhans.attacks import ProjectedGradientDescent
 from cleverhans.evaluation import batch_eval
 from cleverhans.utils_keras import KerasModelWrapper
+
+import attacks.cw_linf as cw_linf
 
 # FLAGS = flags.FLAGS
 
@@ -50,7 +45,8 @@ def generate(model_name, X, Y, attack_method, attack_params):
 
     # flag - whether to train a clean model
     train_new_model = True
-    if (os.path.isfile('{}/{}.h5'.format(PATH.MODEL, model_name))):
+    if (os.path.isfile('{}/{}.h5'.format(PATH.MODEL, model_name)) or
+      (os.path.isfile('{}/{}.json'.format(PATH.MODEL, model_name)))):
         # found a trained model
         print('Found the trained model.')
         train_new_model = False
@@ -125,7 +121,7 @@ def generate(model_name, X, Y, attack_method, attack_params):
             pass
         elif (ord == np.inf):
             # TODO
-            pass
+            attacker = cw_linf.CarliniLi(sess, model)
         else:
             raise ValueError('CW supports only l0, l2, and l-inf norms.')
 
@@ -183,6 +179,10 @@ def generate(model_name, X, Y, attack_method, attack_params):
             'metrics': adv_accuracy_metric
         }
 
+    print('#### Recompile the model')
+    model.compile(optimizer=compile_params['optimizer'],
+                  loss=keras.losses.categorical_crossentropy,
+                  metrics=['accuracy', adv_accuracy_metric])
     # train_model(model, dataset, model_name, need_augment=False, **kwargs)
     if (train_new_model):
         model = train_model(model, dataset, model_name,
@@ -199,8 +199,10 @@ def generate(model_name, X, Y, attack_method, attack_params):
                         [X, Y], batch_size=batch_size)
 
     if (MODE.DEBUG):
-        title = '{}-{}'.format(dataset, attack_method)
-        draw_comparisons(X[:10], adv_examples[:10], title)
+        score = model.evaluate(adv_examples, Y, verbose=2)
+        print('*** Evaluation on adversarial examples: {}'.format(score))
+        # title = '{}-{}'.format(dataset, attack_method)
+        # draw_comparisons(X[10:20], adv_examples[10:20], title)
 
     if (train_new_model):
         """

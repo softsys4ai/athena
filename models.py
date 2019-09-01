@@ -244,6 +244,12 @@ def train(model, X, Y, model_name, need_augment=False, **kwargs):
 
   nb_examples, img_rows, img_cols, nb_channels = X.shape
 
+  if (DATA.cifar_10 == dataset):
+    """
+    mean-std normalization
+    """
+    X = data.normalize(X)
+
   nb_training = int(nb_examples * (1. - validation_rate))
   train_examples = X[:nb_training]
   train_labels = Y[:nb_training]
@@ -316,6 +322,7 @@ def train_and_save(model_name, X, Y, validation_rate=0.2, need_augment=False):
   :param Y: corresponding desired labels.
   :param need_augment: a flag whether to perform data augmentation before training.
   """
+
   prefix, dataset, architect, trans_type = model_name.split('-')
   nb_examples, img_rows, img_cols, nb_channels = X.shape
 
@@ -443,16 +450,17 @@ def save_to_json(model, model_name):
   with open(file_name, 'w') as json_file:
     json_file.write(model_json)
 
-  model.save_weigths('{}/weights_{}.h5'.format(PATH.MODEL, model_name))
+  model.save_weights('{}/weights_{}.h5'.format(PATH.MODEL, model_name))
 
 def load_from_json(model_name,
                    optimizer=keras.optimizers.RMSprop(lr=0.001, decay=1e-6)):
-  json_file = open('{}/{}.json'.format(PATH.MODEL, model_name), 'r')
+  dataset = model_name.split('-')[1]
+  json_file = open('{}/{}/{}.json'.format(PATH.MODEL, dataset, model_name), 'r')
   loaded_model_json = json_file.read()
   json_file.close()
 
   model = keras.models.model_from_json(loaded_model_json)
-  model.load_weights('{}/weights_{}.h5'.format(PATH.MODEL, model_name))
+  model.load_weights('{}/{}/weights_{}.h5'.format(PATH.MODEL, dataset, model_name))
 
   model.compile(
     optimizer=optimizer,

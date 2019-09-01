@@ -80,8 +80,8 @@ class TRANSFORMATION(object):
     """
     samplewise_std_norm = 'samplewise_std_norm'
     feature_std_norm = 'feature_std_norm'
-    zca_whitening = 'zca_whitening'
-    #pca_whitening = 'pca_whitening'
+    zca_whitening = 'zca_whitening' # TODO: bug fix
+    #pca_whitening = 'pca_whitening' # TODO: add ?
 
     """
     cartoonify
@@ -98,12 +98,12 @@ class TRANSFORMATION(object):
     """
     quantization
     """
-    quant_2clusters = 'quant_2_clusters'
-    quant_4clusters = 'quant_4_clusters'
-    quant_8clusters = 'quant_8_clusters'
-    quant_16clusters = 'quant_16_clusters'
-    quant_32clusters = 'quant_32_clusters'
-    quant_64clusters = 'quant_64_clusters'
+    quant_2_clusters = 'quant_2_clusters'
+    quant_4_clusters = 'quant_4_clusters' # TODO: temporary removed from list
+    quant_8_clusters = 'quant_8_clusters'
+    quant_16_clusters = 'quant_16_clusters' # TODO: temporary removed from list
+    quant_32_clusters = 'quant_32_clusters'
+    quant_64_clusters = 'quant_64_clusters' # TODO: temporary removed from list
 
     """
     distortion
@@ -135,12 +135,12 @@ class TRANSFORMATION(object):
     filter_roberts = 'filter_roberts'
     filter_scharr = 'filter_scharr'
     filter_prewitt = 'filter_prewitt'
-    filter_meijering = 'filter_meijering'
-    filter_sato = 'filter_sato'
-    filter_frangi = 'filter_frangi'
-    filter_hessian = 'filter_hessian'
-    filter_skeletonize = 'filter_skeletonize'
-    filter_thin = 'filter_thin'
+    filter_meijering = 'filter_meijering' # TODO: bug fix
+    filter_sato = 'filter_sato' # TODO: bug fix
+    filter_frangi = 'filter_frangi' # TODO: bug fix
+    filter_hessian = 'filter_hessian' # TODO: bug fix
+    filter_skeletonize = 'filter_skeletonize' # TODO: bug fix
+    filter_thin = 'filter_thin' # TODO: bug fix
 
 
     """
@@ -159,7 +159,7 @@ class TRANSFORMATION(object):
     """
     denoise_tv_chambolle = 'denoise_tv_chambolle'
     denoise_tv_bregman = 'denoise_tv_bregman'
-    denoise_bilateral = 'denoise_bilateral'
+    denoise_bilateral = 'denoise_bilateral' # TODO: bug fix
     denoise_wavelet = 'denoise_wavelet'
     denoise_nl_means = 'denoise_nl_means'
     denoise_nl_fast = 'denoise_nl_means_fast'
@@ -168,7 +168,7 @@ class TRANSFORMATION(object):
     geometric
     """
     geo_swirl = 'geo_swirl'
-    geo_random = 'geo_random'
+    geo_radon = 'geo_radon' # TODO: remove from list
     geo_iradon = 'geo_iradon'
     geo_iradon_sart = 'geo_iradon_sart'
 
@@ -176,7 +176,7 @@ class TRANSFORMATION(object):
     segmentation
     """
     seg_gradient = 'seg_gradient'
-    seg_watershed = 'seg_watershed'
+    seg_watershed = 'seg_watershed' # TODO: bug fix
 
 
     ROTATE = [rotate90, rotate180, rotate270]
@@ -186,25 +186,29 @@ class TRANSFORMATION(object):
     AFFINE_TRANS = [affine_vertical_compress, affine_vertical_stretch,
                     affine_horizontal_compress, affine_horizontal_stretch,
                     affine_both_compress, affine_both_stretch]
-    MORPH_TRANS = [morph_erosion, morph_dilation, morph_opening, morph_closing, morph_gradient, filter_skeletonize, filter_thin]
-    AUGMENT = [samplewise_std_norm, feature_std_norm, zca_whitening]
+    MORPH_TRANS = [morph_erosion, morph_dilation, morph_opening, morph_closing, morph_gradient]
+    AUGMENT = [samplewise_std_norm, feature_std_norm] #, zca_whitening]
     CARTOONS = [cartoon_mean_type1, cartoon_mean_type2, cartoon_mean_type3, cartoon_mean_type4,
                 cartoon_gaussian_type1, cartoon_gaussian_type2, cartoon_gaussian_type3, cartoon_gaussian_type4]
-    QUANTIZATIONS = [quant_2clusters, quant_4clusters, quant_8clusters,
-                     quant_16clusters, quant_32clusters, quant_64clusters]
+    QUANTIZATIONS = [quant_2_clusters, quant_4_clusters, quant_8_clusters,
+                     quant_16_clusters, quant_32_clusters, quant_64_clusters]
     DISTORTIONS = [distortion_x, distortion_y]
     NOISES =[noise_gaussian, noise_localvar, noise_poisson, noise_salt,
              noise_pepper, noise_saltNpepper, noise_speckle]
+    # FILTERS = [filter_sobel, filter_gaussian, filter_rank, filter_median, filter_minimum,
+    #            filter_maximum, filter_entropy, filter_roberts, filter_scharr,
+    #            filter_prewitt, filter_meijering, filter_sato, filter_frangi, filter_hessian,
+    #            filter_skeletonize, filter_thin] # TODO: full set
     FILTERS = [filter_sobel, filter_gaussian, filter_rank, filter_median, filter_minimum,
-               filter_maximum, filter_entropy, filter_roberts, filter_scharr,
-               filter_prewitt, filter_meijering, filter_sato, filter_frangi, filter_hessian,
-               filter_skeletonize, filter_thin]
+                   filter_maximum, filter_entropy, filter_roberts, filter_scharr,
+                   filter_prewitt]
     COMPRESSION = [compress_jpeg_quality_80, compress_jpeg_quality_50,
                    compress_jpeg_quality_30, compress_jpeg_quality_10,
                    compress_png_compression_1, compress_png_compression_8, compress_png_compression_5]
-    DENOISING = [denoise_tv_chambolle, denoise_tv_bregman, denoise_bilateral, denoise_wavelet, denoise_nl_means, denoise_nl_fast]
-    GEOMETRIC = [geo_swirl, geo_random, geo_iradon, geo_iradon_sart]
-    SEGMENTATION = [seg_gradient, seg_watershed]
+    DENOISING = [denoise_tv_chambolle, denoise_tv_bregman, # denoise_bilateral,
+                 denoise_wavelet, denoise_nl_means, denoise_nl_fast]
+    GEOMETRIC = [geo_swirl, geo_iradon, geo_iradon_sart]
+    SEGMENTATION = [seg_gradient] #, seg_watershed]
 
     @classmethod
     def supported_types(cls):
@@ -226,7 +230,8 @@ class TRANSFORMATION(object):
         transformations.extend(cls.GEOMETRIC)
         transformations.extend(cls.SEGMENTATION)
 
-        return transformations
+        print('Support {} types of transformations.'.format(len(transformations)))
+        return np.sort(transformations)
 
 class ATTACK(object):
     """
@@ -254,7 +259,7 @@ class ATTACK(object):
     # ---------------------------
     @classmethod
     def get_fgsm_eps(cls):
-        return [0.25, 0.3, 0.1, 0.05, 0.01, 0.005] # full set
+        return [0.3, 0.25, 0.1, 0.05, 0.025, 0.01] # full set
         #return [0.25] # for test
 
     @classmethod
@@ -274,8 +279,8 @@ class ATTACK(object):
     # ---------------------------
     @classmethod
     def get_bim_nbIter(cls):
-        return [1, 10, 100, 1000, 10000, 100000] # full set
-        # return [100] # for test
+        # return [1, 10, 100, 1000, 10000, 100000] # full set
+        return [1, 1000] # for test
 
     @classmethod
     def get_bim_norm(cls):
@@ -285,11 +290,11 @@ class ATTACK(object):
     @classmethod
     def get_bim_eps(cls, order):
         if order == 2:
-            return [0.1, 0.25, 0.5, 1]
-            # return [0.5, 0.25]
+            # return [0.1, 0.25, 0.5, 1]
+            return [0.5, 1.]
         elif order == np.inf:
-            return [0.005, 0.01, 0.05, 0.1, 0.25, 0.5]
-            # return [0.01, 0.005]
+            # return [0.005, 0.01, 0.05, 0.1, 0.25, 0.5]
+            return [0.1, 0.25, 0.5]
 
     @classmethod
     def get_bim_AETypes(cls):
@@ -329,8 +334,8 @@ class ATTACK(object):
     # ----------------------------
     @classmethod
     def get_df_maxIter(cls):
-        return [1, 10, 100, 1000, 10000, 100000] # full set
-        # return [10]
+        # return [1, 10, 100, 1000, 10000, 100000] # full set
+        return [10000]
 
     # ----------------------------
     # JSMA parameters
@@ -359,6 +364,13 @@ class ATTACK(object):
     def get_cw_maxIter(cls):
         # return [1, 10, 100, 1000, 10000, 100000] # full set
         return [100]
+
+    # ----------------------------
+    # PGD parameters
+    # ----------------------------
+    @classmethod
+    def get_pgd_eps(cls):
+        return [1., 0.75, 0.5, 0.3, 0.25, 0.1, 0.05]
 
 class DATA(object):
     """

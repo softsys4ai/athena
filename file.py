@@ -8,19 +8,19 @@ import os
 
 from config import *
 from data import load_data
-from plot import draw_comparisons
+from plot import plot_comparisons
 
 def dict2csv(dictionary, file_name):
-    """
-    Serialize values in given dictionary to a csv file.
-    :param dictionary: the dictionary to save.
-    :param file_name: the name of the csv file, including the path.
-    """
-    print(dictionary)
-    with open(file_name, 'w') as outfile:
-        writer = csv.writer(outfile, delimiter=',')
-        writer.writerow(dictionary.keys())
-        writer.writerows(zip(*dictionary.values()))
+  """
+  Serialize values in given dictionary to a csv file.
+  :param dictionary: the dictionary to save.
+  :param file_name: the name of the csv file, including the path.
+  """
+  print(dictionary)
+  with open(file_name, 'w') as outfile:
+    writer = csv.writer(outfile, delimiter=',')
+    writer.writerow(dictionary.keys())
+    writer.writerows(zip(*dictionary.values()))
 
 def save_adv_examples(data, **kwargs):
   """
@@ -43,8 +43,8 @@ def save_adv_examples(data, **kwargs):
   np.save('{}/{}'.format(PATH.ADVERSARIAL_FILE, file_name), data)
 
   if MODE.DEBUG:
-      title = '{}-{}'.format(model_info, attack_info)
-      _, (bs_samples, _) = load_data(dataset)
-      draw_comparisons(bs_samples[10:20], data[10:20], title)
+    title = '{}-{}'.format(model_info, attack_info)
+    _, (bs_samples, _) = load_data(dataset)
+    plot_comparisons(bs_samples[10:20], data[10:20], title)
 
   print('Adversarial examples saved to {}/{}.'.format(PATH.ADVERSARIAL_FILE, file_name))
