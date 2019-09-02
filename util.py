@@ -922,7 +922,7 @@ def kFoldPredictionSetup(
     '''
     # Load models and create models to output logits
     modelFilenamePrefix = datasetName+"-"+architecture
-    models, logitsModels = loadModels(modelsDir, modelFilenamePrefix, transformationList)
+    models, logitsModels = loadModels(modelsDir, modelFilenamePrefix, transformationList, datasetName)
     numOfModels = len(models) # include the clean model, positioning at index 0
 
     # connect input images with predicted results 
@@ -1044,7 +1044,7 @@ def predictionForTest(
     '''
     # Load models and create models to output logits
     modelFilenamePrefix = datasetName+"-"+architecture
-    models, logitsModels = loadModels(modelsDir, modelFilenamePrefix, transformationList)
+    models, logitsModels = loadModels(modelsDir, modelFilenamePrefix, transformationList, datasetName)
     numOfModels = len(models) # include the clean model, positioning at index 0
 
     # Load labels
@@ -1107,9 +1107,67 @@ def predictionForTest(
        
 
 
+def cnn_cifar_logit_output(input_shape, nb_classes):
+  """
+  a cnn for cifar
+  :param input_shape:
+  :param nb_classes:
+  :return:
+  """
+
+  struct = [
+    layers.Conv2D(32, (3, 3), padding='same',
+                  kernel_regularizer=regularizers.l2(weight_decay),
+                  input_shape=input_shape),
+    layers.Activation('elu'),
+    layers.BatchNormalization(),
+
+    layers.Conv2D(32, (3, 3), padding='same',
+                  kernel_regularizer=regularizers.l2(weight_decay)),
+    layers.Activation('elu'),
+    layers.BatchNormalization(),
+    layers.MaxPooling2D(pool_size=(2, 2)),
+    layers.Dropout(0.2),
+
+    layers.Conv2D(64, (3, 3), padding='same',
+                  kernel_regularizer=regularizers.l2(weight_decay)),
+    layers.Activation('elu'),
+    layers.BatchNormalization(),
+
+    layers.Conv2D(64, (3, 3), padding='same',
+                  kernel_regularizer=regularizers.l2(weight_decay)),
+    layers.Activation('elu'),
+    layers.BatchNormalization(),
+    layers.MaxPooling2D(pool_size=(2, 2)),
+    layers.Dropout(0.3),
+
+    layers.Conv2D(128, (3, 3), padding='same',
+                  kernel_regularizer=regularizers.l2(weight_decay)),
+    layers.Activation('elu'),
+    layers.BatchNormalization(),
+
+    layers.Conv2D(128, (3, 3), padding='same',
+                  kernel_regularizer=regularizers.l2(weight_decay)),
+    layers.Activation('elu'),
+    layers.BatchNormalization(),
+    layers.MaxPooling2D(pool_size=(2, 2)),
+    layers.Dropout(0.4),
+
+    layers.Flatten(),
+    layers.Dense(nb_classes)
+  ]
+
+  model = models.Sequential()
+  for layer in struct:
+    model.add(layer)
+
+  if MODE.DEBUG:
+    print(model.summary())
+  return model
 
 
-def loadModels(modelsDir, modelFilenamePrefix, transformationList):
+
+def loadModels(modelsDir, modelFilenamePrefix, transformationList, datasetName):
     models=[]
     logitsModels=[]
     print("Number of transformations: {}".format(len(transformationList)))
@@ -1123,10 +1181,16 @@ def loadModels(modelsDir, modelFilenamePrefix, transformationList):
         model = load_model(modelNameFP)
         models.append(model)
         # Create corresponding model for outputing logits
-        layerName=model.layers[-2].name
-        logitsModel = Model(
-                inputs=model.input,
-                outputs=model.get_layer(layerName).output)
+        if datasetName == "cifar10":
+            # apply probability-to-logit to the output when calling for prediction
+            inputShape=(32， 32， 3)
+            logitsModel = cnn_cifar_logit_output(inputShape, 10)
+            logitsModel.set_weights(model.get_weights())
+        else: # mnist
+            layerName=model.layers[-2].name
+            logitsModel = Model(
+                    inputs=model.input,
+                    outputs=model.get_layer(layerName).output)
         logitsModels.append(logitsModel)
     
     print("Number of loaded models: {}".format(len(models)))
