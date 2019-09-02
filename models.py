@@ -444,6 +444,8 @@ def evaluate_model(model, X, Y):
 
   return test_acc, ave_conf_correct, ave_conf_miss
 
+
+
 def save_to_json(model, model_name):
   file_name = '{}/{}.json'.format(PATH.MODEL, model_name)
   model_json = model.to_json()

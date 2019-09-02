@@ -20,13 +20,14 @@ if len(sys.argv) != 6:
 inputImagesFP = sys.argv[1]
 modelsDir = sys.argv[2]
 experimentRootDir = sys.argv[3]
-datasetName = sys.argv[4]
-numOfClasses = int(sys.argv[5])
-
 
 # Basic parameters for k-fold experiment setup
+datasetName = DATA.mnist
 architecture = MODEL.ARCHITECTURE
+numOfClasses = 10
+
 AETypes = ATTACK.get_AETypes()
+
 numOfAETypes = len(AETypes)
 
 targetModelName = "clean"
