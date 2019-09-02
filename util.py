@@ -1,5 +1,6 @@
 import os
 import time
+import re
 
 import matplotlib
 matplotlib.use('Agg')
@@ -1121,7 +1122,7 @@ def loadModels(modelsDir, modelFilenamePrefix, transformationList, datasetName):
         # Create corresponding model for outputing logits
         if datasetName == "cifar10":
             modelArchNameFP = os.path.join(modelsDir, modelName+".json")
-            modelWeightsNameFP = os.path.join(modelsDir, modelName+".h5")
+            modelWeightsNameFP = os.path.join(modelsDir, "weights_"+modelName+".h5")
             json_file = open(modelArchNameFP, 'r')
             loaded_model_json = json_file.read()
             json_file.close()

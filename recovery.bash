@@ -3,13 +3,13 @@
 rootDir="experiment"
 modelsDir="models"
 
-dataSetName="mnist"
+dataSetName="cifar10" #"mnist"
 numOfClasses=10
 
 # Change training and testing paramters accordingly
 # [Training parameters]
 trainSamplesDir="training_samples"
-numOfTrainSamples=12000
+numOfTrainSamples=10000
 kFold=5
 
 # [Testing paramters]
@@ -21,7 +21,7 @@ python train.py "$trainSamplesDir" "$rootDir" "$modelsDir" "$numOfTrainSamples" 
 
 experimentRootDir=$(cat "current_experiment_root_dir_name.txt")
 
-python test_ensemble_model_on_all_types_of_AEs.py "$testSamplesDir" "$experimentRootDir" "$modelsDir" "$numOfTestSamples" "$testResultFoldName" "$dataSetName"
+python test_ensemble_model_on_all_types_of_AEs.py "$testSamplesDir" "$experimentRootDir" "$modelsDir" "$numOfTestSamples" "$testResultFoldName" "$dataSetName" "$numOfClasses"
 
 # collect new labels from each ensemble model for the give image dataset
 #inputImagesFP="${testSamplesDir}/BS-${dataSetName}-clean.npy" # change it accordingly
