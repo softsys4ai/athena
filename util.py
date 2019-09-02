@@ -1107,65 +1107,6 @@ def predictionForTest(
        
 
 
-def cnn_cifar_logit_output(input_shape, nb_classes):
-  """
-  a cnn for cifar
-  :param input_shape:
-  :param nb_classes:
-  :return:
-  """
-
-  struct = [
-    layers.Conv2D(32, (3, 3), padding='same',
-                  kernel_regularizer=regularizers.l2(weight_decay),
-                  input_shape=input_shape),
-    layers.Activation('elu'),
-    layers.BatchNormalization(),
-
-    layers.Conv2D(32, (3, 3), padding='same',
-                  kernel_regularizer=regularizers.l2(weight_decay)),
-    layers.Activation('elu'),
-    layers.BatchNormalization(),
-    layers.MaxPooling2D(pool_size=(2, 2)),
-    layers.Dropout(0.2),
-
-    layers.Conv2D(64, (3, 3), padding='same',
-                  kernel_regularizer=regularizers.l2(weight_decay)),
-    layers.Activation('elu'),
-    layers.BatchNormalization(),
-
-    layers.Conv2D(64, (3, 3), padding='same',
-                  kernel_regularizer=regularizers.l2(weight_decay)),
-    layers.Activation('elu'),
-    layers.BatchNormalization(),
-    layers.MaxPooling2D(pool_size=(2, 2)),
-    layers.Dropout(0.3),
-
-    layers.Conv2D(128, (3, 3), padding='same',
-                  kernel_regularizer=regularizers.l2(weight_decay)),
-    layers.Activation('elu'),
-    layers.BatchNormalization(),
-
-    layers.Conv2D(128, (3, 3), padding='same',
-                  kernel_regularizer=regularizers.l2(weight_decay)),
-    layers.Activation('elu'),
-    layers.BatchNormalization(),
-    layers.MaxPooling2D(pool_size=(2, 2)),
-    layers.Dropout(0.4),
-
-    layers.Flatten(),
-    layers.Dense(nb_classes)
-  ]
-
-  model = models.Sequential()
-  for layer in struct:
-    model.add(layer)
-
-  if MODE.DEBUG:
-    print(model.summary())
-  return model
-
-
 
 def loadModels(modelsDir, modelFilenamePrefix, transformationList, datasetName):
     models=[]
@@ -1188,9 +1129,9 @@ def loadModels(modelsDir, modelFilenamePrefix, transformationList, datasetName):
             model.load_weights(modelWeightsNameFP)
             models.append(model)
 
-            # apply probability-to-logit to the output when calling for prediction
-            inputShape=(32, 32, 3)
-            logitsModel = cnn_cifar_logit_output(inputShape, 10)
+            # Temporarily workaround: remove softmax activation in the output layer 
+            loaded_model_json2 = re.sub(r'"activation": "softmax",', "", loaded_model_json)
+            logitsModel = model_from_json(loaded_model_json2)
             logitsModel.set_weights(model.get_weights())
         else: # mnist
             modelNameFP = os.path.join(modelsDir, modelName+".h5")
