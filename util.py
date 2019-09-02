@@ -6,9 +6,7 @@ matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 
 from sklearn.cluster import KMeans
-from tensorflow.keras.models import load_model
-from tensorflow.keras.models import Model
-
+from tensorflow.keras.models import load_model, Model, model_from_json
 from config import *
 from transformation import transform_images
 
@@ -977,8 +975,8 @@ def kFoldPredictionSetup(
                     else:
                         foldIndices = np.array(range(0, (foldIdx-1)*oneFoldAmount))
 
-            curSamples = samples[foldIndices]
-            numOfCurSamples = curSamples.shape[0] 
+            oriCurSamples = samples[foldIndices]
+            numOfCurSamples = oriCurSamples.shape[0] 
 
             # 0 - Transform TC, 1 - Prediction (Prob) TC 2 - Prediction (Logit) TC
             curPredTCs  = np.zeros((numOfModels, 3))
@@ -988,6 +986,7 @@ def kFoldPredictionSetup(
 
             for modelID in range(numOfModels):
                 transformType = transformationList[modelID]
+                curSamples = oriCurSamples.copy()
                 print("\t\t\t [{}] prediction on {} model".format(modelID, transformType))
                 # Transformation cost
                 startTime = time.monotonic()
@@ -1071,7 +1070,7 @@ def predictionForTest(
         curExprDir = os.path.join(predictionResultDir, sampleType)
         createDirSafely(curExprDir)
 
-        curSamples = np.load(os.path.join(samplesDir, sampleFilename))
+        oriCurSamples = np.load(os.path.join(samplesDir, sampleFilename))
 
         # 0 - Transform TC, 1 - Prediction (Prob) TC 2 - Prediction (Logit) TC
         curPredTCs  = np.zeros((numOfModels, 3))
@@ -1081,6 +1080,7 @@ def predictionForTest(
 
         for modelID in range(numOfModels):
             transformType = transformationList[modelID]
+            curSamples = oriCurSamples.copy()
             print("\t\t\t [{}] prediction on {} model".format(modelID, transformType))
             # Transformation cost
             startTime = time.monotonic()
@@ -1173,20 +1173,29 @@ def loadModels(modelsDir, modelFilenamePrefix, transformationList, datasetName):
     print("Number of transformations: {}".format(len(transformationList)))
     for tIdx in range(len(transformationList)):
         transformType = transformationList[tIdx]
-        if transformType == 'noise_s&p':
-            transformType = 'noise_s_p'
+        #if transformType == 'noise_s&p':
+        #    transformType = 'noise_s_p'
         modelName = "model-"+modelFilenamePrefix+"-"+transformType
-        modelNameFP = os.path.join(modelsDir, modelName+".h5")
         print("loading model {}".format(modelName))
-        model = load_model(modelNameFP)
-        models.append(model)
         # Create corresponding model for outputing logits
         if datasetName == "cifar10":
+            modelArchNameFP = os.path.join(modelsDir, modelName+".json")
+            modelWeightsNameFP = os.path.join(modelsDir, modelName+".h5")
+            json_file = open(modelArchNameFP, 'r')
+            loaded_model_json = json_file.read()
+            json_file.close()
+            model = model_from_json(loaded_model_json)
+            model.load_weights(modelWeightsNameFP)
+            models.append(model)
+
             # apply probability-to-logit to the output when calling for prediction
             inputShape=(32， 32， 3)
             logitsModel = cnn_cifar_logit_output(inputShape, 10)
             logitsModel.set_weights(model.get_weights())
         else: # mnist
+            modelNameFP = os.path.join(modelsDir, modelName+".h5")
+            model = load_model(modelNameFP)
+            models.append(model)
             layerName=model.layers[-2].name
             logitsModel = Model(
                     inputs=model.input,
