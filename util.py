@@ -6,9 +6,7 @@ matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 
 from sklearn.cluster import KMeans
-from tensorflow.keras.models import load_model
-from tensorflow.keras.models import Model
-
+from tensorflow.keras.models import load_model, Model, model_from_json
 from config import *
 from transformation import transform_images
 
@@ -922,7 +920,7 @@ def kFoldPredictionSetup(
     '''
     # Load models and create models to output logits
     modelFilenamePrefix = datasetName+"-"+architecture
-    models, logitsModels = loadModels(modelsDir, modelFilenamePrefix, transformationList)
+    models, logitsModels = loadModels(modelsDir, modelFilenamePrefix, transformationList, datasetName)
     numOfModels = len(models) # include the clean model, positioning at index 0
 
     # connect input images with predicted results 
@@ -977,8 +975,8 @@ def kFoldPredictionSetup(
                     else:
                         foldIndices = np.array(range(0, (foldIdx-1)*oneFoldAmount))
 
-            curSamples = samples[foldIndices]
-            numOfCurSamples = curSamples.shape[0] 
+            oriCurSamples = samples[foldIndices]
+            numOfCurSamples = oriCurSamples.shape[0] 
 
             # 0 - Transform TC, 1 - Prediction (Prob) TC 2 - Prediction (Logit) TC
             curPredTCs  = np.zeros((numOfModels, 3))
@@ -988,6 +986,7 @@ def kFoldPredictionSetup(
 
             for modelID in range(numOfModels):
                 transformType = transformationList[modelID]
+                curSamples = oriCurSamples.copy()
                 print("\t\t\t [{}] prediction on {} model".format(modelID, transformType))
                 # Transformation cost
                 startTime = time.monotonic()
@@ -1044,7 +1043,7 @@ def predictionForTest(
     '''
     # Load models and create models to output logits
     modelFilenamePrefix = datasetName+"-"+architecture
-    models, logitsModels = loadModels(modelsDir, modelFilenamePrefix, transformationList)
+    models, logitsModels = loadModels(modelsDir, modelFilenamePrefix, transformationList, datasetName)
     numOfModels = len(models) # include the clean model, positioning at index 0
 
     # Load labels
@@ -1071,7 +1070,7 @@ def predictionForTest(
         curExprDir = os.path.join(predictionResultDir, sampleType)
         createDirSafely(curExprDir)
 
-        curSamples = np.load(os.path.join(samplesDir, sampleFilename))
+        oriCurSamples = np.load(os.path.join(samplesDir, sampleFilename))
 
         # 0 - Transform TC, 1 - Prediction (Prob) TC 2 - Prediction (Logit) TC
         curPredTCs  = np.zeros((numOfModels, 3))
@@ -1081,6 +1080,7 @@ def predictionForTest(
 
         for modelID in range(numOfModels):
             transformType = transformationList[modelID]
+            curSamples = oriCurSamples.copy()
             print("\t\t\t [{}] prediction on {} model".format(modelID, transformType))
             # Transformation cost
             startTime = time.monotonic()
@@ -1107,26 +1107,99 @@ def predictionForTest(
        
 
 
+def cnn_cifar_logit_output(input_shape, nb_classes):
+  """
+  a cnn for cifar
+  :param input_shape:
+  :param nb_classes:
+  :return:
+  """
+
+  struct = [
+    layers.Conv2D(32, (3, 3), padding='same',
+                  kernel_regularizer=regularizers.l2(weight_decay),
+                  input_shape=input_shape),
+    layers.Activation('elu'),
+    layers.BatchNormalization(),
+
+    layers.Conv2D(32, (3, 3), padding='same',
+                  kernel_regularizer=regularizers.l2(weight_decay)),
+    layers.Activation('elu'),
+    layers.BatchNormalization(),
+    layers.MaxPooling2D(pool_size=(2, 2)),
+    layers.Dropout(0.2),
+
+    layers.Conv2D(64, (3, 3), padding='same',
+                  kernel_regularizer=regularizers.l2(weight_decay)),
+    layers.Activation('elu'),
+    layers.BatchNormalization(),
+
+    layers.Conv2D(64, (3, 3), padding='same',
+                  kernel_regularizer=regularizers.l2(weight_decay)),
+    layers.Activation('elu'),
+    layers.BatchNormalization(),
+    layers.MaxPooling2D(pool_size=(2, 2)),
+    layers.Dropout(0.3),
+
+    layers.Conv2D(128, (3, 3), padding='same',
+                  kernel_regularizer=regularizers.l2(weight_decay)),
+    layers.Activation('elu'),
+    layers.BatchNormalization(),
+
+    layers.Conv2D(128, (3, 3), padding='same',
+                  kernel_regularizer=regularizers.l2(weight_decay)),
+    layers.Activation('elu'),
+    layers.BatchNormalization(),
+    layers.MaxPooling2D(pool_size=(2, 2)),
+    layers.Dropout(0.4),
+
+    layers.Flatten(),
+    layers.Dense(nb_classes)
+  ]
+
+  model = models.Sequential()
+  for layer in struct:
+    model.add(layer)
+
+  if MODE.DEBUG:
+    print(model.summary())
+  return model
 
 
-def loadModels(modelsDir, modelFilenamePrefix, transformationList):
+
+def loadModels(modelsDir, modelFilenamePrefix, transformationList, datasetName):
     models=[]
     logitsModels=[]
     print("Number of transformations: {}".format(len(transformationList)))
     for tIdx in range(len(transformationList)):
         transformType = transformationList[tIdx]
-        if transformType == 'noise_s&p':
-            transformType = 'noise_s_p'
+        #if transformType == 'noise_s&p':
+        #    transformType = 'noise_s_p'
         modelName = "model-"+modelFilenamePrefix+"-"+transformType
-        modelNameFP = os.path.join(modelsDir, modelName+".h5")
         print("loading model {}".format(modelName))
-        model = load_model(modelNameFP)
-        models.append(model)
         # Create corresponding model for outputing logits
-        layerName=model.layers[-2].name
-        logitsModel = Model(
-                inputs=model.input,
-                outputs=model.get_layer(layerName).output)
+        if datasetName == "cifar10":
+            modelArchNameFP = os.path.join(modelsDir, modelName+".json")
+            modelWeightsNameFP = os.path.join(modelsDir, modelName+".h5")
+            json_file = open(modelArchNameFP, 'r')
+            loaded_model_json = json_file.read()
+            json_file.close()
+            model = model_from_json(loaded_model_json)
+            model.load_weights(modelWeightsNameFP)
+            models.append(model)
+
+            # apply probability-to-logit to the output when calling for prediction
+            inputShape=(32, 32, 3)
+            logitsModel = cnn_cifar_logit_output(inputShape, 10)
+            logitsModel.set_weights(model.get_weights())
+        else: # mnist
+            modelNameFP = os.path.join(modelsDir, modelName+".h5")
+            model = load_model(modelNameFP)
+            models.append(model)
+            layerName=model.layers[-2].name
+            logitsModel = Model(
+                    inputs=model.input,
+                    outputs=model.get_layer(layerName).output)
         logitsModels.append(logitsModel)
     
     print("Number of loaded models: {}".format(len(models)))

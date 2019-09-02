@@ -10,25 +10,24 @@ from util import *
 from train_models import train_models_with_newLabels 
 
 def usage():
-    print("===================================================================")
-    print("python <this script> inputImagesFP  experimentRootDir")
-    print("===================================================================")
+    print("==============================================================================")
+    print("python <this script> inputImagesFP  experimentRootDir datasetName numOfClasses")
+    print("==============================================================================")
 
-if len(sys.argv) != 3:
+if len(sys.argv) != 5:
     usage()
     exit(1)
 
 
 inputImagesFP = sys.argv[1]
 experimentRootDir = sys.argv[2]
+datasetName = sys.argv[3]
+numOfClasses = int(sys.argv[4])
+
 
 # Basic parameters for k-fold experiment setup
-datasetName = DATA.mnist
 architecture = MODEL.ARCHITECTURE
-numOfClasses = 10
-
 AETypes = ATTACK.get_AETypes()
-
 numOfAETypes = len(AETypes)
 
 targetModelName = "clean"
