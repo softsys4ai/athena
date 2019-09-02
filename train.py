@@ -8,15 +8,15 @@ from config import *
 from util import *
 
 def usage():
-    print("===================================================================")
-    print("python <this script> samplesDir rootDir modelsDir numOfSamples kFold")
+    print("=============================================================================================")
+    print("python <this script> samplesDir rootDir modelsDir numOfSamples kFold datasetName numOfClasses")
     print("Note:")
     print("\trootDir: directory for hold each run of evaluation result.")
     print("\t         For each run of evaluation, a directory named by a time stamp")
     print("\t         will be created inside 'rootDir'")
-    print("===================================================================")
+    print("=============================================================================================")
 
-if len(sys.argv) != 6:
+if len(sys.argv) != 8:
     usage()
     exit(1)
 
@@ -26,6 +26,9 @@ rootDir = sys.argv[2]
 modelsDir = sys.argv[3]
 numOfSamples  = int(sys.argv[4])
 kFold = int(sys.argv[5])
+datasetName = sys.argv[6] #DATA.mnist
+numOfClasses = int(sys.argv[7])
+
 
 # Basic parameters for k-fold experiment setup
 timeStamp=time.strftime("%Y-%m-%d_%H-%M-%S", time.gmtime())
@@ -34,12 +37,8 @@ createDirSafely(experimentRootDir)
 with open("current_experiment_root_dir_name.txt", "w") as fp:
     fp.write(experimentRootDir)
 
-#kFold = 5
 isKFolderUponTestSet=True
-datasetName = DATA.mnist
 architecture = MODEL.ARCHITECTURE
-numOfClasses = 10
-
 AETypes = ATTACK.get_AETypes()
 
 numOfAETypes = len(AETypes)

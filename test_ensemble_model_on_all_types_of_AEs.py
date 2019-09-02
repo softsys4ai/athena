@@ -8,11 +8,11 @@ from config import *
 from util import *
 
 def usage():
-    print("=============================================================================================")
-    print("python <this script> samplesDir experimentRootDir modelsDir numOfSamples testResultFoldName")
-    print("=============================================================================================")
+    print("====================================================================================================================")
+    print("python <this script> samplesDir experimentRootDir modelsDir numOfSamples testResultFoldName datasetName numOfClasses")
+    print("====================================================================================================================")
 
-if len(sys.argv) != 6:
+if len(sys.argv) != 8:
     usage()
     exit(1)
 
@@ -22,11 +22,11 @@ experimentRootDir   = sys.argv[2]
 modelsDir           = sys.argv[3]
 numOfSamples        = int(sys.argv[4])
 testResultFoldName  = sys.argv[5]
+datasetName = argv[6]
+numOfClasses = int(argv[7])
 
 # Basic parameters for k-fold experiment setup
-datasetName = DATA.mnist
 architecture = MODEL.ARCHITECTURE
-numOfClasses = 10
 testDir = os.path.join(experimentRootDir, testResultFoldName)
 
 AETypes = ATTACK.get_AETypes()
