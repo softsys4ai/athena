@@ -1189,7 +1189,7 @@ def loadModels(modelsDir, modelFilenamePrefix, transformationList, datasetName):
             models.append(model)
 
             # apply probability-to-logit to the output when calling for prediction
-            inputShape=(32， 32， 3)
+            inputShape=(32, 32, 3)
             logitsModel = cnn_cifar_logit_output(inputShape, 10)
             logitsModel.set_weights(model.get_weights())
         else: # mnist
