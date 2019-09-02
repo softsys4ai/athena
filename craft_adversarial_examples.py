@@ -35,7 +35,6 @@ def craft(dataset, method):
 
     model_name = 'model-{}-cnn-clean'.format(dataset)
 
-    X_adv = None
     if method == ATTACK.FGSM:
         for eps in ATTACK.get_fgsm_eps():
             print('{}: (eps={})'.format(method.upper(), eps))
@@ -114,4 +113,4 @@ if __name__ == '__main__':
   switch on debugging mode
   """
     MODE.debug_on()
-    main(DATA.mnist, ATTACK.DEEPFOOL)
+    main(DATA.cifar_10, ATTACK.DEEPFOOL)

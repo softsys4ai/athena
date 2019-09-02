@@ -62,7 +62,7 @@ def get_adversarial_examples(model_name, attack_method, X, Y, **kwargs):
         print('Time cost: {}'.format(duration))
     elif attack_method == ATTACK.DEEPFOOL:
         # Images for inception classifier are normalized to be in [0, 255] interval.
-        # X *= 255.
+        X *= 1.
 
         max_iterations = kwargs.get('max_iterations', 1)
         ord = kwargs.get('ord', 2)
@@ -70,6 +70,7 @@ def get_adversarial_examples(model_name, attack_method, X, Y, **kwargs):
             'ord': ord,
             'max_iterations': max_iterations,
             'nb_candidate': Y.shape[1],
+            'overshoot': 10.,
             'clip_min': 0.,
             'clip_max': 1.
         }
