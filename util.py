@@ -957,8 +957,6 @@ def kFoldPredictionSetup(
         createDirSafely(curExprDir)
 
         samples = np.load(os.path.join(samplesDir, sampleFilename))
-        if datasetName == DATA.cifar_10:
-            samples = normalize(samples)
         samples = samples[kFoldImgIndices]
 
         for foldIdx in range(1, 1+kFold):
@@ -997,6 +995,9 @@ def kFoldPredictionSetup(
                 tranSamples = transform_images(curSamples, transformType)
                 endTime = time.monotonic()
                 curPredTCs[modelID, 0] = endTime - startTime
+
+                if datasetName == DATA.cifar_10:
+                    tranSamples = normalize(tranSamples)
 
                 # model prediction cost - using probability-based defense
                 curPredProb[modelID, :, :],   curPredTCs[modelID, 1] = prediction(
@@ -1091,6 +1092,9 @@ def predictionForTest(
             tranSamples = transform_images(curSamples, transformType)
             endTime = time.monotonic()
             curPredTCs[modelID, 0] = endTime - startTime
+
+            if datasetName == DATA.cifar_10:
+                tranSamples = normalize(tranSamples)
 
             # model prediction cost - using probability-based defense
             curPredProb[modelID, :, :],   curPredTCs[modelID, 1] = prediction(

@@ -25,7 +25,7 @@ numOfClasses = int(sys.argv[5])
 
 # Basic parameters for k-fold experiment setup
 architecture = MODEL.ARCHITECTURE
-AETypes = ATTACK.get_AETypes()
+AETypes = ATTACK.get_AETypes(datasetName)
 numOfAETypes = len(AETypes)
 
 targetModelName = "clean"

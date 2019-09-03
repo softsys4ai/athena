@@ -264,8 +264,8 @@ class ATTACK(object):
                 cls.ONE_PIXEL, cls.PGD, cls.BLACKBOX]
 
     @classmethod
-    def get_AETypes(cls):
-        dataset = DATA.cifar_10
+    def get_AETypes(cls, dataset):
+        #dataset = DATA.cifar_10
         AETypes = []
         AETypes.extend(cls.get_jsma_AETypes(dataset))
         AETypes.extend(cls.get_fgsm_AETypes(dataset))

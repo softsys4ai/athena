@@ -39,7 +39,7 @@ with open("current_experiment_root_dir_name.txt", "w") as fp:
 
 isKFolderUponTestSet=True
 architecture = MODEL.ARCHITECTURE
-AETypes = ATTACK.get_AETypes()
+AETypes = ATTACK.get_AETypes(datasetName)
 
 numOfAETypes = len(AETypes)
 sampleTypes =["BS"]

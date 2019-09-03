@@ -37,7 +37,7 @@ createDirSafely(experimentRootDir)
 architecture = MODEL.ARCHITECTURE
 testDir = os.path.join(experimentRootDir, testResultFoldName)
 
-AETypes = ATTACK.get_AETypes()
+AETypes = ATTACK.get_AETypes(datasetName)
 
 
 numOfAETypes = len(AETypes)
