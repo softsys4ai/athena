@@ -11,6 +11,7 @@ from tensorflow.keras.models import load_model, Model, model_from_json
 from config import *
 from transformation import transform_images
 
+from data import normalize
 
 def randomChoiceBasedDefense(predProb, measureTC=False):
     '''
@@ -956,6 +957,8 @@ def kFoldPredictionSetup(
         createDirSafely(curExprDir)
 
         samples = np.load(os.path.join(samplesDir, sampleFilename))
+        if datasetName == DATA.cifar_10:
+            samples = normalize(samples)
         samples = samples[kFoldImgIndices]
 
         for foldIdx in range(1, 1+kFold):
