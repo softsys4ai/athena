@@ -356,7 +356,7 @@ class ATTACK(object):
         if dataset == DATA.cifar_10:
             return ['jsma_theta30_gamma50', 'jsma_theta50_gamma70']
         elif dataset == DATA.mnist:
-            return ['jsma_theta30_gamma50'] #, 'jsma_theta50_gamma70']
+            return ['jsma_theta30_gamma50'] 'jsma_theta50_gamma70']
 
     # ----------------------------
     # CW parameters
