@@ -332,7 +332,7 @@ class ATTACK(object):
     @classmethod
     def get_df_AETypes(cls, dataset):
         if dataset == DATA.cifar_10:
-            return []
+            return ["deepfool_maxIter100", "deepfool_maxIter10000"]
         elif dataset == DATA.mnist:
             return ['deepfool_maxIter100', 'deepfool_maxIter10000']
 
