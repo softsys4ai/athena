@@ -197,9 +197,11 @@ class TRANSFORMATION(object):
     when evaluation, we choose 2 types of quants for each dataset, for the time-consuming issue.
     """
     # cifar10
-    QUANTIZATIONS = [quant_16_clusters, quant_64_clusters]
+    if DATA.CUR_DATASET_NAME == DATA.cifar10:
+        QUANTIZATIONS = [quant_16_clusters, quant_64_clusters]
     # mnist
-    # QUANTIZATIONS = [quant_4_clusters, quant_8_clusters]
+    else: # extend the branch as necessary when adding more types of datasets
+        QUANTIZATIONS = [quant_4_clusters, quant_8_clusters]
 
     DISTORTIONS = [distortion_x, distortion_y]
     NOISES =[noise_gaussian, noise_localvar, noise_poisson, noise_salt,
@@ -266,14 +268,13 @@ class ATTACK(object):
 
     @classmethod
     def get_AETypes(cls):
-        #dataset = DATA.cifar_10
         AETypes = []
         AETypes.extend(cls.get_jsma_AETypes())
         AETypes.extend(cls.get_fgsm_AETypes())
         AETypes.extend(cls.get_bim_AETypes())
         AETypes.extend(cls.get_pgd_AETypes())
         AETypes.extend(cls.get_df_AETypes())
- 
+
         return AETypes
 
     # ---------------------------
