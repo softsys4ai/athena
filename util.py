@@ -52,8 +52,8 @@ def clusteringBasedDefesTrainPre(
         numOfModels,
         numOfAEs,
         numOfTrans,
-        maxNumOfClusters,
-        NC, 
+        #maxNumOfClusters,
+        #NC,
         AEPredLC,
         trueLabels):
     '''
@@ -79,13 +79,36 @@ def clusteringBasedDefesTrainPre(
             for aeID in range(numOfAEs):
                 fp.write(str(msv[transID, aeID])+",")
             fp.write("\n")
-         
+
+    # remove duplicate points in msv
+    msvNoDup  =   [msv[0].tolist()]
+    mIDs    =   [0]
+    for i in range(1, numOfTrans):
+        isDup = False
+        for mp in msvNoDup:
+            isEqual = True
+            for k in range(numOfAEs):
+                if msv[i, k] != mp[k]:
+                    isEqual = False
+                    break
+            if isEqual:
+                isDup = True
+                break
+        if not isDup:
+            mIDs.append(i)
+            msvNoDup.append(msv[i].tolist())
+
+    msvNoDup = np.array(msvNoDup)
+    mIDs    = np.array(mIDs)
+    np.save(os.path.join(curExprDir, "msv_nodup.npy"), msvNoDup)
+    np.save(os.path.join(curExprDir, "mIDs.npy"), mIDs)
 
     # Clustering using KMeans with Squared Euclidean distance
     clusteringResultDir = os.path.join(curExprDir, kmeansResultFoldName)
     createDirSafely(clusteringResultDir)
 
-    ubAccs = np.zeros((maxNumOfClusters))
+    ubAccs = np.zeros((len(mIDs)))
+    NC = list(range(1, 1+len(mIDs)))
     for numOfClusters in NC:
         print("[CAV-defenses: pre-train - KMeans clustering with {} clusters]".format(numOfClusters))
         # clustering into c groups
@@ -95,7 +118,7 @@ def clusteringBasedDefesTrainPre(
         # smallest sum of squared distances of samples to their closest cluster center.
         numOfTries = 10
         for _ in range(numOfTries):
-            cur_kmeans = KMeans(n_clusters=numOfClusters).fit(msv)
+            cur_kmeans = KMeans(n_clusters=numOfClusters).fit(msvNoDup)
             if cur_kmeans.inertia_ < inertia:
                 inertia = cur_kmeans.inertia_
                 kmeans  = cur_kmeans
@@ -106,8 +129,9 @@ def clusteringBasedDefesTrainPre(
             for c in range(numOfClusters):
                 # transform model ID starts at 0.
                 cluster = np.where(kmeans.labels_==c)[0]
-                clusters.append(cluster)
-                for tranModelID in cluster:
+                clusterModelIDs = mIDs[cluster]
+                clusters.append(clusterModelIDs)
+                for tranModelID in clusterModelIDs:
                     fp.write(str(tranModelID)+" ")
                 fp.write("\n")
 
@@ -119,6 +143,7 @@ def clusteringBasedDefesTrainPre(
                 trueLabels)
 
     np.save(os.path.join(curExprDir, "upper_bound_accuracy.npy"), ubAccs)
+    return len(mIDs)
 
 def clusteringBasedDefesTrain(
         curExprDir,
@@ -234,23 +259,24 @@ def clusteringDefensesEvaluation(
     numOfModels = AEPredProbTrain.shape[0]
     numOfTrainingSamples = AEPredProbTrain.shape[1] # number of AEs = number of BSs
     numOfTrans = numOfModels-1
-    maxNumOfClusters = numOfTrans
-    NC=list(range(1, maxNumOfClusters+1)) # list of numbers of clusters
+    #maxNumOfClusters = numOfTrans
 
     AEPredLCTrain = np.zeros((numOfModels, numOfTrainingSamples, 2))
 
     AEPredLCTrain[:, :, 0] = np.argmax(AEPredProbTrain, axis=2)
     AEPredLCTrain[:, :, 1] = np.max(AEPredProbTrain, axis=2)
 
-    clusteringBasedDefesTrainPre(
+    maxNumOfClusters = clusteringBasedDefesTrainPre(
             curExprDir,
             numOfModels,
             numOfTrainingSamples,
             numOfTrans,
-            maxNumOfClusters,
-            NC,
+            #maxNumOfClusters,
+            #NC,
             AEPredLCTrain,
             labelsTrain)
+
+    NC=list(range(1, maxNumOfClusters+1)) # list of numbers of clusters
 
     # use the prediction from the transform models for training
     trainingResult = clusteringBasedDefesTrain(
