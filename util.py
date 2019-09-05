@@ -1027,7 +1027,88 @@ def kFoldPredictionSetup(
     np.save(os.path.join(predictionResultDir, "labels.npy"), labels)
        
 
+def predictionForTest0(
+        predictionResultDir,
+        datasetName,
+        architecture,
+        numOfClasses,
+        targetModelName,
+        modelsDir,
+        samplesDir,
+        numOfSamples,
+        sampleTypes,
+        transformationList):
+        
+    '''
+        Input:
 
+        Output:
+    '''
+    # Load models and create models to output logits
+    modelFilenamePrefix = datasetName+"-"+architecture
+    models, logitsModels = loadModels(modelsDir, modelFilenamePrefix, transformationList, datasetName)
+    numOfModels = len(models) # include the clean model, positioning at index 0
+
+    # Load labels
+    sampleFilenameTag = datasetName+"-"+architecture+"-"+targetModelName
+    labels_raw = np.load(os.path.join(samplesDir, "Label-"+datasetName+"-"+targetModelName+".npy"))
+    labels = np.argmax(labels_raw, axis=1)
+
+
+    numOfSampleTypes = len(sampleTypes)
+
+    # average time cost in seconds 
+    # averaing upon samples
+    predTCs = np.zeros((numOfSampleTypes, numOfModels, 3))
+
+    for sampleTypeIdx, sampleType in zip(list(range(numOfSampleTypes)), sampleTypes):
+        print("Sample type: "+sampleType)
+        if sampleType == "BS":
+            sampleFilename = "BS-"+datasetName+"-"+targetModelName+".npy"
+        else:
+            sampleFilename = "AE-"+sampleFilenameTag+"-"+sampleType+".npy"
+
+        curExprDir = os.path.join(predictionResultDir, sampleType)
+        createDirSafely(curExprDir)
+
+        oriCurSamples = np.load(os.path.join(samplesDir, sampleFilename))
+
+        # 0 - Transform TC, 1 - Prediction (Prob) TC 2 - Prediction (Logit) TC
+        curPredTCs  = np.zeros((numOfModels, 3))
+        predShape = (numOfModels, numOfSamples, numOfClasses)
+        curPredProb   = np.zeros(predShape)
+        curPredLogits = np.zeros(predShape)
+
+        for modelID in range(numOfModels):
+            transformType = transformationList[modelID]
+            curSamples = oriCurSamples.copy()
+            print("\t\t\t [{}] prediction on {} model".format(modelID, transformType))
+            # Transformation cost
+            startTime = time.monotonic()
+            tranSamples = transform_images(curSamples, transformType)
+            endTime = time.monotonic()
+            curPredTCs[modelID, 0] = endTime - startTime
+
+            if datasetName == DATA.cifar_10:
+                tranSamples = normalize(tranSamples)
+
+            # model prediction cost - using probability-based defense
+            curPredProb[modelID, :, :],   curPredTCs[modelID, 1] = prediction(
+                    tranSamples,
+                    models[modelID])
+            # model prediction cost - using logits-based defense
+            curPredLogits[modelID, :, :], curPredTCs[modelID, 2] = prediction(
+                    tranSamples,
+                    logitsModels[modelID])
+   
+        predTCs[sampleTypeIdx, : ,:] = curPredTCs
+
+        np.save(os.path.join(curExprDir, "predProb.npy"), curPredProb)
+        np.save(os.path.join(curExprDir, "predLogit.npy"), curPredLogits)
+   
+    predTCs = predTCs / numOfSamples
+    np.save(os.path.join(predictionResultDir, "predTCs.npy"), predTCs)
+ 
 
 def predictionForTest(
         predictionResultDir,
