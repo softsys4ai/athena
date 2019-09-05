@@ -29,7 +29,8 @@ kFold = int(sys.argv[5])
 datasetName = sys.argv[6] #DATA.mnist
 numOfClasses = int(sys.argv[7])
 
-
+DATA.set_current_dataset_name(datasetName)
+_
 # Basic parameters for k-fold experiment setup
 timeStamp=time.strftime("%Y-%m-%d_%H-%M-%S", time.gmtime())
 experimentRootDir=os.path.join(rootDir,timeStamp)
@@ -39,7 +40,7 @@ with open("current_experiment_root_dir_name.txt", "w") as fp:
 
 isKFolderUponTestSet=True
 architecture = MODEL.ARCHITECTURE
-AETypes = ATTACK.get_AETypes(datasetName)
+AETypes = ATTACK.get_AETypes()
 
 numOfAETypes = len(AETypes)
 sampleTypes =["BS"]

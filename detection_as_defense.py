@@ -29,6 +29,8 @@ testResultFoldName  = sys.argv[5]
 datasetName         = sys.argv[6]
 numOfClasses        = int(sys.argv[7])
 
+DATA.set_current_dataset_name(datasetName)
+
 # Basic parameters for k-fold experiment setup
 timeStamp=time.strftime("%Y-%m-%d_%H-%M-%S", time.gmtime())
 experimentRootDir=os.path.join(rootDir,timeStamp)
@@ -37,7 +39,7 @@ createDirSafely(experimentRootDir)
 architecture = MODEL.ARCHITECTURE
 testDir = os.path.join(experimentRootDir, testResultFoldName)
 
-AETypes = ATTACK.get_AETypes(datasetName)
+AETypes = ATTACK.get_AETypes()
 
 
 numOfAETypes = len(AETypes)

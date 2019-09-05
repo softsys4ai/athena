@@ -241,7 +241,7 @@ class TRANSFORMATION(object):
         transformations.extend(cls.SEGMENTATION)
 
         print('Support {} types of transformations.'.format(len(transformations)))
-        return np.sort(transformations)
+        return transformations
 
 class ATTACK(object):
     """
@@ -265,14 +265,14 @@ class ATTACK(object):
                 cls.ONE_PIXEL, cls.PGD, cls.BLACKBOX]
 
     @classmethod
-    def get_AETypes(cls, dataset):
+    def get_AETypes(cls):
         #dataset = DATA.cifar_10
         AETypes = []
-        AETypes.extend(cls.get_jsma_AETypes(dataset))
-        AETypes.extend(cls.get_fgsm_AETypes(dataset))
-        AETypes.extend(cls.get_bim_AETypes(dataset))
-        AETypes.extend(cls.get_pgd_AETypes(dataset))
-        AETypes.extend(cls.get_df_AETypes(dataset))
+        AETypes.extend(cls.get_jsma_AETypes())
+        AETypes.extend(cls.get_fgsm_AETypes())
+        AETypes.extend(cls.get_bim_AETypes())
+        AETypes.extend(cls.get_pgd_AETypes())
+        AETypes.extend(cls.get_df_AETypes())
 
         return AETypes
 
@@ -285,10 +285,10 @@ class ATTACK(object):
         #return [0.25] # for test
 
     @classmethod
-    def get_fgsm_AETypes(cls, dataset):
-        if dataset == DATA.cifar_10:
+    def get_fgsm_AETypes(cls):
+        if DATA.CUR_DATASET_NAME == DATA.cifar_10:
             return ['fgsm_eps10', 'fgsm_eps50', 'fgsm_eps100']
-        elif dataset == DATA.mnist:
+        elif DATA.CUR_DATASET_NAME == DATA.mnist:
             return ['fgsm_eps100', 'fgsm_eps250', 'fgsm_eps300']
 
     # ---------------------------
@@ -314,11 +314,11 @@ class ATTACK(object):
             # return [0.01, 0.005]
 
     @classmethod
-    def get_bim_AETypes(cls, dataset):
-        if dataset == DATA.cifar_10:
+    def get_bim_AETypes(cls):
+        if DATA.CUR_DATASET_NAME == DATA.cifar_10:
             return ['bim_ord2_nbIter100_eps500', 'bim_ord2_nbIter100_eps1000',
                     'bim_ordinf_nbIter100_eps50', 'bim_ordinf_nbIter100_eps100']
-        elif dataset == DATA.mnist:
+        elif DATA.CUR_DATASET_NAME == DATA.mnist:
             return ['bim_ord2_nbIter100_eps500', 'bim_ord2_nbIter100_eps1000',
                     'bim_ordinf_nbIter100_eps250', 'bim_ordinf_nbIter100_eps500']
 
@@ -331,10 +331,10 @@ class ATTACK(object):
         # return [10]
 
     @classmethod
-    def get_df_AETypes(cls, dataset):
-        if dataset == DATA.cifar_10:
+    def get_df_AETypes(cls):
+        if DATA.CUR_DATASET_NAME == DATA.cifar_10:
             return ["deepfool_maxIter100", "deepfool_maxIter10000"]
-        elif dataset == DATA.mnist:
+        elif DATA.CUR_DATASET_NAME == DATA.mnist:
             return ['deepfool_maxIter100', 'deepfool_maxIter10000']
 
     # ----------------------------
@@ -353,10 +353,10 @@ class ATTACK(object):
         # return [0.5]
 
     @classmethod
-    def get_jsma_AETypes(cls, dataset):
-        if dataset == DATA.cifar_10:
+    def get_jsma_AETypes(cls):
+        if DATA.CUR_DATASET_NAME == DATA.cifar_10:
             return ['jsma_theta30_gamma50', 'jsma_theta50_gamma70']
-        elif dataset == DATA.mnist:
+        elif DATA.CUR_DATASET_NAME == DATA.mnist:
             return ['jsma_theta30_gamma50', 'jsma_theta50_gamma70']
 
     # ----------------------------
@@ -373,10 +373,10 @@ class ATTACK(object):
         return [100]
 
     @classmethod
-    def get_cw_AETypes(cls, dataset):
-        if dataset == DATA.cifar_10:
+    def get_cw_AETypes(cls):
+        if DATA.CUR_DATASET_NAME == DATA.cifar_10:
             return []
-        elif dataset == DATA.mnist:
+        elif DATA.CUR_DATASET_NAME == DATA.mnist:
             return []
 
     # ----------------------------
@@ -387,10 +387,10 @@ class ATTACK(object):
         return [1., 0.75, 0.5, 0.3, 0.25, 0.1, 0.05]
 
     @classmethod
-    def get_pgd_AETypes(cls, dataset):
-        if dataset == DATA.cifar_10:
+    def get_pgd_AETypes(cls):
+        if DATA.CUR_DATASET_NAME == DATA.cifar_10:
             return ['pgd_eps50_nbIter100_epsIter10', 'pgd_eps100_nbIter100_epsIter10']
-        elif dataset == DATA.mnist:
+        elif DATA.CUR_DATASET_NAME == DATA.mnist:
             return ['pgd_eps250_nbIter100_epsIter10', 'pgd_eps500_nbIter100_epsIter10',
                     'pgd_eps750_nbIter100_epsIter10']
 
@@ -404,6 +404,16 @@ class DATA(object):
     cifar_100 = 'cifar100'
 
     valiation_rate = 0.2
+
+    CUR_DATASET_NAME = mnist
+
+    @classmethod
+    def set_current_dataset_name(cls, dataset_name):
+        supported_list = cls.get_supported_datasets
+        if dataset_name not in supported_list:
+            raise ValueError("{} is not supported. Currently only {} are supported.".format(dataset_name, supported_list))
+
+        CUR_DATASET_NAME = dataset_name
 
     @classmethod
     def get_supported_datasets(cls):
