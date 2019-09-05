@@ -1051,8 +1051,8 @@ def predictionForTest0(
 
     # Load labels
     sampleFilenameTag = datasetName+"-"+architecture+"-"+targetModelName
-    labels_raw = np.load(os.path.join(samplesDir, "Label-"+datasetName+"-"+targetModelName+".npy"))
-    labels = np.argmax(labels_raw, axis=1)
+    #labels_raw = np.load(os.path.join(samplesDir, "Label-"+datasetName+"-"+targetModelName+".npy"))
+    #labels = np.argmax(labels_raw, axis=1)
 
 
     numOfSampleTypes = len(sampleTypes)
