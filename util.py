@@ -1107,7 +1107,7 @@ def predictionForTest0(
         np.save(os.path.join(curExprDir, "predLogit.npy"), curPredLogits)
    
     predTCs = predTCs / numOfSamples
-    np.save(os.path.join(predictionResultDir, "predTCs.npy"), predTCs)
+    np.save(os.path.join(predictionResultDir, sampleTypes[0]+"-predTCs.npy"), predTCs)
  
 
 def predictionForTest(

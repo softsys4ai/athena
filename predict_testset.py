@@ -29,7 +29,7 @@ sampleType          = sys.argv[8]
 # Basic parameters for k-fold experiment setup
 architecture = MODEL.ARCHITECTURE
 testDir = os.path.join(experimentRootDir, testResultFoldName)
-
+createDirSafely(testDir)
 
 sampleTypes =[sampleType]
 
@@ -38,8 +38,9 @@ transformConfig = TRANSFORMATION()
 transformationList = transformConfig.supported_types() 
 
 # Create fold directories for evaluation
-predictionResultDir = os.path.join(testDir, "prediction_result")
 
+predictionResultDir = os.path.join(testDir, "prediction_result")
+createDirSafely(predictionResultDir)
 
 # Prediction : needs a new prediction function
 predictionForTest0(
