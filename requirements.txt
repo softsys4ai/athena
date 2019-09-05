@@ -4,3 +4,4 @@ tensorflow==1.13.1
 numpy==1.17.1
 scikit-image==0.15.0
 opencv-python>=4.1.0
+keras==2.2.5
