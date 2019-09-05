@@ -273,7 +273,7 @@ class ATTACK(object):
         AETypes.extend(cls.get_bim_AETypes())
         AETypes.extend(cls.get_pgd_AETypes())
         AETypes.extend(cls.get_df_AETypes())
-
+ 
         return AETypes
 
     # ---------------------------
@@ -409,8 +409,8 @@ class DATA(object):
 
     @classmethod
     def set_current_dataset_name(cls, dataset_name):
-        supported_list = cls.get_supported_datasets
-        if dataset_name not in supported_list:
+        supported_list = cls.get_supported_datasets()
+        if not dataset_name in supported_list:
             raise ValueError("{} is not supported. Currently only {} are supported.".format(dataset_name, supported_list))
 
         CUR_DATASET_NAME = dataset_name
