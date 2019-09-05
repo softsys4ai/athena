@@ -16,5 +16,8 @@ testResultFoldName="test"
 
 experimentRootDir=$(cat "current_experiment_root_dir_name.txt")
 
+mkdir "$rootDir"
+mkdir "$rootDir/$experimentRootDir"
+
 python -u predict_testset.py "$testSamplesDir" "$experimentRootDir" "$modelsDir" "$numOfTestSamples" "$testResultFoldName" "$dataSetName" "$numOfClasses" "$sampleType"
 
