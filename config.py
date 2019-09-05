@@ -21,6 +21,37 @@ defensesList = ["CV_Maj", "CV_Max", "1s_Mean", "EM_Mean", "EM_MXMV", "1s_Mean_L"
 
 dropout = 0.5
 
+class DATA(object):
+    """
+    Configuration for data.
+    """
+    mnist = 'mnist'
+    fation_mnist = 'fmnist'
+    cifar_10 = 'cifar10'
+    cifar_100 = 'cifar100'
+
+    valiation_rate = 0.2
+
+    CUR_DATASET_NAME = mnist
+
+    @classmethod
+    def set_current_dataset_name(cls, dataset_name):
+        supported_list = cls.get_supported_datasets()
+        if not dataset_name in supported_list:
+            raise ValueError("{} is not supported. Currently only {} are supported.".format(dataset_name, supported_list))
+
+        CUR_DATASET_NAME = dataset_name
+
+    @classmethod
+    def get_supported_datasets(cls):
+        datasets = [cls.mnist, cls.fation_mnist, cls.cifar_10, cls.cifar_100]
+        return datasets
+
+    @classmethod
+    def set_validation_rate(cls, rate):
+        cls.valiation_rate = rate
+
+
 class TRANSFORMATION(object):
     """
     Define transformation types that are supported.
@@ -197,7 +228,7 @@ class TRANSFORMATION(object):
     when evaluation, we choose 2 types of quants for each dataset, for the time-consuming issue.
     """
     # cifar10
-    if DATA.CUR_DATASET_NAME == DATA.cifar10:
+    if DATA.CUR_DATASET_NAME == DATA.cifar_10:
         QUANTIZATIONS = [quant_16_clusters, quant_64_clusters]
     # mnist
     else: # extend the branch as necessary when adding more types of datasets
@@ -395,35 +426,6 @@ class ATTACK(object):
             return ['pgd_eps250_nbIter100_epsIter10', 'pgd_eps500_nbIter100_epsIter10',
                     'pgd_eps750_nbIter100_epsIter10']
 
-class DATA(object):
-    """
-    Configuration for data.
-    """
-    mnist = 'mnist'
-    fation_mnist = 'fmnist'
-    cifar_10 = 'cifar10'
-    cifar_100 = 'cifar100'
-
-    valiation_rate = 0.2
-
-    CUR_DATASET_NAME = mnist
-
-    @classmethod
-    def set_current_dataset_name(cls, dataset_name):
-        supported_list = cls.get_supported_datasets()
-        if not dataset_name in supported_list:
-            raise ValueError("{} is not supported. Currently only {} are supported.".format(dataset_name, supported_list))
-
-        CUR_DATASET_NAME = dataset_name
-
-    @classmethod
-    def get_supported_datasets(cls):
-        datasets = [cls.mnist, cls.fation_mnist, cls.cifar_10, cls.cifar_100]
-        return datasets
-
-    @classmethod
-    def set_validation_rate(cls, rate):
-        cls.valiation_rate = rate
 
 class MODEL(object):
     """
