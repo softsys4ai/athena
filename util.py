@@ -1,17 +1,17 @@
 import os
 import time
+import re
 
 import matplotlib
 matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 
 from sklearn.cluster import KMeans
-from tensorflow.keras.models import load_model
-from tensorflow.keras.models import Model
-
+from tensorflow.keras.models import load_model, Model, model_from_json
 from config import *
 from transformation import transform_images
 
+from data import normalize
 
 def randomChoiceBasedDefense(predProb, measureTC=False):
     '''
@@ -52,8 +52,8 @@ def clusteringBasedDefesTrainPre(
         numOfModels,
         numOfAEs,
         numOfTrans,
-        maxNumOfClusters,
-        NC, 
+        #maxNumOfClusters,
+        #NC,
         AEPredLC,
         trueLabels):
     '''
@@ -79,13 +79,36 @@ def clusteringBasedDefesTrainPre(
             for aeID in range(numOfAEs):
                 fp.write(str(msv[transID, aeID])+",")
             fp.write("\n")
-         
+
+    # remove duplicate points in msv
+    msvNoDup  =   [msv[0].tolist()]
+    mIDs    =   [0]
+    for i in range(1, numOfTrans):
+        isDup = False
+        for mp in msvNoDup:
+            isEqual = True
+            for k in range(numOfAEs):
+                if msv[i, k] != mp[k]:
+                    isEqual = False
+                    break
+            if isEqual:
+                isDup = True
+                break
+        if not isDup:
+            mIDs.append(i)
+            msvNoDup.append(msv[i].tolist())
+
+    msvNoDup = np.array(msvNoDup)
+    mIDs    = np.array(mIDs)
+    np.save(os.path.join(curExprDir, "msv_nodup.npy"), msvNoDup)
+    np.save(os.path.join(curExprDir, "mIDs.npy"), mIDs)
 
     # Clustering using KMeans with Squared Euclidean distance
     clusteringResultDir = os.path.join(curExprDir, kmeansResultFoldName)
     createDirSafely(clusteringResultDir)
 
-    ubAccs = np.zeros((maxNumOfClusters))
+    ubAccs = np.zeros((len(mIDs)))
+    NC = list(range(1, 1+len(mIDs)))
     for numOfClusters in NC:
         print("[CAV-defenses: pre-train - KMeans clustering with {} clusters]".format(numOfClusters))
         # clustering into c groups
@@ -95,7 +118,7 @@ def clusteringBasedDefesTrainPre(
         # smallest sum of squared distances of samples to their closest cluster center.
         numOfTries = 10
         for _ in range(numOfTries):
-            cur_kmeans = KMeans(n_clusters=numOfClusters).fit(msv)
+            cur_kmeans = KMeans(n_clusters=numOfClusters).fit(msvNoDup)
             if cur_kmeans.inertia_ < inertia:
                 inertia = cur_kmeans.inertia_
                 kmeans  = cur_kmeans
@@ -106,8 +129,9 @@ def clusteringBasedDefesTrainPre(
             for c in range(numOfClusters):
                 # transform model ID starts at 0.
                 cluster = np.where(kmeans.labels_==c)[0]
-                clusters.append(cluster)
-                for tranModelID in cluster:
+                clusterModelIDs = mIDs[cluster]
+                clusters.append(clusterModelIDs)
+                for tranModelID in clusterModelIDs:
                     fp.write(str(tranModelID)+" ")
                 fp.write("\n")
 
@@ -119,6 +143,7 @@ def clusteringBasedDefesTrainPre(
                 trueLabels)
 
     np.save(os.path.join(curExprDir, "upper_bound_accuracy.npy"), ubAccs)
+    return len(mIDs)
 
 def clusteringBasedDefesTrain(
         curExprDir,
@@ -234,23 +259,24 @@ def clusteringDefensesEvaluation(
     numOfModels = AEPredProbTrain.shape[0]
     numOfTrainingSamples = AEPredProbTrain.shape[1] # number of AEs = number of BSs
     numOfTrans = numOfModels-1
-    maxNumOfClusters = numOfTrans
-    NC=list(range(1, maxNumOfClusters+1)) # list of numbers of clusters
+    #maxNumOfClusters = numOfTrans
 
     AEPredLCTrain = np.zeros((numOfModels, numOfTrainingSamples, 2))
 
     AEPredLCTrain[:, :, 0] = np.argmax(AEPredProbTrain, axis=2)
     AEPredLCTrain[:, :, 1] = np.max(AEPredProbTrain, axis=2)
 
-    clusteringBasedDefesTrainPre(
+    maxNumOfClusters = clusteringBasedDefesTrainPre(
             curExprDir,
             numOfModels,
             numOfTrainingSamples,
             numOfTrans,
-            maxNumOfClusters,
-            NC,
+            #maxNumOfClusters,
+            #NC,
             AEPredLCTrain,
             labelsTrain)
+
+    NC=list(range(1, maxNumOfClusters+1)) # list of numbers of clusters
 
     # use the prediction from the transform models for training
     trainingResult = clusteringBasedDefesTrain(
@@ -977,8 +1003,8 @@ def kFoldPredictionSetup(
                     else:
                         foldIndices = np.array(range(0, (foldIdx-1)*oneFoldAmount))
 
-            curSamples = samples[foldIndices]
-            numOfCurSamples = curSamples.shape[0] 
+            oriCurSamples = samples[foldIndices]
+            numOfCurSamples = oriCurSamples.shape[0] 
 
             # 0 - Transform TC, 1 - Prediction (Prob) TC 2 - Prediction (Logit) TC
             curPredTCs  = np.zeros((numOfModels, 3))
@@ -988,12 +1014,16 @@ def kFoldPredictionSetup(
 
             for modelID in range(numOfModels):
                 transformType = transformationList[modelID]
+                curSamples = oriCurSamples.copy()
                 print("\t\t\t [{}] prediction on {} model".format(modelID, transformType))
                 # Transformation cost
                 startTime = time.monotonic()
                 tranSamples = transform_images(curSamples, transformType)
                 endTime = time.monotonic()
                 curPredTCs[modelID, 0] = endTime - startTime
+
+                if datasetName == DATA.cifar_10:
+                    tranSamples = normalize(tranSamples)
 
                 # model prediction cost - using probability-based defense
                 curPredProb[modelID, :, :],   curPredTCs[modelID, 1] = prediction(
@@ -1023,7 +1053,88 @@ def kFoldPredictionSetup(
     np.save(os.path.join(predictionResultDir, "labels.npy"), labels)
        
 
+def predictionForTest0(
+        predictionResultDir,
+        datasetName,
+        architecture,
+        numOfClasses,
+        targetModelName,
+        modelsDir,
+        samplesDir,
+        numOfSamples,
+        sampleTypes,
+        transformationList):
+        
+    '''
+        Input:
 
+        Output:
+    '''
+    # Load models and create models to output logits
+    modelFilenamePrefix = datasetName+"-"+architecture
+    models, logitsModels = loadModels(modelsDir, modelFilenamePrefix, transformationList, datasetName)
+    numOfModels = len(models) # include the clean model, positioning at index 0
+
+    # Load labels
+    sampleFilenameTag = datasetName+"-"+architecture+"-"+targetModelName
+    #labels_raw = np.load(os.path.join(samplesDir, "Label-"+datasetName+"-"+targetModelName+".npy"))
+    #labels = np.argmax(labels_raw, axis=1)
+
+
+    numOfSampleTypes = len(sampleTypes)
+
+    # average time cost in seconds 
+    # averaing upon samples
+    predTCs = np.zeros((numOfSampleTypes, numOfModels, 3))
+
+    for sampleTypeIdx, sampleType in zip(list(range(numOfSampleTypes)), sampleTypes):
+        print("Sample type: "+sampleType)
+        if sampleType == "BS":
+            sampleFilename = "BS-"+datasetName+"-"+targetModelName+".npy"
+        else:
+            sampleFilename = "AE-"+sampleFilenameTag+"-"+sampleType+".npy"
+
+        curExprDir = os.path.join(predictionResultDir, sampleType)
+        createDirSafely(curExprDir)
+
+        oriCurSamples = np.load(os.path.join(samplesDir, sampleFilename))
+
+        # 0 - Transform TC, 1 - Prediction (Prob) TC 2 - Prediction (Logit) TC
+        curPredTCs  = np.zeros((numOfModels, 3))
+        predShape = (numOfModels, numOfSamples, numOfClasses)
+        curPredProb   = np.zeros(predShape)
+        curPredLogits = np.zeros(predShape)
+
+        for modelID in range(numOfModels):
+            transformType = transformationList[modelID]
+            curSamples = oriCurSamples.copy()
+            print("\t\t\t [{}] prediction on {} model".format(modelID, transformType))
+            # Transformation cost
+            startTime = time.monotonic()
+            tranSamples = transform_images(curSamples, transformType)
+            endTime = time.monotonic()
+            curPredTCs[modelID, 0] = endTime - startTime
+
+            if datasetName == DATA.cifar_10:
+                tranSamples = normalize(tranSamples)
+
+            # model prediction cost - using probability-based defense
+            curPredProb[modelID, :, :],   curPredTCs[modelID, 1] = prediction(
+                    tranSamples,
+                    models[modelID])
+            # model prediction cost - using logits-based defense
+            curPredLogits[modelID, :, :], curPredTCs[modelID, 2] = prediction(
+                    tranSamples,
+                    logitsModels[modelID])
+   
+        predTCs[sampleTypeIdx, : ,:] = curPredTCs
+
+        np.save(os.path.join(curExprDir, "predProb.npy"), curPredProb)
+        np.save(os.path.join(curExprDir, "predLogit.npy"), curPredLogits)
+   
+    predTCs = predTCs / numOfSamples
+    np.save(os.path.join(predictionResultDir, sampleTypes[0]+"-predTCs.npy"), predTCs)
+ 
 
 def predictionForTest(
         predictionResultDir,
@@ -1071,7 +1182,7 @@ def predictionForTest(
         curExprDir = os.path.join(predictionResultDir, sampleType)
         createDirSafely(curExprDir)
 
-        curSamples = np.load(os.path.join(samplesDir, sampleFilename))
+        oriCurSamples = np.load(os.path.join(samplesDir, sampleFilename))
 
         # 0 - Transform TC, 1 - Prediction (Prob) TC 2 - Prediction (Logit) TC
         curPredTCs  = np.zeros((numOfModels, 3))
@@ -1081,12 +1192,16 @@ def predictionForTest(
 
         for modelID in range(numOfModels):
             transformType = transformationList[modelID]
+            curSamples = oriCurSamples.copy()
             print("\t\t\t [{}] prediction on {} model".format(modelID, transformType))
             # Transformation cost
             startTime = time.monotonic()
             tranSamples = transform_images(curSamples, transformType)
             endTime = time.monotonic()
             curPredTCs[modelID, 0] = endTime - startTime
+
+            if datasetName == DATA.cifar_10:
+                tranSamples = normalize(tranSamples)
 
             # model prediction cost - using probability-based defense
             curPredProb[modelID, :, :],   curPredTCs[modelID, 1] = prediction(
@@ -1107,65 +1222,6 @@ def predictionForTest(
        
 
 
-def cnn_cifar_logit_output(input_shape, nb_classes):
-  """
-  a cnn for cifar
-  :param input_shape:
-  :param nb_classes:
-  :return:
-  """
-
-  struct = [
-    layers.Conv2D(32, (3, 3), padding='same',
-                  kernel_regularizer=regularizers.l2(weight_decay),
-                  input_shape=input_shape),
-    layers.Activation('elu'),
-    layers.BatchNormalization(),
-
-    layers.Conv2D(32, (3, 3), padding='same',
-                  kernel_regularizer=regularizers.l2(weight_decay)),
-    layers.Activation('elu'),
-    layers.BatchNormalization(),
-    layers.MaxPooling2D(pool_size=(2, 2)),
-    layers.Dropout(0.2),
-
-    layers.Conv2D(64, (3, 3), padding='same',
-                  kernel_regularizer=regularizers.l2(weight_decay)),
-    layers.Activation('elu'),
-    layers.BatchNormalization(),
-
-    layers.Conv2D(64, (3, 3), padding='same',
-                  kernel_regularizer=regularizers.l2(weight_decay)),
-    layers.Activation('elu'),
-    layers.BatchNormalization(),
-    layers.MaxPooling2D(pool_size=(2, 2)),
-    layers.Dropout(0.3),
-
-    layers.Conv2D(128, (3, 3), padding='same',
-                  kernel_regularizer=regularizers.l2(weight_decay)),
-    layers.Activation('elu'),
-    layers.BatchNormalization(),
-
-    layers.Conv2D(128, (3, 3), padding='same',
-                  kernel_regularizer=regularizers.l2(weight_decay)),
-    layers.Activation('elu'),
-    layers.BatchNormalization(),
-    layers.MaxPooling2D(pool_size=(2, 2)),
-    layers.Dropout(0.4),
-
-    layers.Flatten(),
-    layers.Dense(nb_classes)
-  ]
-
-  model = models.Sequential()
-  for layer in struct:
-    model.add(layer)
-
-  if MODE.DEBUG:
-    print(model.summary())
-  return model
-
-
 
 def loadModels(modelsDir, modelFilenamePrefix, transformationList, datasetName):
     models=[]
@@ -1173,20 +1229,29 @@ def loadModels(modelsDir, modelFilenamePrefix, transformationList, datasetName):
     print("Number of transformations: {}".format(len(transformationList)))
     for tIdx in range(len(transformationList)):
         transformType = transformationList[tIdx]
-        if transformType == 'noise_s&p':
-            transformType = 'noise_s_p'
+        #if transformType == 'noise_s&p':
+        #    transformType = 'noise_s_p'
         modelName = "model-"+modelFilenamePrefix+"-"+transformType
-        modelNameFP = os.path.join(modelsDir, modelName+".h5")
         print("loading model {}".format(modelName))
-        model = load_model(modelNameFP)
-        models.append(model)
         # Create corresponding model for outputing logits
         if datasetName == "cifar10":
-            # apply probability-to-logit to the output when calling for prediction
-            inputShape=(32， 32， 3)
-            logitsModel = cnn_cifar_logit_output(inputShape, 10)
+            modelArchNameFP = os.path.join(modelsDir, modelName+".json")
+            modelWeightsNameFP = os.path.join(modelsDir, "weights_"+modelName+".h5")
+            json_file = open(modelArchNameFP, 'r')
+            loaded_model_json = json_file.read()
+            json_file.close()
+            model = model_from_json(loaded_model_json)
+            model.load_weights(modelWeightsNameFP)
+            models.append(model)
+
+            # Temporarily workaround: remove softmax activation in the output layer 
+            loaded_model_json2 = re.sub(r'"activation": "softmax",', "", loaded_model_json)
+            logitsModel = model_from_json(loaded_model_json2)
             logitsModel.set_weights(model.get_weights())
         else: # mnist
+            modelNameFP = os.path.join(modelsDir, modelName+".h5")
+            model = load_model(modelNameFP)
+            models.append(model)
             layerName=model.layers[-2].name
             logitsModel = Model(
                     inputs=model.input,

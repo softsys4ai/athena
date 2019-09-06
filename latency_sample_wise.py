@@ -15,6 +15,8 @@ from transformation import transform_images
 
 DEBUG = True #MODE.DEBUG
 
+# NOTICE:   this script currently only works for mnist dataset.
+#           models built upon Cifar10 are saved different than that trained on mnist
 
 # Basic parameters
 timeStamp=time.strftime("%Y-%m-%d_%H-%M-%S", time.gmtime())

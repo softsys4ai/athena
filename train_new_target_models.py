@@ -25,6 +25,7 @@ datasetName = sys.argv[3]
 numOfClasses = int(sys.argv[4])
 
 
+DATA.set_current_dataset_name(datasetName)
 # Basic parameters for k-fold experiment setup
 architecture = MODEL.ARCHITECTURE
 AETypes = ATTACK.get_AETypes()

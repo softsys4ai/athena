@@ -1095,16 +1095,16 @@ for testing
 
 def main(*args):
     print('Transform --- {}'.format(args))
-    _, (X, _) = load_data(args[0])
-    # X = np.load('{}/{}.npy'.format(PATH.ADVERSARIAL_FILE, args[0]))
+    # _, (X, _) = load_data(args[0])
+    X = np.load('experiment_mnist/testing_samples/BS-mnist-clean.npy')
     X_orig = np.copy(X[10:20])
     X_trans = transform_images(X_orig, args[1])
 
-    # plot_comparisons(X_orig, X_trans, '{}-{}'.format(args[0], args[1]))
-    plot_difference(X_orig[:5], X_trans[:5], 'Diff-{}-{}'.format(args[0], args[1]))
+    plot_comparisons(X_orig, X_trans, '{}-{}'.format(args[0], args[1]))
+    # plot_difference(X_orig[:5], X_trans[:5], 'Diff-{}-{}'.format(args[0], args[1]))
 
 
 if __name__ == "__main__":
     MODE.debug_on()
     # file = 'test_AE-mnist-cnn-clean-jsma_theta10_gamma30'
-    main(DATA.cifar_10, TRANSFORMATION.rotate270)
+    main(DATA.mnist, TRANSFORMATION.seg_gradient)

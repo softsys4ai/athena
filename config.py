@@ -21,6 +21,37 @@ defensesList = ["CV_Maj", "CV_Max", "1s_Mean", "EM_Mean", "EM_MXMV", "1s_Mean_L"
 
 dropout = 0.5
 
+class DATA(object):
+    """
+    Configuration for data.
+    """
+    mnist = 'mnist'
+    fation_mnist = 'fmnist'
+    cifar_10 = 'cifar10'
+    cifar_100 = 'cifar100'
+
+    valiation_rate = 0.2
+
+    CUR_DATASET_NAME = mnist
+
+    @classmethod
+    def set_current_dataset_name(cls, dataset_name):
+        supported_list = cls.get_supported_datasets()
+        if not dataset_name in supported_list:
+            raise ValueError("{} is not supported. Currently only {} are supported.".format(dataset_name, supported_list))
+
+        CUR_DATASET_NAME = dataset_name
+
+    @classmethod
+    def get_supported_datasets(cls):
+        datasets = [cls.mnist, cls.fation_mnist, cls.cifar_10, cls.cifar_100]
+        return datasets
+
+    @classmethod
+    def set_validation_rate(cls, rate):
+        cls.valiation_rate = rate
+
+
 class TRANSFORMATION(object):
     """
     Define transformation types that are supported.
@@ -196,11 +227,22 @@ class TRANSFORMATION(object):
                     affine_horizontal_compress, affine_horizontal_stretch,
                     affine_both_compress, affine_both_stretch]
     MORPH_TRANS = [morph_erosion, morph_dilation, morph_opening, morph_closing, morph_gradient]
-    AUGMENT = [samplewise_std_norm, feature_std_norm] #, zca_whitening]
+    AUGMENT = [samplewise_std_norm, feature_std_norm]
     CARTOONS = [cartoon_mean_type1, cartoon_mean_type2, cartoon_mean_type3, cartoon_mean_type4,
                 cartoon_gaussian_type1, cartoon_gaussian_type2, cartoon_gaussian_type3, cartoon_gaussian_type4]
-    QUANTIZATIONS = [quant_2_clusters, quant_4_clusters, quant_8_clusters,
-                     quant_16_clusters, quant_32_clusters, quant_64_clusters]
+    # QUANTIZATIONS = [quant_2_clusters, quant_4_clusters, quant_8_clusters,
+    #                  quant_16_clusters, quant_32_clusters, quant_64_clusters] # full set
+
+    """
+    when evaluation, we choose 2 types of quants for each dataset, for the time-consuming issue.
+    """
+    # cifar10
+    if DATA.CUR_DATASET_NAME == DATA.cifar_10:
+        QUANTIZATIONS = [quant_16_clusters, quant_64_clusters]
+    # mnist
+    else: # extend the branch as necessary when adding more types of datasets
+        QUANTIZATIONS = [quant_4_clusters, quant_8_clusters]
+
     DISTORTIONS = [distortion_x, distortion_y]
     NOISES =[noise_gaussian, noise_localvar, noise_poisson, noise_salt,
              noise_pepper, noise_saltNpepper, noise_speckle]
@@ -208,10 +250,10 @@ class TRANSFORMATION(object):
     #            filter_maximum, filter_entropy, filter_roberts, filter_scharr,
     #            filter_prewitt, filter_meijering, filter_sato, filter_frangi, filter_hessian,
     #            filter_skeletonize, filter_thin] # TODO: full set
+
     FILTERS = [filter_sobel, filter_gaussian, filter_rank, filter_median, filter_minimum,
-               filter_maximum, filter_entropy, filter_roberts, filter_scharr,
-               filter_prewitt, filter_meijering, filter_sato, filter_frangi, filter_hessian,
-               filter_skeletonize, filter_thin]
+               filter_maximum, filter_roberts, filter_scharr, filter_entropy, 
+               filter_prewitt]
     COMPRESSION = [compress_jpeg_quality_80, compress_jpeg_quality_50,
                    compress_jpeg_quality_30, compress_jpeg_quality_10,
                    compress_png_compression_1, compress_png_compression_8, compress_png_compression_5]
@@ -241,7 +283,7 @@ class TRANSFORMATION(object):
         transformations.extend(cls.SEGMENTATION)
 
         print('Support {} types of transformations.'.format(len(transformations)))
-        return np.sort(transformations)
+        return transformations
 
 class ATTACK(object):
     """
@@ -264,6 +306,17 @@ class ATTACK(object):
         return [cls.FGSM, cls.BIM, cls.DEEPFOOL, cls.JSMA, cls.CW,
                 cls.ONE_PIXEL, cls.PGD, cls.BLACKBOX]
 
+    @classmethod
+    def get_AETypes(cls):
+        AETypes = []
+        AETypes.extend(cls.get_jsma_AETypes())
+        AETypes.extend(cls.get_fgsm_AETypes())
+        AETypes.extend(cls.get_bim_AETypes())
+        AETypes.extend(cls.get_pgd_AETypes())
+        AETypes.extend(cls.get_df_AETypes())
+
+        return AETypes
+
     # ---------------------------
     # FGSM Parameters
     # ---------------------------
@@ -274,15 +327,10 @@ class ATTACK(object):
 
     @classmethod
     def get_fgsm_AETypes(cls):
-        attackApproach = cls.FGSM
-        AETypes = []
-        EPS = cls.get_fgsm_eps()
-        EPS.sort()
-        EPS=[0.25]
-        for eps in EPS:
-            epsInt = int(1000*eps)
-            AETypes.append(attackApproach+"_eps"+str(epsInt))
-        return AETypes
+        if DATA.CUR_DATASET_NAME == DATA.cifar_10:
+            return ['fgsm_eps10', 'fgsm_eps50', 'fgsm_eps100']
+        elif DATA.CUR_DATASET_NAME == DATA.mnist:
+            return ['fgsm_eps100', 'fgsm_eps250', 'fgsm_eps300']
 
     # ---------------------------
     # i-FGSM/BIM Parameters
@@ -308,36 +356,12 @@ class ATTACK(object):
 
     @classmethod
     def get_bim_AETypes(cls):
-        attackApproach = cls.BIM
-        AETypes = []
-        EPS={}
-        EPS["ord2"] = [0.25]
-        EPS["ordinf"] = [0.01]
-        for distType in ["ord2", "ordinf"]:
-            curEPS = EPS[distType]
-            for nbIter in [100]:
-                for eps in curEPS:
-                    epsInt = int(1000*eps)
-                    AETypes.append(attackApproach+"_"+distType+"_nbIter"+str(nbIter)+"_eps"+str(epsInt))
-        return AETypes
-
-    @classmethod
-    def get_jsma_AETypes(cls):
-        AETypes = [
-                #"jsma_theta10_gamma30",
-                #"jsma_theta10_gamma70",
-                #"jsma_theta30_gamma50",
-                "jsma_theta50_gamma50"]
-        return AETypes
-
-    @classmethod
-    def get_AETypes(cls):
-        AETypes = []
-        AETypes.extend(cls.get_jsma_AETypes())
-        AETypes.extend(cls.get_fgsm_AETypes())
-        AETypes.extend(cls.get_bim_AETypes())
-
-        return AETypes
+        if DATA.CUR_DATASET_NAME == DATA.cifar_10:
+            return ['bim_ord2_nbIter100_eps500', 'bim_ord2_nbIter100_eps1000',
+                    'bim_ordinf_nbIter100_eps50', 'bim_ordinf_nbIter100_eps100']
+        elif DATA.CUR_DATASET_NAME == DATA.mnist:
+            return ['bim_ord2_nbIter100_eps500', 'bim_ord2_nbIter100_eps1000',
+                    'bim_ordinf_nbIter100_eps250', 'bim_ordinf_nbIter100_eps500']
 
     # ----------------------------
     # Deepfool parameters
@@ -346,6 +370,13 @@ class ATTACK(object):
     def get_df_maxIter(cls):
         return [1, 10, 100, 1000, 10000, 100000] # full set
         # return [10]
+
+    @classmethod
+    def get_df_AETypes(cls):
+        if DATA.CUR_DATASET_NAME == DATA.cifar_10:
+            return ["deepfool_maxIter100", "deepfool_maxIter10000"]
+        elif DATA.CUR_DATASET_NAME == DATA.mnist:
+            return ['deepfool_maxIter100', 'deepfool_maxIter10000']
 
     # ----------------------------
     # JSMA parameters
@@ -362,6 +393,13 @@ class ATTACK(object):
         return [0.05, 0.1, 0.3, 0.5, 0.7, 1.] # full set.
         # return [0.5]
 
+    @classmethod
+    def get_jsma_AETypes(cls):
+        if DATA.CUR_DATASET_NAME == DATA.cifar_10:
+            return ['jsma_theta30_gamma50', 'jsma_theta50_gamma70']
+        elif DATA.CUR_DATASET_NAME == DATA.mnist:
+            return ['jsma_theta30_gamma50', 'jsma_theta50_gamma70']
+
     # ----------------------------
     # CW parameters
     # ----------------------------
@@ -375,6 +413,13 @@ class ATTACK(object):
         # return [1, 10, 100, 1000, 10000, 100000] # full set
         return [100]
 
+    @classmethod
+    def get_cw_AETypes(cls):
+        if DATA.CUR_DATASET_NAME == DATA.cifar_10:
+            return []
+        elif DATA.CUR_DATASET_NAME == DATA.mnist:
+            return []
+
     # ----------------------------
     # PGD parameters
     # ----------------------------
@@ -382,25 +427,14 @@ class ATTACK(object):
     def get_pgd_eps(cls):
         return [1., 0.75, 0.5, 0.3, 0.25, 0.1, 0.05]
 
-class DATA(object):
-    """
-    Configuration for data.
-    """
-    mnist = 'mnist'
-    fation_mnist = 'fmnist'
-    cifar_10 = 'cifar10'
-    cifar_100 = 'cifar100'
-
-    valiation_rate = 0.2
-
     @classmethod
-    def get_supported_datasets(cls):
-        datasets = [cls.mnist, cls.fation_mnist, cls.cifar_10, cls.cifar_100]
-        return datasets
+    def get_pgd_AETypes(cls):
+        if DATA.CUR_DATASET_NAME == DATA.cifar_10:
+            return ['pgd_eps50_nbIter100_epsIter10', 'pgd_eps100_nbIter100_epsIter10']
+        elif DATA.CUR_DATASET_NAME == DATA.mnist:
+            return ['pgd_eps250_nbIter100_epsIter10', 'pgd_eps500_nbIter100_epsIter10',
+                    'pgd_eps750_nbIter100_epsIter10']
 
-    @classmethod
-    def set_validation_rate(cls, rate):
-        cls.valiation_rate = rate
 
 class MODEL(object):
     """

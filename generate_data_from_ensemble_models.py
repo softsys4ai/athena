@@ -23,6 +23,7 @@ experimentRootDir = sys.argv[3]
 datasetName = sys.argv[4]
 numOfClasses = int(sys.argv[5])
 
+DATA.set_current_dataset_name(datasetName)
 
 # Basic parameters for k-fold experiment setup
 architecture = MODEL.ARCHITECTURE

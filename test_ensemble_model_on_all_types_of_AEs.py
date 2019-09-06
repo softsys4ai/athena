@@ -22,8 +22,10 @@ experimentRootDir   = sys.argv[2]
 modelsDir           = sys.argv[3]
 numOfSamples        = int(sys.argv[4])
 testResultFoldName  = sys.argv[5]
-datasetName = argv[6]
-numOfClasses = int(argv[7])
+datasetName         = sys.argv[6]
+numOfClasses        = int(sys.argv[7])
+
+DATA.set_current_dataset_name(datasetName)
 
 # Basic parameters for k-fold experiment setup
 architecture = MODEL.ARCHITECTURE
