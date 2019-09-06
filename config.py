@@ -110,6 +110,15 @@ class TRANSFORMATION(object):
     """
     distortion_y = 'distortion_y'
     distortion_x = 'distortion_x'
+    pixelate = 'pixelate'
+    saturate = 'saturate'
+    brightness = 'brightness'
+    contrast = 'contrast'
+    motion_blur = 'motion_blur'
+    defocus_blur = 'defocus_blur'
+    glass_blur = 'glass_blur'
+    gaussian_blur = 'gaussian_blur'
+
 
     """
     noises

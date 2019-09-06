@@ -4,11 +4,13 @@ Implement transformations.
 """
 import cv2
 from scipy import ndimage
+from PIL import Image
 
 from keras.preprocessing.image import ImageDataGenerator
 from skimage import filters, util
 from sklearn.cluster import MiniBatchKMeans
-from skimage.restoration import (denoise_bilateral, denoise_nl_means, denoise_tv_bregman, denoise_tv_chambolle, denoise_wavelet, estimate_sigma)
+from skimage.restoration import (denoise_bilateral, denoise_nl_means, denoise_tv_bregman, denoise_tv_chambolle,
+                                 denoise_wavelet, estimate_sigma)
 from skimage.transform import (rescale, swirl, radon, iradon, iradon_sart)
 from skimage.morphology import disk, watershed, skeletonize, thin
 from skimage.filters import (rank, roberts, scharr, prewitt, meijering, sato, frangi, hessian)
@@ -17,6 +19,7 @@ from skimage.util import invert
 from config import *
 from data import load_data, normalize
 from plot import plot_comparisons, plot_difference
+
 
 def rotate(original_images, transformation):
     """
@@ -31,8 +34,8 @@ def rotate(original_images, transformation):
     trans_matrix = None
     transformed_images = []
     nb_images, img_rows, img_cols, nb_channels = original_images.shape[:4]
-    center = (img_rows/2, img_cols/2)
-    
+    center = (img_rows / 2, img_cols / 2)
+
     # ---------------
     # rotate images
     # ---------------
@@ -46,17 +49,17 @@ def rotate(original_images, transformation):
         # rotate 180-deg counterclockwise
         angle = 180
         scale = 1.0
-        
+
         trans_matrix = cv2.getRotationMatrix2D(center, angle, scale)
     elif (transformation == TRANSFORMATION.rotate270):
         # rotate 270-deg counterclockwise
         angle = 270
         scale = 1.0
-        
+
         trans_matrix = cv2.getRotationMatrix2D(center, angle, scale)
     else:
         raise ValueError('{} is not supported.'.format(transformation))
-    
+
     # applying an affine transformation over the dataset
     transformed_images = []
 
@@ -73,6 +76,7 @@ def rotate(original_images, transformation):
         print('Applied transformation {}.'.format(transformation))
 
     return transformed_images
+
 
 def shift(original_images, transformation):
     """
@@ -140,6 +144,7 @@ def shift(original_images, transformation):
 
     return transformed_images
 
+
 def flip(original_images, transformation):
     """
     Flip images.
@@ -178,6 +183,7 @@ def flip(original_images, transformation):
         print('shapes: original - {}; transformed - {}'.format(original_images.shape, transformed_images.shape))
 
     return transformed_images
+
 
 def affine_trans(original_images, transformation):
     """
@@ -248,6 +254,7 @@ def affine_trans(original_images, transformation):
 
     return transformed_images
 
+
 def morph_trans(original_images, transformation):
     """
     Apply morphological transformations on images.
@@ -255,12 +262,12 @@ def morph_trans(original_images, transformation):
     :param: transformation - the standard transformation to apply.
     :return: the transformed dataset.
     """
-    if MODE.DEBUG:    
+    if MODE.DEBUG:
         print('Applying morphological transformation ({})...'.format(transformation))
 
     nb_images, img_rows, img_cols, nb_channels = original_images.shape
     # set kernel as a matrix of size 2
-    kernel = np.ones((2, 2),np.uint8)
+    kernel = np.ones((2, 2), np.uint8)
 
     transformed_images = []
 
@@ -318,6 +325,7 @@ def morph_trans(original_images, transformation):
 
     return transformed_images
 
+
 def augment(original_images, transformation):
     """
     Image augmentation.
@@ -350,7 +358,7 @@ def augment(original_images, transformation):
     input_size = len(original_images)
 
     transformed_images = []
-    for X_batch in data_generator.flow(original_images, shuffle=False,  batch_size=batch_size):
+    for X_batch in data_generator.flow(original_images, shuffle=False, batch_size=batch_size):
         for image in X_batch:
             # transformed_images[cnt_trans] = image
             transformed_images.append(image)
@@ -369,6 +377,7 @@ def augment(original_images, transformation):
         print('Applied augmentations. ')
 
     return transformed_images
+
 
 def cartoon_effect(original_images, **kwargs):
     """
@@ -407,9 +416,9 @@ def cartoon_effect(original_images, **kwargs):
         # repeatedly apply small bilateral filter instead of applying one large filter
         for _ in range(nb_bilateral):
             img_color = cv2.bilateralFilter(src=img_color,
-                                        d=6,
-                                        sigmaColor=filter_sigma_color,
-                                        sigmaSpace=filter_sigma_space)
+                                            d=6,
+                                            sigmaColor=filter_sigma_color,
+                                            sigmaSpace=filter_sigma_space)
 
         # upsample image
         for _ in range(nb_downsampling):
@@ -443,7 +452,7 @@ def cartoon_effect(original_images, **kwargs):
 
         img_cartoon = cv2.bitwise_and(img_color, img_edges)
 
-        transformed_images.append(img_cartoon/255.)
+        transformed_images.append(img_cartoon / 255.)
     transformed_images = np.stack(transformed_images, axis=0)
     if (nb_channels == 1):
         # reshape a 3d array to a 4d array
@@ -455,6 +464,7 @@ def cartoon_effect(original_images, **kwargs):
 
     return transformed_images
 
+
 def cartoonify(original_images, transformation):
     """
     Configure for each type of cartoon effect.
@@ -462,7 +472,7 @@ def cartoonify(original_images, transformation):
     :param transformation:
     :return:
     """
-    if MODE.DEBUG:    
+    if MODE.DEBUG:
         print('Applying transformation {}...'.format(transformation))
 
     _, img_rows, img_cols, nb_channels = original_images.shape
@@ -529,6 +539,7 @@ def cartoonify(original_images, transformation):
                           filter_sigma_space=filter_sigma_space,
                           nb_downsampling=nb_downsampling, nb_bilateral=nb_bilateral)
 
+
 def quantize(original_images, transformation):
     """
     Adapted from tutorial
@@ -593,10 +604,12 @@ def quantize(original_images, transformation):
 
     return transformed_images
 
+
 def distort(original_images, transformation):
     transformed_images = []
 
     nb_images, img_rows, img_cols, nb_channels = original_images.shape
+    pixel_size = 10
 
     r1 = 5.
     r2 = 2.
@@ -619,6 +632,15 @@ def distort(original_images, transformation):
             for i in range(img_rows):
                 img_distorted[:, i] = np.roll(img_distorted[:, i], int(shift(i)))
             transformed_images.append(img_distorted)
+    elif (transformation == TRANSFORMATION.pixelate):
+        for img in original_images:
+            # Resize smoothly down
+            img_distorted = img.resize((img_rows // pixel_size, img_cols // pixel_size),
+                                                 resample=Image.BILINEAR)
+            # Scale back up using NEAREST to original size
+            img_distorted = img_distorted.resize((img_rows, img_cols),
+                                                 resample=Image.NEAREST)
+            transformed_images.append(img_distorted)
     else:
         raise ValueError('{} is not supported.'.format(transformation))
 
@@ -627,6 +649,7 @@ def distort(original_images, transformation):
         # reshape a 3d array to a 4d array
         transformed_images = transformed_images.reshape((nb_images, img_rows, img_cols, nb_channels))
     return transformed_images
+
 
 def filter(original_images, transformation):
     """
@@ -751,6 +774,7 @@ def filter(original_images, transformation):
         transformed_images = transformed_images.reshape((nb_images, img_rows, img_cols, nb_channels))
     return transformed_images
 
+
 def add_noise(original_images, transformation):
     """
     Adding noise to given images.
@@ -769,6 +793,7 @@ def add_noise(original_images, transformation):
     if (nb_channels == 1):
         transformed_images = transformed_images.reshape((nb_images, img_rows, img_cols, nb_channels))
     return transformed_images
+
 
 def compress(original_images, transformation):
     """
@@ -799,13 +824,14 @@ def compress(original_images, transformation):
         decoded_img = cv2.imdecode(encoded_img, 1)
         if (nb_channels == 1):
             decoded_img = cv2.cvtColor(decoded_img, cv2.COLOR_RGB2GRAY)
-        transformed_images.append(decoded_img/255.)
+        transformed_images.append(decoded_img / 255.)
 
     transformed_images = np.stack(transformed_images, axis=0)
 
     if (nb_channels == 1):
         transformed_images = transformed_images.reshape((nb_images, img_rows, img_cols, nb_channels))
     return transformed_images
+
 
 def denoising(original_images, transformation):
     """
@@ -863,8 +889,8 @@ def denoising(original_images, transformation):
         for img in original_images:
             # estimate the noise standard deviation from the noisy image
             sigma_est = np.mean(estimate_sigma(img, multichannel=True))
-            img_trans = denoise_nl_means(img, h=hr*sigma_est, sigma=sr*sigma_est,
-                            fast_mode=False, **patch_kw)
+            img_trans = denoise_nl_means(img, h=hr * sigma_est, sigma=sr * sigma_est,
+                                         fast_mode=False, **patch_kw)
             transformed_images.append(img_trans)
     elif (transformation == TRANSFORMATION.denoise_nl_fast):
         patch_kw = dict(patch_size=5,  # 5x5 patches
@@ -876,8 +902,8 @@ def denoising(original_images, transformation):
             sr = 3
         for img in original_images:
             sigma_est = np.mean(estimate_sigma(img, multichannel=True))
-            img_trans = denoise_nl_means(img, h=hr*sigma_est, sigma=sr*sigma_est,
-                                 fast_mode=True, **patch_kw)
+            img_trans = denoise_nl_means(img, h=hr * sigma_est, sigma=sr * sigma_est,
+                                         fast_mode=True, **patch_kw)
             transformed_images.append(img_trans)
     else:
         raise ValueError('{} is not supported.'.format(transformation))
@@ -891,6 +917,7 @@ def denoising(original_images, transformation):
         transformed_images = transformed_images.reshape((nb_images, img_rows, img_cols, nb_channels))
 
     return transformed_images
+
 
 def geometric_transformations(original_images, transformation):
     """
@@ -964,6 +991,7 @@ def geometric_transformations(original_images, transformation):
 
     return np.array(transformed_images)
 
+
 def segmentations(original_images, transformation):
     """
         Segmentation of objects¶
@@ -1012,6 +1040,7 @@ def segmentations(original_images, transformation):
         transformed_images = transformed_images.reshape((nb_images, img_rows, img_cols, nb_channels))
 
     return np.array(transformed_images)
+
 
 def transform_images(X, transformation_type):
     """
@@ -1062,6 +1091,8 @@ def transform_images(X, transformation_type):
 """
 for testing
 """
+
+
 def main(*args):
     print('Transform --- {}'.format(args))
     _, (X, _) = load_data(args[0])
@@ -1071,6 +1102,7 @@ def main(*args):
 
     # plot_comparisons(X_orig, X_trans, '{}-{}'.format(args[0], args[1]))
     plot_difference(X_orig[:5], X_trans[:5], 'Diff-{}-{}'.format(args[0], args[1]))
+
 
 if __name__ == "__main__":
     MODE.debug_on()
