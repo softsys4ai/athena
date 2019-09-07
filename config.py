@@ -21,6 +21,7 @@ defensesList = ["CV_Maj", "CV_Max", "1s_Mean", "EM_Mean", "EM_MXMV", "1s_Mean_L"
 
 dropout = 0.5
 
+
 class DATA(object):
     """
     Configuration for data.
@@ -38,7 +39,8 @@ class DATA(object):
     def set_current_dataset_name(cls, dataset_name):
         supported_list = cls.get_supported_datasets()
         if not dataset_name in supported_list:
-            raise ValueError("{} is not supported. Currently only {} are supported.".format(dataset_name, supported_list))
+            raise ValueError(
+                "{} is not supported. Currently only {} are supported.".format(dataset_name, supported_list))
 
         CUR_DATASET_NAME = dataset_name
 
@@ -111,8 +113,8 @@ class TRANSFORMATION(object):
     """
     samplewise_std_norm = 'samplewise_std_norm'
     feature_std_norm = 'feature_std_norm'
-    zca_whitening = 'zca_whitening' # TODO: bug fix
-    #pca_whitening = 'pca_whitening' # TODO: add ?
+    zca_whitening = 'zca_whitening'  # TODO: bug fix
+    # pca_whitening = 'pca_whitening' # TODO: add ?
 
     """
     cartoonify
@@ -130,11 +132,11 @@ class TRANSFORMATION(object):
     quantization
     """
     quant_2_clusters = 'quant_2_clusters'
-    quant_4_clusters = 'quant_4_clusters' # TODO: temporary removed from list
+    quant_4_clusters = 'quant_4_clusters'  # TODO: temporary removed from list
     quant_8_clusters = 'quant_8_clusters'
-    quant_16_clusters = 'quant_16_clusters' # TODO: temporary removed from list
+    quant_16_clusters = 'quant_16_clusters'  # TODO: temporary removed from list
     quant_32_clusters = 'quant_32_clusters'
-    quant_64_clusters = 'quant_64_clusters' # TODO: temporary removed from list
+    quant_64_clusters = 'quant_64_clusters'  # TODO: temporary removed from list
 
     """
     distortion
@@ -149,7 +151,6 @@ class TRANSFORMATION(object):
     defocus_blur = 'defocus_blur'
     glass_blur = 'glass_blur'
     gaussian_blur = 'gaussian_blur'
-
 
     """
     noises
@@ -175,13 +176,12 @@ class TRANSFORMATION(object):
     filter_roberts = 'filter_roberts'
     filter_scharr = 'filter_scharr'
     filter_prewitt = 'filter_prewitt'
-    filter_meijering = 'filter_meijering' # TODO: bug fix
-    filter_sato = 'filter_sato' # TODO: bug fix
-    filter_frangi = 'filter_frangi' # TODO: bug fix
-    filter_hessian = 'filter_hessian' # TODO: bug fix
-    filter_skeletonize = 'filter_skeletonize' # TODO: bug fix
-    filter_thin = 'filter_thin' # TODO: bug fix
-
+    filter_meijering = 'filter_meijering'  # TODO: bug fix
+    filter_sato = 'filter_sato'  # TODO: bug fix
+    filter_frangi = 'filter_frangi'  # TODO: bug fix
+    filter_hessian = 'filter_hessian'  # TODO: bug fix
+    filter_skeletonize = 'filter_skeletonize'  # TODO: bug fix
+    filter_thin = 'filter_thin'  # TODO: bug fix
 
     """
     compression
@@ -199,7 +199,7 @@ class TRANSFORMATION(object):
     """
     denoise_tv_chambolle = 'denoise_tv_chambolle'
     denoise_tv_bregman = 'denoise_tv_bregman'
-    denoise_bilateral = 'denoise_bilateral' # TODO: bug fix
+    denoise_bilateral = 'denoise_bilateral'  # TODO: bug fix
     denoise_wavelet = 'denoise_wavelet'
     denoise_nl_means = 'denoise_nl_means'
     denoise_nl_fast = 'denoise_nl_means_fast'
@@ -208,7 +208,7 @@ class TRANSFORMATION(object):
     geometric
     """
     geo_swirl = 'geo_swirl'
-    geo_radon = 'geo_radon' # TODO: remove from list
+    geo_radon = 'geo_radon'  # TODO: remove from list
     geo_iradon = 'geo_iradon'
     geo_iradon_sart = 'geo_iradon_sart'
 
@@ -217,7 +217,6 @@ class TRANSFORMATION(object):
     """
     seg_gradient = 'seg_gradient'
     seg_watershed = 'seg_watershed'
-
 
     ROTATE = [rotate90, rotate180, rotate270]
     SHIFT = [shift_left, shift_right, shift_up, shift_down,
@@ -240,31 +239,31 @@ class TRANSFORMATION(object):
     if DATA.CUR_DATASET_NAME == DATA.cifar_10:
         QUANTIZATIONS = [quant_16_clusters, quant_64_clusters]
     # mnist
-    else: # extend the branch as necessary when adding more types of datasets
+    else:  # extend the branch as necessary when adding more types of datasets
         QUANTIZATIONS = [quant_4_clusters, quant_8_clusters]
 
-    DISTORTIONS = [distortion_x, distortion_y]
-    NOISES =[noise_gaussian, noise_localvar, noise_poisson, noise_salt,
-             noise_pepper, noise_saltNpepper, noise_speckle]
+    DISTORTIONS = [distortion_x, distortion_y, contrast]
+    NOISES = [noise_gaussian, noise_localvar, noise_poisson, noise_salt,
+              noise_pepper, noise_saltNpepper, noise_speckle]
     # FILTERS = [filter_sobel, filter_gaussian, filter_rank, filter_median, filter_minimum,
     #            filter_maximum, filter_entropy, filter_roberts, filter_scharr,
     #            filter_prewitt, filter_meijering, filter_sato, filter_frangi, filter_hessian,
     #            filter_skeletonize, filter_thin] # TODO: full set
 
     FILTERS = [filter_sobel, filter_gaussian, filter_rank, filter_median, filter_minimum,
-               filter_maximum, filter_roberts, filter_scharr, filter_entropy, 
+               filter_maximum, filter_roberts, filter_scharr, filter_entropy,
                filter_prewitt]
     COMPRESSION = [compress_jpeg_quality_80, compress_jpeg_quality_50,
                    compress_jpeg_quality_30, compress_jpeg_quality_10,
                    compress_png_compression_1, compress_png_compression_8, compress_png_compression_5]
-    DENOISING = [denoise_tv_chambolle, denoise_tv_bregman, # denoise_bilateral,
+    DENOISING = [denoise_tv_chambolle, denoise_tv_bregman,  # denoise_bilateral,
                  denoise_wavelet, denoise_nl_means, denoise_nl_fast]
     GEOMETRIC = [geo_swirl, geo_iradon, geo_iradon_sart]
-    SEGMENTATION = [seg_gradient] #, seg_watershed]
+    SEGMENTATION = [seg_gradient]  # , seg_watershed]
 
     @classmethod
     def supported_types(cls):
-        transformations =[]
+        transformations = []
         transformations.extend(['clean'])
         transformations.extend(cls.ROTATE)
         transformations.extend(cls.SHIFT)
@@ -284,6 +283,7 @@ class TRANSFORMATION(object):
 
         print('Support {} types of transformations.'.format(len(transformations)))
         return transformations
+
 
 class ATTACK(object):
     """
@@ -322,8 +322,8 @@ class ATTACK(object):
     # ---------------------------
     @classmethod
     def get_fgsm_eps(cls):
-        return [0.25, 0.3, 0.1, 0.05, 0.01, 0.005] # full set
-        #return [0.25] # for test
+        return [0.25, 0.3, 0.1, 0.05, 0.01, 0.005]  # full set
+        # return [0.25] # for test
 
     @classmethod
     def get_fgsm_AETypes(cls):
@@ -337,12 +337,12 @@ class ATTACK(object):
     # ---------------------------
     @classmethod
     def get_bim_nbIter(cls):
-        return [1, 10, 100, 1000, 10000, 100000] # full set
+        return [1, 10, 100, 1000, 10000, 100000]  # full set
         # return [100] # for test
 
     @classmethod
     def get_bim_norm(cls):
-        return [np.inf, 2] # full set
+        return [np.inf, 2]  # full set
         # return [np.inf]
 
     @classmethod
@@ -368,7 +368,7 @@ class ATTACK(object):
     # ----------------------------
     @classmethod
     def get_df_maxIter(cls):
-        return [1, 10, 100, 1000, 10000, 100000] # full set
+        return [1, 10, 100, 1000, 10000, 100000]  # full set
         # return [10]
 
     @classmethod
@@ -384,13 +384,13 @@ class ATTACK(object):
     @classmethod
     def get_jsma_theta(cls):
         # theta: Perturbation introduced to modified components (can be positive or negative)
-        return [0.1, 0.3, 0.5, 0,7, 1.] # full set
+        return [0.1, 0.3, 0.5, 0, 7, 1.]  # full set
         # return [0.3, 0.5]
 
     @classmethod
     def get_jsma_gamma(cls):
         # gamma: Maximum percentage of perturbed features
-        return [0.05, 0.1, 0.3, 0.5, 0.7, 1.] # full set.
+        return [0.05, 0.1, 0.3, 0.5, 0.7, 1.]  # full set.
         # return [0.5]
 
     @classmethod
@@ -450,27 +450,35 @@ class MODEL(object):
     @classmethod
     def set_architecture(cls, architecture):
         cls.ARCHITECTURE = architecture
+
     @classmethod
     def set_batch_size(cls, batch_size):
         cls.BATCH_SIZE = batch_size
+
     @classmethod
     def set_learning_rate(cls, lr):
         cls.LEARNING_RATE = lr
+
     @classmethod
     def set_dataset(cls, dataset):
         cls.NAME = dataset
+
     @classmethod
     def set_epochs(cls, epochs):
         cls.EPOCHS = epochs
 
+
 class MODE(object):
     DEBUG = False
+
     @classmethod
     def debug_on(cls):
         cls.DEBUG = True
+
     @classmethod
     def debug_off(cls):
         cls.DEBUG = False
+
 
 class PATH(object):
     # for debugging

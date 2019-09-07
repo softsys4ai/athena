@@ -7,21 +7,25 @@ import numpy as np
 from config import *
 from util import *
 
+
 def usage():
-    print("====================================================================================================================")
-    print("python <this script> samplesDir experimentRootDir modelsDir numOfSamples testResultFoldName datasetName numOfClasses")
-    print("====================================================================================================================")
+    print(
+        "====================================================================================================================")
+    print(
+        "python <this script> samplesDir experimentRootDir modelsDir numOfSamples testResultFoldName datasetName numOfClasses")
+    print(
+        "====================================================================================================================")
+
 
 if len(sys.argv) != 8:
     usage()
     exit(1)
 
-
-samplesDir          = sys.argv[1]
-experimentRootDir   = sys.argv[2]
-modelsDir           = sys.argv[3]
-numOfSamples        = int(sys.argv[4])
-testResultFoldName  = sys.argv[5]
+samplesDir = sys.argv[1]
+experimentRootDir = sys.argv[2]
+modelsDir = sys.argv[3]
+numOfSamples = int(sys.argv[4])
+testResultFoldName = sys.argv[5]
 datasetName = sys.argv[6]
 numOfClasses = int(sys.argv[7])
 
@@ -32,56 +36,52 @@ testDir = os.path.join(experimentRootDir, testResultFoldName)
 
 AETypes = ATTACK.get_AETypes()
 
-
 numOfAETypes = len(AETypes)
-sampleTypes =["BS"]
+sampleTypes = ["BS"]
 sampleTypes.extend(AETypes)
 numOfSampleTypes = numOfAETypes + 1
 
 targetModelName = "clean"
 transformConfig = TRANSFORMATION()
-transformationList = transformConfig.supported_types() 
+transformationList = transformConfig.supported_types()
 
 # Create fold directories for evaluation
 predictionResultDir = os.path.join(testDir, "prediction_result")
 
-
 # Prediction : needs a new prediction function
 predictionForTest(
-        predictionResultDir,
-        datasetName,
-        architecture,
-        numOfClasses,
-        targetModelName,
-        modelsDir,
-        samplesDir,
-        numOfSamples,
-        AETypes,
-        transformationList)
-
+    predictionResultDir,
+    datasetName,
+    architecture,
+    numOfClasses,
+    targetModelName,
+    modelsDir,
+    samplesDir,
+    numOfSamples,
+    AETypes,
+    transformationList)
 
 numOfTrans = len(transformationList) - 1
-numOfModels = 1 + numOfTrans # clean model + transform models
-
+numOfModels = 1 + numOfTrans  # clean model + transform models
 
 # Evaluation: training and testing
-predProbBS  = np.load(os.path.join(predictionResultDir, "BS/predProb.npy"))
-#predProbBS  = predProbBS[1:]
+predProbBS = np.load(os.path.join(predictionResultDir, "BS/predProb.npy"))
+# predProbBS  = predProbBS[1:]
 predLogitBS = np.load(os.path.join(predictionResultDir, "BS/predLogit.npy"))
-#predLogitBS = predLogitBS[1:]
-labels      = np.load(os.path.join(samplesDir, "Label-"+datasetName+"-"+targetModelName+".npy"))
-labels      = np.argmax(labels, axis=1)
-predLCBS    = np.zeros((predProbBS.shape[0], predProbBS.shape[1], 2))
+# predLogitBS = predLogitBS[1:]
+labels = np.load(os.path.join(samplesDir, "Label-" + datasetName + "-" + targetModelName + ".npy"))
+labels = np.argmax(labels, axis=1)
+predLCBS = np.zeros((predProbBS.shape[0], predProbBS.shape[1], 2))
 predLCBS[:, :, 0] = np.argmax(predProbBS, axis=2)
 predLCBS[:, :, 1] = np.max(predProbBS, axis=2)
-labelsBS    = labels
+labelsBS = labels
 
 trainModelDir = os.path.join(experimentRootDir, "train_models")
 
-numOfDefenses = numOfCVDefenses+2*numOfWCDefenses
+numOfDefenses = numOfCVDefenses + 2 * numOfWCDefenses
 
-acc1Model = np.zeros((numOfAETypes+1, numOfModels))
-acc1Model[0,:] = calAccuracyAllSingleModels(labelsBS, predProbBS)
+acc1Model = np.zeros((numOfAETypes + 1, numOfModels))
+acc1Model[0, :] = calAccuracyAllSingleModels(labelsBS, predProbBS)
 
 # the 1st dimension maps to a kind of ensemble model trained on the specific type of AE
 defenseAccAEs = np.zeros((numOfAETypes, numOfDefenses))
@@ -89,8 +89,8 @@ defenseAccBSs = np.zeros((numOfAETypes, numOfDefenses))
 defenseTCAEs = np.zeros((numOfAETypes, numOfDefenses))
 defenseTCBSs = np.zeros((numOfAETypes, numOfDefenses))
 # accuracies of clean model, random defense and upper bound
-rdCleanUPAcc = np.zeros((numOfAETypes+1, 3))
-clusters=[]
+rdCleanUPAcc = np.zeros((numOfAETypes + 1, 3))
+clusters = []
 for tmID in range(numOfTrans):
     clusters.append([tmID])
 # BS - accuracy of clean model, random defense and upper bound
@@ -100,11 +100,9 @@ rdCleanUPAcc[0, 0] = acc1Model[0, 0]
 rdCleanUPAcc[0, 1] = np.mean(acc1Model[0, 1:])
 # upper-bound accuracy
 rdCleanUPAcc[0, 2] = getUpperBoundAccuracy(
-        predLCBS[1:, :, :],
-        clusters,
-        labelsBS)
-
-
+    predLCBS[1:, :, :],
+    clusters,
+    labelsBS)
 
 # Test each ensemble model trained by each type of AEs
 for AETypeIdx in range(numOfAETypes):
@@ -112,80 +110,78 @@ for AETypeIdx in range(numOfAETypes):
     curTrainModelDir = os.path.join(trainModelDir, AEType)
     curPredictionResultDir = os.path.join(predictionResultDir, AEType)
 
-    print("Evaluating AE type: "+AEType)
-    predProbAE  = np.load(os.path.join(curPredictionResultDir, "predProb.npy"))
+    print("Evaluating AE type: " + AEType)
+    predProbAE = np.load(os.path.join(curPredictionResultDir, "predProb.npy"))
     predLogitAE = np.load(os.path.join(curPredictionResultDir, "predLogit.npy"))
     predProbLC = np.zeros((numOfModels, numOfSamples, 2))
     predProbLC[:, :, 0] = np.argmax(predProbAE, axis=2)
-    predProbLC[:, : ,1] = np.max(predProbAE, axis=2)
+    predProbLC[:, :, 1] = np.max(predProbAE, axis=2)
 
     # accuracy of AE on clean model and all transform models
-    acc1Model[AETypeIdx+1, :] = calAccuracyAllSingleModels(labels, predProbAE)
+    acc1Model[AETypeIdx + 1, :] = calAccuracyAllSingleModels(labels, predProbAE)
 
     # accuracy of clean model
-    rdCleanUPAcc[AETypeIdx+1, 0] = acc1Model[AETypeIdx+1, 0]
+    rdCleanUPAcc[AETypeIdx + 1, 0] = acc1Model[AETypeIdx + 1, 0]
     # accuracy of random defense
-    rdCleanUPAcc[AETypeIdx+1, 1] = np.mean(acc1Model[AETypeIdx+1, 1:])
+    rdCleanUPAcc[AETypeIdx + 1, 1] = np.mean(acc1Model[AETypeIdx + 1, 1:])
     # upper-bound accuracy
-    rdCleanUPAcc[AETypeIdx+1, 2] = getUpperBoundAccuracy(
-            predProbLC[1:, :, :],
-            clusters,
-            labels)
+    rdCleanUPAcc[AETypeIdx + 1, 2] = getUpperBoundAccuracy(
+        predProbLC[1:, :, :],
+        clusters,
+        labels)
 
     # accuracy of clustering-and-voting based defenses
     for defenseIdx in range(numOfCVDefenses):
-        defenseName = cvDefenseNames[defenseIdx] 
-        clusters = loadCAVModel(os.path.join(curTrainModelDir, defenseName+".txt"))
+        defenseName = cvDefenseNames[defenseIdx]
+        clusters = loadCAVModel(os.path.join(curTrainModelDir, defenseName + ".txt"))
 
         # testing AE
         votedResults, defenseTCAEs[AETypeIdx, defenseIdx] = votingAsDefense(
-                predProbLC[1:, :, :],
-                clusters,
-                vsac=cvDefenseNames[defenseIdx],
-                measureTC=True)
+            predProbLC[1:, :, :],
+            clusters,
+            vsac=cvDefenseNames[defenseIdx],
+            measureTC=True)
         defenseAccAEs[AETypeIdx, defenseIdx] = calAccuracy(votedResults[:, 0], labels)
 
         # tesing BS
         votedResults, defenseTCBSs[AETypeIdx, defenseIdx] = votingAsDefense(
-                predLCBS[1:, :, :],
-                clusters,
-                vsac=cvDefenseNames[defenseIdx],
-                measureTC=True)
+            predLCBS[1:, :, :],
+            clusters,
+            vsac=cvDefenseNames[defenseIdx],
+            measureTC=True)
         defenseAccBSs[AETypeIdx, defenseIdx] = calAccuracy(votedResults[:, 0], labelsBS)
-
 
     # accuracy of weithed-confidence based defenses
     for defenseIdx in range(numOfWCDefenses):
         defenseName = wcDefenseNames[defenseIdx]
         for plIdx in range(2):
-            wcMatFilename = defenseName+"_EM.npy"
-            mIDsFilename  = defenseName+"_modelIDs.npy"
+            wcMatFilename = defenseName + "_EM.npy"
+            mIDsFilename = defenseName + "_modelIDs.npy"
             predAE = predProbAE[1:, :, :]
             predBS = predProbBS[1:, :, :]
-            if plIdx == 1: # predict logit instead of probability
+            if plIdx == 1:  # predict logit instead of probability
                 wcMatFilename = "LG_" + wcMatFilename
-                mIDsFilename  = "LG_" +  mIDsFilename
+                mIDsFilename = "LG_" + mIDsFilename
                 predAE = predLogitAE[1:, :, :]
                 predBS = predLogitBS[1:, :, :]
 
             wcMat = np.load(os.path.join(curTrainModelDir, wcMatFilename))
             # ID of transform models: starts from 0.
-            mIDs  = np.load(os.path.join(curTrainModelDir, mIDsFilename))
-           
-            curPredAE = predAE[mIDs] 
+            mIDs = np.load(os.path.join(curTrainModelDir, mIDsFilename))
+
+            curPredAE = predAE[mIDs]
             curPredBS = predBS[mIDs]
             dIdx = numOfCVDefenses + plIdx * numOfWCDefenses + defenseIdx
 
             # testing AE
-            predLabels,  defenseTCAEs[AETypeIdx, dIdx] = wcdefenses(
-                    curPredAE, wcMat, defenseName, measureTC=True)
+            predLabels, defenseTCAEs[AETypeIdx, dIdx] = wcdefenses(
+                curPredAE, wcMat, defenseName, measureTC=True)
             defenseAccAEs[AETypeIdx, dIdx] = calAccuracy(predLabels, labels)
 
             # testing BS
-            predLabels,  defenseTCBSs[AETypeIdx, dIdx] = wcdefenses(
-                    curPredBS, wcMat, defenseName, measureTC=True)
+            predLabels, defenseTCBSs[AETypeIdx, dIdx] = wcdefenses(
+                curPredBS, wcMat, defenseName, measureTC=True)
             defenseAccBSs[AETypeIdx, dIdx] = calAccuracy(predLabels, labels)
-
 
 # Report accuracy data
 # accuracies of random defense, clean model and upper bound
@@ -252,7 +248,6 @@ with open(defenseAccBSsFP, "w") as fp:
             defenseAccBSs[AETypeIdx, 6],
             defenseAccBSs[AETypeIdx, 7]))
 
-
 # Report latency
 # defenseTCBSs , defenseTCAEs : (numOfAETypes, numofDefenses)
 # predTCs: (numOfSampleTypes, numOfModels, 3)
@@ -264,7 +259,7 @@ predAndTransTCs[:, :, 1] = predTCs[:, :, 0] + predTCs[:, :, 2]
 maxTCTransModels = np.argmax(predAndTransTCs[:, 1:, :], axis=1)
 maxTCTransModelsFP = os.path.join(testDir, "maxTCTransModels.txt")
 with open(maxTCTransModelsFP, "w") as fp:
-    sformat="{}\t{}\t{}\n"
+    sformat = "{}\t{}\t{}\n"
     fp.write(sformat.format(
         "Type",
         "ProbPred",
@@ -276,10 +271,11 @@ with open(maxTCTransModelsFP, "w") as fp:
     for AETypeIdx in range(numOfAETypes):
         fp.write(sformat.format(
             AETypes[AETypeIdx],
-            maxTCTransModels[1+AETypeIdx, 0],
-            maxTCTransModels[1+AETypeIdx, 1]))
+            maxTCTransModels[1 + AETypeIdx, 0],
+            maxTCTransModels[1 + AETypeIdx, 1]))
 
-predAndTransTCs = np.max(predAndTransTCs[:, 1:, :], axis=1) # find the largest time cost of transformation and inference across models
+predAndTransTCs = np.max(predAndTransTCs[:, 1:, :],
+                         axis=1)  # find the largest time cost of transformation and inference across models
 CAVEnsembleTCs = np.zeros((numOfAETypes, 2))
 CAVEnsembleTCs[:, 0] = predAndTransTCs[1:, 0] + defenseTCAEs[:, 0]
 CAVEnsembleTCs[:, 1] = predAndTransTCs[1:, 0] + defenseTCAEs[:, 1]
@@ -294,10 +290,10 @@ WCEnsemblesTCs[:, 5] = predAndTransTCs[1:, 1] + defenseTCAEs[:, 7]
 # probability inference on clean model
 # defense time costs
 totalTCsAE = np.zeros((numOfAETypes, 1 + numOfDefenses))
-totalTCsAE[:, 0]   = predTCs[1:, 0, 1]
+totalTCsAE[:, 0] = predTCs[1:, 0, 1]
 totalTCsAE[:, 1:3] = CAVEnsembleTCs
-totalTCsAE[:, 3:]  = WCEnsemblesTCs
-totalTCAEFP = os.path.join(testDir, "time_cost_of_each_ensemble_model.txt") 
+totalTCsAE[:, 3:] = WCEnsemblesTCs
+totalTCAEFP = os.path.join(testDir, "time_cost_of_each_ensemble_model.txt")
 with open(totalTCAEFP, "w") as fp:
     sformat = "{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\n"
     fp.write(sformat.format(
@@ -324,24 +320,24 @@ with open(totalTCAEFP, "w") as fp:
             totalTCsAE[AETypeIdx, 7],
             totalTCsAE[AETypeIdx, 8]))
 ensembleModelNames = [
-        "CV_Maj",
-        "CV_Max",
-        "1s_Mean",
-        "EM_Mean",
-        "EM_MXMV",
-        "1s_Mean_L",
-        "EM_Mean_L",
-        "EM_MXMV_L"]
+    "CV_Maj",
+    "CV_Max",
+    "1s_Mean",
+    "EM_Mean",
+    "EM_MXMV",
+    "1s_Mean_L",
+    "EM_Mean_L",
+    "EM_MXMV_L"]
 xLabel = ["Clean"]
 xLabel.extend(ensembleModelNames)
 yLabel = "Latency (ms)"
 title = "Latency of clean model and ensemble models"
 saveFP = os.path.join(testDir, "latency.pdf")
 xtickSize = 8
-boxPlot(totalTCsAE*1000, title, xLabel, yLabel, saveFP, xtickSize, 45)
+boxPlot(totalTCsAE * 1000, title, xLabel, yLabel, saveFP, xtickSize, 45)
 
 relativeTotTCAE = totalTCsAE / totalTCsAE[:, 0][:, None]
-relativeTotTCAEFP = os.path.join(testDir, "relative_time_cost_of_each_ensemble_model.txt") 
+relativeTotTCAEFP = os.path.join(testDir, "relative_time_cost_of_each_ensemble_model.txt")
 with open(relativeTotTCAEFP, "w") as fp:
     sformat = "{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\n"
     fp.write(sformat.format(

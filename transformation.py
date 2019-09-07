@@ -609,7 +609,6 @@ def distort(original_images, transformation):
     transformed_images = []
 
     nb_images, img_rows, img_cols, nb_channels = original_images.shape
-    pixel_size = 10
 
     r1 = 5.
     r2 = 2.
@@ -620,32 +619,48 @@ def distort(original_images, transformation):
     w = r2 / img_cols
     shift = lambda x: a * np.sin(np.pi * x * w)
 
-    if (transformation == TRANSFORMATION.distortion_y):
+    if transformation == TRANSFORMATION.distortion_y:
         for img in original_images:
             img_distorted = np.copy(img)
             for i in range(img_rows):
                 img_distorted[i, :] = np.roll(img_distorted[i, :], int(shift(i)))
             transformed_images.append(img_distorted)
-    elif (transformation == TRANSFORMATION.distortion_x):
+    elif transformation == TRANSFORMATION.distortion_x:
         for img in original_images:
             img_distorted = np.copy(img)
             for i in range(img_rows):
                 img_distorted[:, i] = np.roll(img_distorted[:, i], int(shift(i)))
             transformed_images.append(img_distorted)
-    elif (transformation == TRANSFORMATION.pixelate):
+    elif transformation == TRANSFORMATION.pixelate:
         for img in original_images:
+            img = Image.fromarray(img, 'RGB')
             # Resize smoothly down
-            img_distorted = img.resize((img_rows // pixel_size, img_cols // pixel_size),
-                                                 resample=Image.BILINEAR)
+            img_distorted = img.resize((16, 16),
+                                       resample=Image.NEAREST)
             # Scale back up using NEAREST to original size
-            img_distorted = img_distorted.resize((img_rows, img_cols),
+            img_distorted = img_distorted.resize((32, 32),
                                                  resample=Image.NEAREST)
+            img_distorted = np.array(img_distorted)
             transformed_images.append(img_distorted)
+    elif transformation == TRANSFORMATION.contrast:
+        if nb_channels == 1:
+            severity = 0.1
+            for img in original_images:
+                means = np.mean(img, axis=(0), keepdims=True)
+                img_distorted = np.clip((img - means) * severity + means, 0, 1)
+                transformed_images.append(img_distorted)
+        else:
+            severity = 0.1
+            for img in original_images:
+                means = np.mean(img, axis=(0, 1), keepdims=True)
+                img_distorted = np.clip((img - means) * severity + means, 0, 255)
+                transformed_images.append(img_distorted)
+
     else:
         raise ValueError('{} is not supported.'.format(transformation))
 
     transformed_images = np.stack(transformed_images, axis=0)
-    if (nb_channels == 1):
+    if nb_channels == 1:
         # reshape a 3d array to a 4d array
         transformed_images = transformed_images.reshape((nb_images, img_rows, img_cols, nb_channels))
     return transformed_images
@@ -1096,7 +1111,7 @@ for testing
 def main(*args):
     print('Transform --- {}'.format(args))
     # _, (X, _) = load_data(args[0])
-    X = np.load('experiment_mnist/testing_samples/BS-mnist-clean.npy')
+    X = np.load('data/models/test_BS-mnist-clean.npy')
     X_orig = np.copy(X[10:20])
     X_trans = transform_images(X_orig, args[1])
 
@@ -1107,4 +1122,4 @@ def main(*args):
 if __name__ == "__main__":
     MODE.debug_on()
     # file = 'test_AE-mnist-cnn-clean-jsma_theta10_gamma30'
-    main(DATA.mnist, TRANSFORMATION.seg_gradient)
+    main(DATA.mnist, TRANSFORMATION.contrast)
