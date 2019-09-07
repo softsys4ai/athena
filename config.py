@@ -242,7 +242,7 @@ class TRANSFORMATION(object):
     else:  # extend the branch as necessary when adding more types of datasets
         QUANTIZATIONS = [quant_4_clusters, quant_8_clusters]
 
-    DISTORTIONS = [distortion_x, distortion_y, contrast]
+    DISTORTIONS = [distortion_x, distortion_y, contrast, brightness]
     NOISES = [noise_gaussian, noise_localvar, noise_poisson, noise_salt,
               noise_pepper, noise_saltNpepper, noise_speckle]
     # FILTERS = [filter_sobel, filter_gaussian, filter_rank, filter_median, filter_minimum,

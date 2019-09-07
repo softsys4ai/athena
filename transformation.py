@@ -6,8 +6,9 @@ import cv2
 from scipy import ndimage
 from PIL import Image
 
+
 from keras.preprocessing.image import ImageDataGenerator
-from skimage import filters, util
+from skimage import filters, util, color
 from sklearn.cluster import MiniBatchKMeans
 from skimage.restoration import (denoise_bilateral, denoise_nl_means, denoise_tv_bregman, denoise_tv_chambolle,
                                  denoise_wavelet, estimate_sigma)
@@ -646,16 +647,32 @@ def distort(original_images, transformation):
         if nb_channels == 1:
             severity = 0.1
             for img in original_images:
-                means = np.mean(img, axis=(0), keepdims=True)
+                means = np.mean(img, axis=0, keepdims=True)
                 img_distorted = np.clip((img - means) * severity + means, 0, 1)
                 transformed_images.append(img_distorted)
         else:
-            severity = 0.1
+            c = 0.1
             for img in original_images:
                 means = np.mean(img, axis=(0, 1), keepdims=True)
-                img_distorted = np.clip((img - means) * severity + means, 0, 255)
+                img_distorted = np.clip((img - means) * c + means, 0, 255)
                 transformed_images.append(img_distorted)
-
+    elif transformation == TRANSFORMATION.brightness:
+        if nb_channels == 1:
+            c = 0.99
+            for img in original_images:
+                img = cv2.cvtColor(img, cv2.COLOR_GRAY2RGB)
+                img = color.rgb2hsv(img)
+                img[:, :, 2] = np.clip(img[:, :, 2] + c, 0, 1)
+                img = color.hsv2rgb(img)
+                img = cv2.cvtColor(img, cv2.COLOR_RGB2GRAY)
+                transformed_images.append(img)
+        else:
+            c = 0.5
+            for img in original_images:
+                img = color.rgb2hsv(img)
+                img[:, :, 2] = np.clip(img[:, :, 2] + c, 0, 255)
+                img = color.hsv2rgb(img)
+                transformed_images.append(img)
     else:
         raise ValueError('{} is not supported.'.format(transformation))
 
@@ -920,6 +937,7 @@ def denoising(original_images, transformation):
             img_trans = denoise_nl_means(img, h=hr * sigma_est, sigma=sr * sigma_est,
                                          fast_mode=True, **patch_kw)
             transformed_images.append(img_trans)
+
     else:
         raise ValueError('{} is not supported.'.format(transformation))
 
@@ -1122,4 +1140,4 @@ def main(*args):
 if __name__ == "__main__":
     MODE.debug_on()
     # file = 'test_AE-mnist-cnn-clean-jsma_theta10_gamma30'
-    main(DATA.mnist, TRANSFORMATION.contrast)
+    main(DATA.mnist, TRANSFORMATION.brightness)
