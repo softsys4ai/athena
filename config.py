@@ -42,7 +42,7 @@ class DATA(object):
             raise ValueError(
                 "{} is not supported. Currently only {} are supported.".format(dataset_name, supported_list))
 
-        CUR_DATASET_NAME = dataset_name
+        cls.CUR_DATASET_NAME = dataset_name
 
     @classmethod
     def get_supported_datasets(cls):
