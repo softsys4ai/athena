@@ -673,6 +673,7 @@ def distort(original_images, transformation):
                 img[:, :, 2] = np.clip(img[:, :, 2] + c, 0, 255)
                 img = color.hsv2rgb(img)
                 transformed_images.append(img)
+
     else:
         raise ValueError('{} is not supported.'.format(transformation))
 
@@ -772,7 +773,11 @@ def filter(original_images, transformation):
             transformed_images.append(img_trans)
     elif (transformation == TRANSFORMATION.filter_meijering):
         for img in original_images:
-            img_trans = meijering(img)
+            if nb_channels == 1:
+                img = cv2.cvtColor(img, cv2.COLOR_GRAY2RGB)
+            img_trans = meijering(img, sigmas=[0.01])
+            if nb_channels == 1:
+                img_trans = img_trans[:, :, 1]
             transformed_images.append(img_trans)
     elif (transformation == TRANSFORMATION.filter_sato):
         for img in original_images:
@@ -1129,7 +1134,7 @@ for testing
 def main(*args):
     print('Transform --- {}'.format(args))
     # _, (X, _) = load_data(args[0])
-    X = np.load('data/models/test_BS-mnist-clean.npy')
+    X = np.load('data/models/test_BS-cifar10-clean.npy')
     X_orig = np.copy(X[10:20])
     X_trans = transform_images(X_orig, args[1])
 
@@ -1140,4 +1145,4 @@ def main(*args):
 if __name__ == "__main__":
     MODE.debug_on()
     # file = 'test_AE-mnist-cnn-clean-jsma_theta10_gamma30'
-    main(DATA.mnist, TRANSFORMATION.brightness)
+    main(DATA.cifar_10, TRANSFORMATION.filter_meijering)

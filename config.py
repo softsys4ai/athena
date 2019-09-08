@@ -252,7 +252,7 @@ class TRANSFORMATION(object):
 
     FILTERS = [filter_sobel, filter_gaussian, filter_rank, filter_median, filter_minimum,
                filter_maximum, filter_roberts, filter_scharr, filter_entropy,
-               filter_prewitt]
+               filter_prewitt, filter_meijering]
     COMPRESSION = [compress_jpeg_quality_80, compress_jpeg_quality_50,
                    compress_jpeg_quality_30, compress_jpeg_quality_10,
                    compress_png_compression_1, compress_png_compression_8, compress_png_compression_5]
