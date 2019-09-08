@@ -71,7 +71,7 @@ for sampleType in sampleTypes:
             fp.write("{}\t{}\t{}\n".format(i, transformationList[i], modelsAcc[i]))
 
 
-with open(os.path.join(predictionResultDir, "singleModelAccuracy.txt"), "w") as fp:
+with open(os.path.join(predictionResultDir, datasetName+"_SingleModelAccuracy.txt"), "w") as fp:
     nST = len(sampleTypes)
     nMs = len(transformationList) # clean model corresponds to index 0
     accs = np.zeros((nMs, nST))
@@ -80,6 +80,11 @@ with open(os.path.join(predictionResultDir, "singleModelAccuracy.txt"), "w") as 
         predDir = os.path.join(predictionResultDir, sampleType)
         predProb = np.load(os.path.join(predDir, "predProb.npy"))
         accs[:, sIdx] = calAccuracyAllSingleModels(labels, predProb)
+
+    fp.write("{}\t{}\t".format("ID", "Transformation"))
+    for sIdx in range(nST):
+        fp.write("{}\t".format(sampleTypes[sIdx]))
+    fp.write("\n")
 
     for i in range(nMs):
         fp.write("{}\t{}\t".format(i, transformationList[i]))
