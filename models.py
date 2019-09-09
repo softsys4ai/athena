@@ -39,14 +39,13 @@ def create_model(dataset, input_shape, nb_classes):
         MODEL.set_epochs(100)
         return cnn_cifar(input_shape, nb_classes)
 
-
 def cnn_cifar(input_shape, nb_classes):
     """
-  a cnn for cifar
-  :param input_shape:
-  :param nb_classes:
-  :return:
-  """
+    a cnn for cifar
+    :param input_shape:
+    :param nb_classes:
+    :return:
+    """
     MODEL.ARCHITECTURE = 'cnn'
     weight_decay = 1e-4
 
@@ -89,7 +88,8 @@ def cnn_cifar(input_shape, nb_classes):
         layers.Dropout(0.4),
 
         layers.Flatten(),
-        layers.Dense(nb_classes, activation='softmax')
+        layers.Dense(nb_classes), # make the 2nd last layer as logits output
+        layers.Activation('softmax')
     ]
 
     model = models.Sequential()
@@ -100,83 +100,20 @@ def cnn_cifar(input_shape, nb_classes):
         print(model.summary())
     return model
 
-
-def cnn_cifar10(input_shape, nb_classes):
+def cnn_mnist(input_shape=(28, 28, 1), nb_classes=10):
     """
-  a cnn for cifar
-  :param input_shape:
-  :param nb_classes:
-  :return:
-  """
-    MODEL.ARCHITECTURE = 'cnn'
-
-    struct = [
-        layers.Conv2D(32, (3, 3), activation='relu',
-                      kernel_initializer='he_uniform',
-                      padding='same',
-                      input_shape=input_shape),
-        layers.BatchNormalization(),
-        layers.Conv2D(32, (3, 3), activation='relu',
-                      kernel_initializer='he_uniform',
-                      padding='same'),
-        layers.BatchNormalization(),
-        layers.MaxPooling2D(pool_size=(2, 2)),
-        layers.Dropout(rate=0.2),
-
-        layers.Conv2D(64, (3, 3), activation='relu',
-                      kernel_initializer='he_uniform',
-                      padding='same'),
-        layers.BatchNormalization(),
-        layers.Conv2D(64, (3, 3), activation='relu',
-                      kernel_initializer='he_uniform',
-                      padding='same'),
-        layers.BatchNormalization(),
-        layers.MaxPooling2D(pool_size=(2, 2)),
-        layers.Dropout(rate=0.3),
-
-        layers.Conv2D(128, (3, 3), activation='relu',
-                      kernel_initializer='he_uniform',
-                      padding='same'),
-        layers.BatchNormalization(),
-        layers.Conv2D(128, (3, 3), activation='relu',
-                      kernel_initializer='he_uniform',
-                      padding='same'),
-        layers.BatchNormalization(),
-        layers.MaxPooling2D(pool_size=(2, 2)),
-        layers.Dropout(rate=0.4),
-
-        layers.Flatten(),
-        layers.Dense(128, activation='relu',
-                     kernel_initializer='he_uniform'),
-        layers.BatchNormalization(),
-        layers.Dropout(rate=0.5),
-        layers.Dense(nb_classes, activation='softmax')
-    ]
-
-    model = models.Sequential()
-    for layer in struct:
-        model.add(layer)
-
-    return model
-
-
-def cnn_mnist(input_shape=(28, 28, 1), nb_classes=10, logits=False, input_placeholder=None):
-    """
-  Defines a CNN model using Keras sequential model
-  :param logits: If set to False, returns a Keras model, otherwise will also
+    Defines a CNN model using Keras sequential model
+    :param logits: If set to False, returns a Keras model, otherwise will also
                   return logits tensor
-  :param input_placeholder: The TensorFlow tensor for the input
+    :param input_placeholder: The TensorFlow tensor for the input
                   (needed if returning logits)
                   ("ph" stands for placeholder but it need not actually be a
                   placeholder)
-  :param img_rows: number of row in the image
-  :param img_cols: number of columns in the image
-  :param channels: number of color channels (e.g., 1 for MNIST)
-  :param nb_filters: number of convolutional filters per layer
-  :param nb_classes: the number of output classes
-  :return:
-  """
-
+    :param img_rows: number of row in the image
+    :param img_cols: number of columns in the image
+    :param channels: number of color channels (e.g., 1 for MNIST)
+    :return:
+    """
     MODEL.ARCHITECTURE = 'cnn'
     img_rows, img_cols, nb_channels = input_shape
 
@@ -204,35 +141,27 @@ def cnn_mnist(input_shape=(28, 28, 1), nb_classes=10, logits=False, input_placeh
     for layer in struct:
         model.add(layer)
 
-    # logits_tensor = None
-    # if logits:
-    #   logits_tensor = model(input_placeholder)
-    # model.add(layers.Activation('softmax'))
-    #
-    # if logits:
-    #   return model, logits_tensor
-    # else:
-    #   return model
+    if MODE.DEBUG:
+        print(model.summary())
     return model
-
 
 # --------------------------------------------
 # OPERATIONS
 # --------------------------------------------
 def train_model(model, dataset, model_name, need_augment=False, **kwargs):
     (X_train, Y_train), _ = data.load_data(dataset)
+    need_augment = (dataset == DATA.CUR_DATASET_NAME)
     return train(model, X_train, Y_train, model_name, need_augment, **kwargs)
-
 
 def train(model, X, Y, model_name, need_augment=False, **kwargs):
     """
-  Train a model on given dataset.
-  :param model: the model to train
-  :param dataset: the name of the dataset
-  :param need_augment: a flag - whether we need to augment the data before training the model
-  :param kwargs: for optimizer, loss function, and metrics
-  :return: the trained model
-  """
+    Train a model on given dataset.
+    :param model: the model to train
+    :param dataset: the name of the dataset
+    :param need_augment: a flag - whether we need to augment the data before training the model
+    :param kwargs: for optimizer, loss function, and metrics
+    :return: the trained model
+    """
     print('INFO: model name: {}'.format(model_name))
     learning_rate = 0.001
     validation_rate = 0.2
@@ -252,8 +181,8 @@ def train(model, X, Y, model_name, need_augment=False, **kwargs):
 
     if (DATA.cifar_10 == dataset):
         """
-    mean-std normalization
-    """
+        mean-std normalization
+        """
         X = data.normalize(X)
 
     nb_training = int(nb_examples * (1. - validation_rate))
@@ -263,8 +192,8 @@ def train(model, X, Y, model_name, need_augment=False, **kwargs):
     val_labels = Y[nb_training:]
 
     """
-  augment data
-  """
+    augment data
+    """
     datagen = None
     if (DATA.cifar_10 == dataset):
         # normalize data (has been handled when loading the data)
@@ -275,20 +204,19 @@ def train(model, X, Y, model_name, need_augment=False, **kwargs):
             height_shift_range=0.1,
             horizontal_flip=True,
         )
-        datagen.fit(train_examples)
+    datagen.fit(train_examples)
 
     """
-  compile data
-  """
-
+    compile data
+    """
     if ('default' == metrics):
         model.compile(optimizer=optimizer, loss=loss_func, metrics=['accuracy'])
     else:
         model.compile(optimizer=optimizer, loss=loss_func, metrics=['accuracy', metrics])
 
     """
-  train the model
-  """
+    train the model
+    """
     if (DATA.cifar_10 == dataset):
         history = model.fit_generator(datagen.flow(train_examples, train_labels, batch_size=MODEL.BATCH_SIZE),
                                       steps_per_epoch=nb_training // MODEL.BATCH_SIZE, epochs=MODEL.EPOCHS,
@@ -302,14 +230,14 @@ def train(model, X, Y, model_name, need_augment=False, **kwargs):
                             validation_data=(val_examples, val_labels))
 
     """
-  evaluate the model
-  """
+    evaluate the model
+    """
     scores_train = model.evaluate(train_examples, train_labels, batch_size=128, verbose=0)
     scores_val = model.evaluate(val_examples, val_labels, batch_size=128, verbose=0)
 
     """
-  report
-  """
+    report
+    """
     print('\t\t\t loss, \tacc, \tadv_acc')
     print('Evaluation score on training set: {}'.format(scores_train))
     print('Evaluation score on validation set: {}'.format(scores_val))
@@ -322,13 +250,13 @@ def train(model, X, Y, model_name, need_augment=False, **kwargs):
 
 def train_and_save(model_name, X, Y, validation_rate=0.2, need_augment=False):
     """
-  Train a model over given training set, then
-  save the trained model as given name.
-  :param model_name: the name to save the model as
-  :param X: training examples.
-  :param Y: corresponding desired labels.
-  :param need_augment: a flag whether to perform data augmentation before training.
-  """
+    Train a model over given training set, then
+    save the trained model as given name.
+    :param model_name: the name to save the model as
+    :param X: training examples.
+    :param Y: corresponding desired labels.
+    :param need_augment: a flag whether to perform data augmentation before training.
+    """
 
     prefix, dataset, architect, trans_type = model_name.split('-')
     nb_examples, img_rows, img_cols, nb_channels = X.shape
@@ -405,10 +333,10 @@ def train_and_save(model_name, X, Y, validation_rate=0.2, need_augment=False):
 
 def lr_schedule(epoch):
     """
-  schedule a dynamic learning rate
-  :param epoch:
-  :return:
-  """
+    schedule a dynamic learning rate
+    :param epoch:
+    :return:
+    """
     lr = 0.001
     if (epoch > 75):
         lr = 0.0005
@@ -419,13 +347,13 @@ def lr_schedule(epoch):
 
 def evaluate_model(model, X, Y):
     """
-  Evaluate the model on given test set.
-  :param model: the name of the model to evaluate
-  :param X: test set
-  :param Y:
-  :return: test accuracy, average confidences on correctly classified samples
+    Evaluate the model on given test set.
+    :param model: the name of the model to evaluate
+    :param X: test set
+    :param Y:
+    :return: test accuracy, average confidences on correctly classified samples
           and misclassified samples respectively.
-  """
+    """
     nb_corrections = 0
     nb_examples = Y.shape[0]
 
