@@ -14,6 +14,8 @@ logger = logging.getLogger('defence_transformers')
 logger.setLevel(logging.INFO)
 
 def get_adversarial_examples(model_name, attack_method, X, Y, **kwargs):
+    dataset = model_name.split('-')[1]
+
     logger.info('Crafting adversarial examples using {} method...'.format(attack_method.upper()))
     X_adv = None
 
@@ -21,7 +23,9 @@ def get_adversarial_examples(model_name, attack_method, X, Y, **kwargs):
         eps = kwargs.get('eps', 0.25)
         attack_params = {
             'eps': eps,
-            'ord': np.inf
+            'ord': np.inf,
+            'clip_min': 0.,
+            'clip_max': 1.
         }
         logger.info('{}: (eps={})'.format(attack_method.upper(), eps))
 
@@ -51,7 +55,9 @@ def get_adversarial_examples(model_name, attack_method, X, Y, **kwargs):
             'eps': eps,
             'eps_iter': eps_iter,
             'nb_iter': nb_iter,
-            'ord': ord
+            'ord': ord,
+            'clip_min': 0.,
+            'clip_max': 1.
         }
 
         logger.info('{}: (ord={}, nb_iter={}, eps={})'.format(attack_method.upper(), ord, nb_iter, eps))
@@ -62,14 +68,18 @@ def get_adversarial_examples(model_name, attack_method, X, Y, **kwargs):
         print('Time cost: {}'.format(duration))
     elif (attack_method == ATTACK.DEEPFOOL):
         # Images for inception classifier are normalized to be in [0, 255] interval.
-        # X *= 255.
-
         max_iterations = kwargs.get('max_iterations', 1)
         ord = kwargs.get('ord', 2)
+
+        overshoot = 0.9
+        if (dataset == DATA.cifar_10):
+            overshoot = 10.
+
         attack_params = {
             'ord': ord,
             'max_iterations': max_iterations,
             'nb_candidate': Y.shape[1],
+            'overshoot': overshoot,
             'clip_min': 0.,
             'clip_max': 1.
         }
@@ -80,14 +90,15 @@ def get_adversarial_examples(model_name, attack_method, X, Y, **kwargs):
         duration = time.time() - start_time
         print('Time cost: {}'.format(duration))
 
-        # X_adv /= 255.
     elif (attack_method == ATTACK.CW):
         max_iterations = kwargs.get('max_iterations', 100)
         ord = kwargs.get('ord', 2)
 
         attack_params = {
             'ord': ord,
-            'max_iterations': max_iterations
+            'max_iterations': max_iterations,
+            'clip_min': 0.,
+            'clip_max': 1.
         }
 
         logger.info('{}: (ord={}, max_iterations={})'.format(attack_method.upper(), ord, max_iterations))
@@ -102,7 +113,9 @@ def get_adversarial_examples(model_name, attack_method, X, Y, **kwargs):
         gamma = kwargs.get('gamma', 0.5)
         attack_params = {
             'theta': theta,
-            'gamma': gamma
+            'gamma': gamma,
+            'clip_min': 0.,
+            'clip_max': 1.
         }
 
         logger.info('{}: (theta={}, gamma={})'.format(attack_method.upper(), theta, gamma))
