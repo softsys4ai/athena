@@ -2,10 +2,10 @@
 Implement transformations.
 @auther: Ying Meng (y(dot)meng201011(at)gmail(dot)com)
 """
+import copy
 import cv2
 from scipy import ndimage
 from PIL import Image
-
 
 from keras.preprocessing.image import ImageDataGenerator
 from skimage import filters, util, color
@@ -608,7 +608,6 @@ def quantize(original_images, transformation):
 
 def distort(original_images, transformation):
     transformed_images = []
-
     nb_images, img_rows, img_cols, nb_channels = original_images.shape
 
     r1 = 5.
@@ -620,30 +619,30 @@ def distort(original_images, transformation):
     w = r2 / img_cols
     shift = lambda x: a * np.sin(np.pi * x * w)
 
-    if transformation == TRANSFORMATION.distortion_y:
+    if transformation == TRANSFORMATION.distort_y:
         for img in original_images:
             img_distorted = np.copy(img)
             for i in range(img_rows):
                 img_distorted[i, :] = np.roll(img_distorted[i, :], int(shift(i)))
             transformed_images.append(img_distorted)
-    elif transformation == TRANSFORMATION.distortion_x:
+    elif transformation == TRANSFORMATION.distort_x:
         for img in original_images:
             img_distorted = np.copy(img)
             for i in range(img_rows):
                 img_distorted[:, i] = np.roll(img_distorted[:, i], int(shift(i)))
             transformed_images.append(img_distorted)
-    elif transformation == TRANSFORMATION.pixelate:
+    elif transformation == TRANSFORMATION.distort_pixelate:
         for img in original_images:
             img = Image.fromarray(img, 'RGB')
             # Resize smoothly down
             img_distorted = img.resize((16, 16),
                                        resample=Image.NEAREST)
             # Scale back up using NEAREST to original size
-            img_distorted = img_distorted.resize((32, 32),
+            img_distorted = img_distorted.resize((img_rows, img_cols),
                                                  resample=Image.NEAREST)
             img_distorted = np.array(img_distorted)
             transformed_images.append(img_distorted)
-    elif transformation == TRANSFORMATION.contrast:
+    elif transformation == TRANSFORMATION.distort_contrast:
         if nb_channels == 1:
             severity = 0.1
             for img in original_images:
@@ -656,7 +655,7 @@ def distort(original_images, transformation):
                 means = np.mean(img, axis=(0, 1), keepdims=True)
                 img_distorted = np.clip((img - means) * c + means, 0, 255)
                 transformed_images.append(img_distorted)
-    elif transformation == TRANSFORMATION.brightness:
+    elif transformation == TRANSFORMATION.distort_brightness:
         if nb_channels == 1:
             c = 0.99
             for img in original_images:
@@ -738,7 +737,7 @@ def filter(original_images, transformation):
             """
             img_trans = np.float32(filters.rank.entropy(img, disk(radius=radius)))
             """
-            rescale back into range [0. 1.]
+            rescale back into range [0., 1.]
             """
             img_trans = (img_trans / 2.) + 0.5
             if (nb_channels == 3):
@@ -1032,11 +1031,11 @@ def geometric_transformations(original_images, transformation):
 
 def segmentations(original_images, transformation):
     """
-        Segmentation of objects¶
-        :param original_images:
-        :param transformation:
-        :return:
-        """
+    Segmentation of objects
+    :param original_images:
+    :param transformation:
+    :return:
+    """
     nb_images, img_rows, img_cols, nb_channels = original_images.shape
     # TODO: checking number of channels and some customization for datasets
     # TODO: more variations, after testing is done
@@ -1082,46 +1081,52 @@ def segmentations(original_images, transformation):
 
 def transform_images(X, transformation_type):
     """
-    Main entrance applying transformations on images.
-    :param X: the images to apply transformation.
+    Main entrance applying transformations on images, values of pixels are presumed in range [0., 1.].
+    :param X: the images (values of pixels in range [0., 1.]) to apply transformation.
     :param transformation_type:
-    :return: the transformed images.
+    :return: the transformed images (values of pixels in the same range of X).
     """
+    print('Transforming data ({})'.format(transformation_type))
     if (transformation_type == TRANSFORMATION.clean):
         """
-        Do not apply any transformation for 'clean' images.
+        Do not apply any transformation for 'clean' type.
         """
         return X
-    elif (transformation_type in TRANSFORMATION.ROTATE):
-        return rotate(X, transformation_type)
+
+    """
+    Use a deepcopy for transformation as some transformations will modify the inputs. 
+    """
+    inputs = copy.deepcopy(X)
+    if (transformation_type in TRANSFORMATION.ROTATE):
+        return rotate(inputs, transformation_type)
     elif (transformation_type in TRANSFORMATION.FLIP):
-        return flip(X, transformation_type)
+        return flip(inputs, transformation_type)
     elif (transformation_type in TRANSFORMATION.SHIFT):
-        return shift(X, transformation_type)
+        return shift(inputs, transformation_type)
     elif (transformation_type in TRANSFORMATION.AFFINE_TRANS):
-        return affine_trans(X, transformation_type)
+        return affine_trans(inputs, transformation_type)
     elif (transformation_type in TRANSFORMATION.MORPH_TRANS):
-        return morph_trans(X, transformation_type)
+        return morph_trans(inputs, transformation_type)
     elif (transformation_type in TRANSFORMATION.AUGMENT):
-        return augment(X, transformation_type)
+        return augment(inputs, transformation_type)
     elif (transformation_type in TRANSFORMATION.CARTOONS):
-        return cartoonify(X, transformation_type)
+        return cartoonify(inputs, transformation_type)
     elif (transformation_type in TRANSFORMATION.QUANTIZATIONS):
-        return quantize(X, transformation_type)
+        return quantize(inputs, transformation_type)
     elif (transformation_type in TRANSFORMATION.DISTORTIONS):
-        return distort(X, transformation_type)
+        return distort(inputs, transformation_type)
     elif (transformation_type in TRANSFORMATION.FILTERS):
-        return filter(X, transformation_type)
+        return filter(inputs, transformation_type)
     elif (transformation_type in TRANSFORMATION.NOISES):
-        return add_noise(X, transformation_type)
+        return add_noise(inputs, transformation_type)
     elif (transformation_type in TRANSFORMATION.COMPRESSION):
-        return compress(X, transformation_type)
+        return compress(inputs, transformation_type)
     elif (transformation_type in TRANSFORMATION.DENOISING):
-        return denoising(X, transformation_type)
+        return denoising(inputs, transformation_type)
     elif (transformation_type in TRANSFORMATION.GEOMETRIC):
-        return geometric_transformations(X, transformation_type)
+        return geometric_transformations(inputs, transformation_type)
     elif (transformation_type in TRANSFORMATION.SEGMENTATION):
-        return segmentations(X, transformation_type)
+        return segmentations(inputs, transformation_type)
     else:
         raise ValueError('Transformation type {} is not supported.'.format(transformation_type.upper()))
 
@@ -1129,8 +1134,6 @@ def transform_images(X, transformation_type):
 """
 for testing
 """
-
-
 def main(*args):
     print('Transform --- {}'.format(args))
     # _, (X, _) = load_data(args[0])
