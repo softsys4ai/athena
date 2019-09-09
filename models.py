@@ -21,32 +21,32 @@ FLAGS = flags.FLAGS
 
 def create_model(dataset, input_shape, nb_classes):
     if (dataset == DATA.mnist):
-        MODEL.set_dataset(DATA.mnist)
+        DATA.set_current_dataset_name(DATA.mnist)
         MODEL.set_learning_rate(0.01)
         MODEL.set_batch_size(128)
-        MODEL.set_epochs(10)
+        MODEL.set_epochs(50)
         return cnn_mnist(input_shape=input_shape, nb_classes=nb_classes)
     elif (dataset == DATA.fation_mnist):
-        MODEL.set_dataset(DATA.fation_mnist)
+        DATA.set_current_dataset_name(DATA.fation_mnist)
         MODEL.set_learning_rate(0.01)
         MODEL.set_batch_size(128)
         MODEL.set_epochs(50)
         return cnn_mnist(input_shape, nb_classes)
     elif (dataset == DATA.cifar_10):
-        MODEL.set_dataset(DATA.cifar_10)
+        DATA.set_current_dataset_name(DATA.cifar_10)
         MODEL.set_learning_rate(0.01)
         MODEL.set_batch_size(64)
         MODEL.set_epochs(100)
         return cnn_cifar(input_shape, nb_classes)
 
-def cnn_cifar(input_shape, nb_classes):
+def cnn_cifar(input_shape=(32, 32, 1), nb_classes=10):
     """
     a cnn for cifar
     :param input_shape:
     :param nb_classes:
     :return:
     """
-    MODEL.ARCHITECTURE = 'cnn'
+    MODEL.set_architecture('cnn')
     weight_decay = 1e-4
 
     struct = [
@@ -103,18 +103,11 @@ def cnn_cifar(input_shape, nb_classes):
 def cnn_mnist(input_shape=(28, 28, 1), nb_classes=10):
     """
     Defines a CNN model using Keras sequential model
-    :param logits: If set to False, returns a Keras model, otherwise will also
-                  return logits tensor
-    :param input_placeholder: The TensorFlow tensor for the input
-                  (needed if returning logits)
-                  ("ph" stands for placeholder but it need not actually be a
-                  placeholder)
-    :param img_rows: number of row in the image
-    :param img_cols: number of columns in the image
-    :param channels: number of color channels (e.g., 1 for MNIST)
+    :param input_shape:
+    :param nb_classes:
     :return:
     """
-    MODEL.ARCHITECTURE = 'cnn'
+    MODEL.set_architecture('cnn')
     img_rows, img_cols, nb_channels = input_shape
 
     # Define the layers successively (convolution layers are version dependent)
