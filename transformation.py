@@ -302,17 +302,6 @@ def morph_trans(original_images, transformation):
         # keep the outline of the object
         for img in original_images:
             transformed_images.append(cv2.morphologyEx(img, cv2.MORPH_GRADIENT, kernel))
-    elif (transformation == TRANSFORMATION.filter_skeletonize):
-        for img in original_images:
-            img = invert(img)
-            img = img.reshape((img_rows, img_cols))
-            img = skeletonize(img)
-            transformed_images.append(img)
-    elif (transformation == TRANSFORMATION.filter_thin):
-        for img in original_images:
-            img = img.reshape(img_rows, img_cols)
-            img = thin(img, max_iter=100)
-            transformed_images.append(img)
     else:
         raise ValueError('{} is not supported.'.format(transformation))
 
