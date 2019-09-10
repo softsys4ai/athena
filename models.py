@@ -22,24 +22,24 @@ FLAGS = flags.FLAGS
 def create_model(dataset, input_shape, nb_classes):
     if (dataset == DATA.mnist):
         DATA.set_current_dataset_name(DATA.mnist)
-        MODEL.set_learning_rate(0.01)
+        MODEL.set_learning_rate(0.001)
         MODEL.set_batch_size(128)
         MODEL.set_epochs(50)
-        return cnn_mnist(input_shape=input_shape, nb_classes=nb_classes)
+        return cnn_mnist(input_shape, nb_classes)
     elif (dataset == DATA.fation_mnist):
         DATA.set_current_dataset_name(DATA.fation_mnist)
-        MODEL.set_learning_rate(0.01)
+        MODEL.set_learning_rate(0.001)
         MODEL.set_batch_size(128)
         MODEL.set_epochs(50)
         return cnn_mnist(input_shape, nb_classes)
     elif (dataset == DATA.cifar_10):
         DATA.set_current_dataset_name(DATA.cifar_10)
-        MODEL.set_learning_rate(0.01)
+        MODEL.set_learning_rate(0.001)
         MODEL.set_batch_size(64)
         MODEL.set_epochs(100)
         return cnn_cifar(input_shape, nb_classes)
 
-def cnn_cifar(input_shape=(32, 32, 1), nb_classes=10):
+def cnn_cifar(input_shape, nb_classes):
     """
     a cnn for cifar
     :param input_shape:
@@ -100,7 +100,7 @@ def cnn_cifar(input_shape=(32, 32, 1), nb_classes=10):
         print(model.summary())
     return model
 
-def cnn_mnist(input_shape=(28, 28, 1), nb_classes=10):
+def cnn_mnist(input_shape, nb_classes):
     """
     Defines a CNN model using Keras sequential model
     :param input_shape:
@@ -143,7 +143,6 @@ def cnn_mnist(input_shape=(28, 28, 1), nb_classes=10):
 # --------------------------------------------
 def train_model(model, dataset, model_name, need_augment=False, **kwargs):
     (X_train, Y_train), _ = data.load_data(dataset)
-    need_augment = (dataset == DATA.CUR_DATASET_NAME)
     return train(model, X_train, Y_train, model_name, need_augment, **kwargs)
 
 def train(model, X, Y, model_name, need_augment=False, **kwargs):
@@ -374,6 +373,33 @@ def evaluate_model(model, X, Y):
 
     return test_acc, ave_conf_correct, ave_conf_miss
 
+def save_model(model, model_name):
+    """
+    Save a model with given name.
+    :param model:
+    :param model_name:
+    :return:
+    """
+    prefix, dataset, artchitect, trans_type = model_name.split('-')
+
+    if dataset == DATA.cifar_10:
+        save_to_json(model, model_name)
+    elif dataset == DATA.mnist:
+        model.save('{}/{}.h5'.format(PATH.MODEL, model_name))
+
+def load_model(model_name):
+    """
+    Load the trained model from given file
+    :param model_name:
+    :return:
+    """
+    prefix, dataset, artchitect, trans_type = model_name.split('-')
+
+    if dataset == DATA.cifar_10:
+        return load_from_json(model_name)
+    elif dataset == DATA.mnist:
+        return keras.models.load_model('{}/{}.h5'.format(PATH.MODEL, model_name))
+
 
 def save_to_json(model, model_name):
     file_name = '{}/{}.json'.format(PATH.MODEL, model_name)
@@ -403,6 +429,9 @@ def load_from_json(model_name,
     return model
 
 
+"""
+for testing
+"""
 def main():
     from data import load_data
 
