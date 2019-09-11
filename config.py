@@ -21,7 +21,6 @@ defensesList = ["CV_Maj", "CV_Max", "1s_Mean", "EM_Mean", "EM_MXMV", "1s_Mean_L"
 
 dropout = 0.5
 
-
 class DATA(object):
     """
     Configuration for data.
@@ -57,11 +56,18 @@ class DATA(object):
 class TRANSFORMATION(object):
     """
     Define transformation types that are supported.
+    Define transformation name in the form of
+    <category>_<transformation>
     """
     """
     clean image, no transformation is applied.
     """
     clean = 'clean'
+
+    """
+    a global variable to store current transformation type
+    """
+    CUR_TRANS_TYPE = clean
 
     """
     rotation
@@ -113,8 +119,8 @@ class TRANSFORMATION(object):
     """
     samplewise_std_norm = 'samplewise_std_norm'
     feature_std_norm = 'feature_std_norm'
-    zca_whitening = 'zca_whitening'  # TODO: bug fix
-    # pca_whitening = 'pca_whitening' # TODO: add ?
+    zca_whitening = 'zca_whitening' # TODO: bug fix
+    #pca_whitening = 'pca_whitening' # TODO: add ?
 
     """
     cartoonify
@@ -141,16 +147,16 @@ class TRANSFORMATION(object):
     """
     distortion
     """
-    distortion_y = 'distortion_y'
-    distortion_x = 'distortion_x'
-    pixelate = 'pixelate'
-    saturate = 'saturate'
-    brightness = 'brightness'
-    contrast = 'contrast'
-    motion_blur = 'motion_blur'
-    defocus_blur = 'defocus_blur'
-    glass_blur = 'glass_blur'
-    gaussian_blur = 'gaussian_blur'
+    distort_y = 'distortion_y'
+    distort_x = 'distortion_x'
+    distort_pixelate = 'distortion_pixelate'
+    distort_saturate = 'distortion_saturate'
+    distort_brightness = 'distortion_brightness'
+    distort_contrast = 'distortion_contrast'
+    distort_motion_blur = 'distortion_motion_blur'
+    distort_defocus_blur = 'distortion_defocus_blur'
+    distort_glass_blur = 'distortion_glass_blur'
+    distort_gaussian_blur = 'distortion_gaussian_blur'
 
     """
     noises
@@ -229,22 +235,28 @@ class TRANSFORMATION(object):
     AUGMENT = [samplewise_std_norm, feature_std_norm]
     CARTOONS = [cartoon_mean_type1, cartoon_mean_type2, cartoon_mean_type3, cartoon_mean_type4,
                 cartoon_gaussian_type1, cartoon_gaussian_type2, cartoon_gaussian_type3, cartoon_gaussian_type4]
+
+    # full set (for training)
     # QUANTIZATIONS = [quant_2_clusters, quant_4_clusters, quant_8_clusters,
     #                  quant_16_clusters, quant_32_clusters, quant_64_clusters] # full set
 
     """
-    when evaluation, we choose 2 types of quants for each dataset, for the time-consuming issue.
+    When evaluation, we choose 2 types of quants for each dataset, for the time-consuming issue.
+    Extend corresponding array if necessary.
     """
-    # cifar10
-    if DATA.CUR_DATASET_NAME == DATA.cifar_10:
+    if (DATA.CUR_DATASET_NAME == DATA.cifar_10 or
+        DATA.CUR_DATASET_NAME == DATA.cifar_100):
+        # color images
         QUANTIZATIONS = [quant_16_clusters, quant_64_clusters]
-    # mnist
-    else:  # extend the branch as necessary when adding more types of datasets
+    elif (DATA.CUR_DATASET_NAME == DATA.mnist or
+          DATA.CUR_DATASET_NAME == DATA.fation_mnist):
+        # greyscale
         QUANTIZATIONS = [quant_4_clusters, quant_8_clusters]
 
-    DISTORTIONS = [distortion_x, distortion_y, contrast, brightness]
+    DISTORTIONS = [distort_x, distort_y, distort_contrast, distort_brightness]
     NOISES = [noise_gaussian, noise_localvar, noise_poisson, noise_salt,
               noise_pepper, noise_saltNpepper, noise_speckle]
+
     # FILTERS = [filter_sobel, filter_gaussian, filter_rank, filter_median, filter_minimum,
     #            filter_maximum, filter_entropy, filter_roberts, filter_scharr,
     #            filter_prewitt, filter_meijering, filter_sato, filter_frangi, filter_hessian,
@@ -262,9 +274,13 @@ class TRANSFORMATION(object):
     SEGMENTATION = [seg_gradient]  # , seg_watershed]
 
     @classmethod
+    def set_cur_transformation_type(cls, transformation):
+        cls.CUR_TRANS_TYPE = transformation
+
+    @classmethod
     def supported_types(cls):
         transformations = []
-        transformations.extend(['clean'])
+        transformations.extend([cls.clean])
         transformations.extend(cls.ROTATE)
         transformations.extend(cls.SHIFT)
         transformations.extend(cls.FLIP)
@@ -384,13 +400,16 @@ class ATTACK(object):
     @classmethod
     def get_jsma_theta(cls):
         # theta: Perturbation introduced to modified components (can be positive or negative)
-        return [0.1, 0.3, 0.5, 0, 7, 1.]  # full set
-        # return [0.3, 0.5]
+        # for Grayscale, positive only.
+        if DATA.CUR_DATASET_NAME == DATA.cifar_10:
+            return [-1., -0.5, -0.3, 0.3, 0.5, 1.]
+        else:
+            return [0.3, 0.5]
 
     @classmethod
     def get_jsma_gamma(cls):
         # gamma: Maximum percentage of perturbed features
-        return [0.05, 0.1, 0.3, 0.5, 0.7, 1.]  # full set.
+        return [0.05, 0.1, 0.3, 0.5, 0.7, 1.] # full set.
         # return [0.5]
 
     @classmethod
@@ -405,8 +424,7 @@ class ATTACK(object):
     # ----------------------------
     @classmethod
     def get_cw_order(cls):
-        # return [2, np.inf, 0] # full set
-        return [2]
+        return [0, 2, np.inf] # full set
 
     @classmethod
     def get_cw_maxIter(cls):
@@ -445,7 +463,7 @@ class MODEL(object):
     TRANS_TYPE = TRANSFORMATION.clean
     LEARNING_RATE = 0.01
     BATCH_SIZE = 128
-    EPOCHS = 50
+    EPOCHS = 100
 
     @classmethod
     def set_architecture(cls, architecture):
@@ -481,14 +499,29 @@ class MODE(object):
 
 
 class PATH(object):
-    # for debugging
-    # MODEL = 'data/debug/models'
-    # ADVERSARIAL_FILE = 'data/debug/AEs'
-
-    # for experiment
     MODEL = 'data/models'
     ADVERSARIAL_FILE = 'data/adversarial_examples'
 
     FIGURES = 'data/figures'
     RESULTS = 'data/results'
     ANALYSE = 'data/analyse'
+
+    @classmethod
+    def set_path_of_models(cls, model_base):
+        cls.MODEL = model_base
+
+    @classmethod
+    def set_path_of_ae(cls, ae_base):
+        cls.ADVERSARIAL_FILE = ae_base
+
+    @classmethod
+    def set_path_of_figs(cls, figure_base):
+        cls.FIGURES = figure_base
+
+    @classmethod
+    def set_path_of_results(cls, result_base):
+        cls.RESULTS = result_base
+
+    @classmethod
+    def set_path_of_analyse(cls, analyse_base):
+        cls.ANALYSE = analyse_base
