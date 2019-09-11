@@ -111,29 +111,26 @@ def get_adversarial_examples(model_name, attack_method, X, Y, **kwargs):
 
     elif (attack_method == ATTACK.ONE_PIXEL):
         # pixel format (x, y, r, g, b)
-        samples = kwargs.get('samples', 500)
-        pixel_counts = kwargs.get('pixel_counts', tuple([1]))
-        max_iterations = kwargs.get('max_iterations', 100)
-        targeted = kwargs.get('targeted', False)
+        pixel_count = kwargs.get('pixel_counts', 1)
+        maxiter = kwargs.get('max_iterations', 100)
+        target = kwargs.get('target', None)
         population = kwargs.get('population', 400)
         attack_params = {
-            'samples': samples,
-            'pixel_counts': pixel_counts,
-            'max_iterations':max_iterations,
-            'targeted': targeted,
-            'population': population
+            'pixel_count': pixel_count,
+            'maxiter':maxiter,
+            'population': population,
+            'target': target
         }
 
-        logger.info('{}: (samples={}, pixel_counts={}, max_iterations={}, target={}, population={})'.format(attack_method.upper(),
-                                                                                                            samples,
-                                                                                                            pixel_counts,
-                                                                                                            max_iterations,
-                                                                                                            targeted,
-                                                                                                            population
-                                                                                        )
-                    )
+        #logger.info('{}: (samples={}, pixel_counts={}, max_iterations={}, target={}, population={})'.format(attack_method.upper(),
+                                                                                                           # pixel_count,
+                                                                                                           # maxiter,
+                                                                                                           # target,
+                                                                                                           # population
+                                                                                                            #)
+        #            )
         start_time = time.time()
-        X_adv, Y = one_pixel.generate(model_name, attack_method, X, Y, attack_params)
+        X_adv, Y = whitebox.generate(model_name, X, Y, attack_method, attack_params)
         duration = time.time() - start_time
         logger.info('Time cost: {}'.format(duration))
 

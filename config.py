@@ -270,9 +270,25 @@ class ATTACK(object):
         # return [1, 10, 100, 1000, 10000, 100000] # full set
         return [100]
 
+    @classmethod
+    def get_one_pixel_samples(cls):
+        return [500]
 
+    @classmethod
+    def get_one_pixel_pixelCounts(cls):
+        return (1,)
 
+    @classmethod
+    def get_one_pixel_maxIter(cls):
+        return [100]
 
+    @classmethod
+    def get_one_pixel_targeted(cls):
+        return False
+
+    @classmethod
+    def get_one_pixel_population(cls):
+        return [400]
 
 
 class DATA(object):

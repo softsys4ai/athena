@@ -3,38 +3,34 @@ from __future__ import division
 from __future__ import print_function
 from __future__ import unicode_literals
 
-
 from models import *
 from config import *
-from plot import draw_comparisons
-
-import os
 
 from scipy.optimize import differential_evolution
 
 import numpy as np
 import pandas as pd
 
-import matplotlib.pyplot as plt
+import os
 
-
-#TODO: Build out more rigorous testing for targeted and untargeted sample
-#TODO: Configure any logging methods that may be relevant
-
+# TODO: Build out more rigorous testing for targeted and untargeted samples
+# TODO: Test on more datasets and models
+# TODO: Configure any logging methods for statistics that may be relevant
+# TODO: Configure any more files that need reference to one-pixel-attack
+# TODO: Consolidate Division by Zero RunTimeWarning
 class PixelAttacker:
-    def __init__(self, models, dataset, class_names, dimensions=(28, 28)):
-            # Load data and model
-            self.models = models
-            (self.X_test, self.Y_test) = data.load_data(dataset)[1]
-            # Scaling images (0 - 255)
-            self.X_test *= (255.0 / self.X_test.max())
-            # Formatting labels into 1-D arrays
-            # i.e. [7] instead of [0, 0, 0, 0, 0, 0, 0, 1, 0, 0]
-            self.Y_test = np.array(
-                [np.where(y == 1)[0][0] for y in self.Y_test]
-            )
-            self.class_names = class_names
-            self.dimensions = dimensions
+    def __init__(self, models, dataset):
+        # Load data and model
+        self.models = models
+        (self.X_test, self.Y_test) = data.load_data(dataset)[1]
+        # Scaling images (0 - 255)
+        self.X_test *= (255.0 / self.X_test.max())
+        # Formatting labels into 1-D array
+        self.Y_test = np.array(
+            [np.where(y == 1)[0][0] for y in self.Y_test]
+        )
+        self.class_names = np.unique(self.Y_test)
+        self.dimensions = self.X_test.shape[1: 3]
 
     @staticmethod
     def perturb_image(xs, img):
@@ -67,10 +63,9 @@ class PixelAttacker:
         # Perturbing image with the given pixel(s) x and getting prediction of model
         imgs_perturbed = self.perturb_image(xs, img)
         predictions = model.predict(imgs_perturbed)[:, target_class]
-        # This function should always be minimized, so return its complement if needed
         return predictions if minimize else 1 - predictions
 
-    def attack_success(self, x, img, target_class, model, targeted_attack=False, verbose=False):
+    def attack_success(self, x, img, target_class, model, targeted_attack=False):
         # Perturbing image with the given pixel(s) and getting prediction of model
         attack_image = self.perturb_image(x, img)
         confidence = model.predict(attack_image)[0]
@@ -82,7 +77,7 @@ class PixelAttacker:
                 (not targeted_attack and predicted_class != target_class)):
             return True
 
-    def attack(self, img, model, target=None, pixel_count=1,
+    def attack(self, img, model, target=None, pixel_count=(1,),
                maxiter=75, population=400):
         # Change the target class based on whether this is a targeted attack or not
         targeted_attack = target is not None
@@ -134,28 +129,26 @@ class PixelAttacker:
                     targets = [None] if not targeted else range(10)
 
                     for target in targets:
-                        if (targeted):
+                        if targeted:
                             print('Attacking with target', self.class_names[target])
-                            if (target != self.Y_test[img]):
+                            if target != self.Y_test[img]:
                                 continue
                         result = self.attack(img, model, target, pixel_count,
                                              maxiter=maxiter, population=population)
                         model_results.append(result)
 
-
             results += model_results
         return results
 
 
-def generate(model, dataset, attack_params):
-
-    '''label_smoothing_rate = 0.1
+def generate(model_name, attack_method, X, Y, attack_params):
+    label_smoothing_rate = 0.1
 
     prefix, dataset, architect, trans_type = model_name.split('-')
 
     # flag - whether to train a clean model
     train_new_model = True
-    if (os.path.isfile('{}/{}.h5'.format(PATH.MODEL, model_name))):
+    if os.path.isfile('{}/{}.h5'.format(PATH.MODEL, model_name)):
         # found a trained model
         print('Found the trained model.')
         train_new_model = False
@@ -169,16 +162,11 @@ def generate(model, dataset, attack_params):
     sess = tf.Session(config=config)
     keras.backend.set_session(sess)
 
-    # input and output tensors
-    # x = tf.placeholder(tf.float32, shape=(None, img_rows, img_cols, nb_channels))
-    # y = tf.placeholder(tf.float32, shape=(None, nb_classes))
-    batch_size = 128
-
     # label smoothing
     Y -= label_smoothing_rate * (Y - 1. / nb_classes)
 
     model = None
-    if (train_new_model):
+    if train_new_model:
         print('INFO: train a new model then generate adversarial examples.')
         # create a new model
         input_shape = (img_rows, img_cols, nb_channels)
@@ -189,10 +177,9 @@ def generate(model, dataset, attack_params):
 
     # to be able to call the model in the custom loss, we need to call it once before.
     # see https://github.com/tensorflow/tensorflow/issues/23769
-    model(model.input)'''
+    model(model.input)
 
-    attacker = PixelAttacker(models=model, dataset=dataset,
-                             class_names=[i for i in range(10)], dimensions=(28, 28))
+    attacker = PixelAttacker(models=model, dataset=dataset)
 
     results = attacker.attack_all(models=[model],
                                   samples=attack_params['samples'],
@@ -217,7 +204,7 @@ def generate(model, dataset, attack_params):
         file_path = f'../{PATH.ADVERSARIAL_FILE}/example-{index}.jpeg'
         img.save(file_path)
 
-    return (results_table['attack_images'], results_table['predicted'])
+    return (attack_images, results_table['predicted'])
 
 
 if __name__ == '__main__':
@@ -226,15 +213,7 @@ if __name__ == '__main__':
         'samples': 25,
         'pixel_counts': tuple([1]),
         'max_iterations': 100,
-        'targeted': False,
+        'targeted': True,
         'population': 400
     }
-    generate(model=model, dataset=DATA.mnist, attack_params=attack_params)
-
-
-
-
-
-
-
-
+    generate(model_name='model-mnist-cnn-clean', attack_params=attack_params)

@@ -28,6 +28,7 @@ from cleverhans.attacks import BasicIterativeMethod
 from cleverhans.attacks import ProjectedGradientDescent
 from cleverhans.evaluation import batch_eval
 from cleverhans.utils_keras import KerasModelWrapper
+from attacks.clever_one_pixel import OnePixelAttack
 
 # FLAGS = flags.FLAGS
 
@@ -154,12 +155,7 @@ def generate(model_name, X, Y, attack_method, attack_params):
         attacker = BasicIterativeMethod(wrap_model, back='tf', sess=sess)
 
     elif (attack_method == ATTACK.ONE_PIXEL):
-        population = attack_params['population']
-        max_iterations = attack_params['max_iterations']
-        target = attack_params['target'] is not None
-
-
-
+        attacker = OnePixelAttack(model, sess=sess)
 
     else:
         raise ValueError('{} attack is not supported.'.format(attack_method.upper()))
@@ -215,6 +211,8 @@ def get_adversarial_metric(model, attacker, attack_params):
         x_adv = attacker.generate(model.input, **attack_params)
         # consider the attack to be constant
         x_adv = tf.stop_gradient(x_adv)
+        #----------DEBUG----------#
+        print(x_adv)
 
         # get the prediction on the adversarial examples
         preds_adv = model(x_adv)
