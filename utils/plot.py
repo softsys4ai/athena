@@ -8,7 +8,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 from config import PATH, MODE
 
-def plot_difference(controls, treatments, title="None"):
+def plot_difference(controls, treatments, title="None", save=False):
     """
     Plot the original image, corresponding perturbed image, and their difference.
     :param controls:
@@ -63,15 +63,17 @@ def plot_difference(controls, treatments, title="None"):
             plt.imshow(diffs[i].reshape(img_rows, img_cols, nb_channels))
         pos += 1
 
-    fig.savefig(
-        os.path.join(PATH.FIGURES, '{}.pdf'.format(title)),
-        bbox_inches='tight'
-    )
+    if save:
+        fig.savefig(
+            os.path.join(PATH.FIGURES, '{}.pdf'.format(title)),
+            bbox_inches='tight'
+        )
+
     plt.show()
     plt.close()
 
 
-def plot_comparisons(controls, treatments, title="None"):
+def plot_comparisons(controls, treatments, title="None", save=False):
     """
     Draw some comparisons of original images and transformed/perturbed images.
     :param controls: the original images
@@ -112,10 +114,44 @@ def plot_comparisons(controls, treatments, title="None"):
             plt.imshow(treatments[i - 1].reshape(img_rows, img_cols, nb_channels))
         pos += 1
 
-    fig.savefig(
-        os.path.join(PATH.FIGURES, '{}.pdf'.format(title)),
-        bbox_inches='tight'
-    )
+    if save:
+        fig.savefig(
+            os.path.join(PATH.FIGURES, '{}.pdf'.format(title)),
+            bbox_inches='tight'
+        )
+    plt.show()
+    plt.close()
+
+
+def plot_curves(data, title='curves', ylabel='None', save=False):
+    """
+    Plot curves in one figure, values[keys[i]] vs. values[keys[0]], where i > 0.
+    Usage:
+    Check eval_acc_upperbound() function in ../scripts/eval_model.py as an example.
+    :param data: a dictionary. Data of the curves to plot, where
+            (1) values of keys[0] is the value of x-axis
+            (2) values of the rest keys are values of y-axis of each curve.
+    :param title: string. Title of the figure.
+    :param ylabel: string. The label of y-axis.
+    :param save: boolean. Save the figure or not.
+    :return:
+    """
+    nb_dimensions = len(data.keys())
+    keys = list(data.keys())
+
+    for i in range(1, nb_dimensions):
+        plt.plot(data[keys[0]], data[keys[i]], '-+', label=keys[i])
+
+    plt.xlabel(keys[0])
+    plt.ylabel(ylabel)
+    plt.legend(loc="lower right")
+
+    if save:
+        plt.savefig(
+            os.path.join(PATH.FIGURES, '{}.pdf'.format(title)),
+            bbox_inches='tight'
+        )
+
     plt.show()
     plt.close()
 
