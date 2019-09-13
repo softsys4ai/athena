@@ -1,15 +1,17 @@
 import os
 import time
+import re
 
+import matplotlib
+matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 
 from sklearn.cluster import KMeans
-from tensorflow.keras.models import load_model
-from tensorflow.keras.models import Model
-
+from tensorflow.keras.models import load_model, Model, model_from_json
 from config import *
 from transformation import transform_images
 
+from data import normalize
 
 def randomChoiceBasedDefense(predProb, measureTC=False):
     '''
@@ -50,18 +52,18 @@ def clusteringBasedDefesTrainPre(
         numOfModels,
         numOfAEs,
         numOfTrans,
-        maxNumOfClusters,
-        NC, 
+        #maxNumOfClusters,
+        #NC,
         AEPredLC,
         trueLabels):
     '''
         Run for a specific type of AEs
         Input:
-            AEPredLC: (numOfModels, 2). 0 - label, 1 - confidence
+            AEPredLC: (numOfModels, numOfAEs, 2). 0 - label, 1 - confidence
             NC: list of numbers of cluters to run with KMeans
 
     '''
-
+    print("[CAV-defenses: pre-train - msv computation]")
     # Compute model-sample vector for transform models and AEs
     msv = np.zeros((numOfTrans, numOfAEs))
     for modelID in range(1, numOfModels): # clean model's ID is 0 
@@ -77,14 +79,38 @@ def clusteringBasedDefesTrainPre(
             for aeID in range(numOfAEs):
                 fp.write(str(msv[transID, aeID])+",")
             fp.write("\n")
-         
+
+    # remove duplicate points in msv
+    msvNoDup  =   [msv[0].tolist()]
+    mIDs    =   [0]
+    for i in range(1, numOfTrans):
+        isDup = False
+        for mp in msvNoDup:
+            isEqual = True
+            for k in range(numOfAEs):
+                if msv[i, k] != mp[k]:
+                    isEqual = False
+                    break
+            if isEqual:
+                isDup = True
+                break
+        if not isDup:
+            mIDs.append(i)
+            msvNoDup.append(msv[i].tolist())
+
+    msvNoDup = np.array(msvNoDup)
+    mIDs    = np.array(mIDs)
+    np.save(os.path.join(curExprDir, "msv_nodup.npy"), msvNoDup)
+    np.save(os.path.join(curExprDir, "mIDs.npy"), mIDs)
 
     # Clustering using KMeans with Squared Euclidean distance
     clusteringResultDir = os.path.join(curExprDir, kmeansResultFoldName)
     createDirSafely(clusteringResultDir)
 
-    ubAccs = np.zeros((maxNumOfClusters))
+    ubAccs = np.zeros((len(mIDs)))
+    NC = list(range(1, 1+len(mIDs)))
     for numOfClusters in NC:
+        print("[CAV-defenses: pre-train - KMeans clustering with {} clusters]".format(numOfClusters))
         # clustering into c groups
         kmeans = None
         inertia = np.inf
@@ -92,7 +118,7 @@ def clusteringBasedDefesTrainPre(
         # smallest sum of squared distances of samples to their closest cluster center.
         numOfTries = 10
         for _ in range(numOfTries):
-            cur_kmeans = KMeans(n_clusters=numOfClusters).fit(msv)
+            cur_kmeans = KMeans(n_clusters=numOfClusters).fit(msvNoDup)
             if cur_kmeans.inertia_ < inertia:
                 inertia = cur_kmeans.inertia_
                 kmeans  = cur_kmeans
@@ -101,20 +127,23 @@ def clusteringBasedDefesTrainPre(
         with open(os.path.join(clusteringResultDir, "C"+str(numOfClusters)+".txt"), "w") as fp:
             clusters = []
             for c in range(numOfClusters):
-                # transform model ID starts at 1.
-                cluster = 1 + np.where(kmeans.labels_==c)[0]
-                clusters.append(cluster)
-                for tranModelID in cluster:
+                # transform model ID starts at 0.
+                cluster = np.where(kmeans.labels_==c)[0]
+                clusterModelIDs = mIDs[cluster]
+                clusters.append(clusterModelIDs)
+                for tranModelID in clusterModelIDs:
                     fp.write(str(tranModelID)+" ")
                 fp.write("\n")
 
         # Compute upper-bound accuracy
+        # exclude the prediction of the clean model
         ubAccs[numOfClusters-1] = getUpperBoundAccuracy(
-                AEPredLC,
+                AEPredLC[1:, :, :],
                 clusters,
                 trueLabels)
 
     np.save(os.path.join(curExprDir, "upper_bound_accuracy.npy"), ubAccs)
+    return len(mIDs)
 
 def clusteringBasedDefesTrain(
         curExprDir,
@@ -134,6 +163,7 @@ def clusteringBasedDefesTrain(
                         1st column: the corresponding accuracy of classifying AEs
                         2nd column: the corresponding accuracy of classifying BSs
     '''
+    print("[CAV-defenses: training]")
     clusteringResultDir = os.path.join(curExprDir, kmeansResultFoldName)
 
     accsAEClustering = np.zeros((maxNumOfClusters, numOfCVDefenses))
@@ -143,6 +173,7 @@ def clusteringBasedDefesTrain(
         clusters = loadClusteringResult(clusteringResultDir, numOfClusters)
         for defenseIdx in range(numOfCVDefenses):
             defenseName = cvDefenseNames[defenseIdx]
+            #print("[CAV defense training] "+defenseName)
             votedResultAE, timeCostAE = votingAsDefense(
                     AEPredLC,
                     clusters,
@@ -174,7 +205,7 @@ def clusteringBasedDefesTest(
             predLC: (numOfTrans, numOfSamples, 2)
             labels    : true labels
             numOfClusters: 1D numpy tuple of numOfCVDefenses elements  
-        Iutput:
+        Output:
             votedResults: numOfSamples X 2. 2 - label and confidence
             accuracyAndTCs: numOfCVDefenses X 2 numpy array. 2 - accuracy and time cost
     '''
@@ -182,8 +213,10 @@ def clusteringBasedDefesTest(
     clusteringResultDir = os.path.join(curExprDir, kmeansResultFoldName)
     votedResults = np.zeros((numOfCVDefenses, numOfSamples, 2))
     accuracyAndTCs   = np.zeros((numOfCVDefenses, 2))
+    optimalClusters = []
     for defenseIdx in range(numOfCVDefenses):
         clusters = loadClusteringResult(clusteringResultDir, numOfClusters[defenseIdx])
+        optimalClusters.append(clusters)
 
         votedResults[defenseIdx, :, :], timeCost = votingAsDefense(
                 predLC,
@@ -193,7 +226,8 @@ def clusteringBasedDefesTest(
         accuracyAndTCs[defenseIdx, 1] = timeCost
         accuracyAndTCs[defenseIdx, 0] = calAccuracy(votedResults[defenseIdx, :, 0], labels)
 
-    return votedResults, accuracyAndTCs
+    return votedResults, accuracyAndTCs, optimalClusters
+
 
 
 def clusteringDefensesEvaluation(
@@ -225,23 +259,24 @@ def clusteringDefensesEvaluation(
     numOfModels = AEPredProbTrain.shape[0]
     numOfTrainingSamples = AEPredProbTrain.shape[1] # number of AEs = number of BSs
     numOfTrans = numOfModels-1
-    maxNumOfClusters = numOfTrans
-    NC=list(range(1, maxNumOfClusters+1)) # list of numbers of clusters
+    #maxNumOfClusters = numOfTrans
 
     AEPredLCTrain = np.zeros((numOfModels, numOfTrainingSamples, 2))
 
     AEPredLCTrain[:, :, 0] = np.argmax(AEPredProbTrain, axis=2)
     AEPredLCTrain[:, :, 1] = np.max(AEPredProbTrain, axis=2)
 
-    clusteringBasedDefesTrainPre(
+    maxNumOfClusters = clusteringBasedDefesTrainPre(
             curExprDir,
             numOfModels,
             numOfTrainingSamples,
             numOfTrans,
-            maxNumOfClusters,
-            NC,
+            #maxNumOfClusters,
+            #NC,
             AEPredLCTrain,
             labelsTrain)
+
+    NC=list(range(1, maxNumOfClusters+1)) # list of numbers of clusters
 
     # use the prediction from the transform models for training
     trainingResult = clusteringBasedDefesTrain(
@@ -265,13 +300,13 @@ def clusteringDefensesEvaluation(
     #testVotes   : (numOfCVDefenses, numOfTestingSamples, 2)
     # 2: AE-accuracy, AE-time cost
     #testResults : (numOfCVDefenses, 2)
-    testVotesAE, testResultsAE = clusteringBasedDefesTest(
+    testVotesAE, testResultsAE, optimalClusters = clusteringBasedDefesTest(
             curExprDir,
             AEPredLCTest,
             labelsTest,
             numOfClusters)
 
-    testVotesBS, testResultsBS = clusteringBasedDefesTest(
+    testVotesBS, testResultsBS, _ = clusteringBasedDefesTest(
             curExprDir,
             BSPredLC,
             BSLabels,
@@ -284,7 +319,7 @@ def clusteringDefensesEvaluation(
     np.save(os.path.join(curExprDir, "BS_testResults_ClusteringAndVote.npy"), testResultsBS)
 
 
-    return testResultsAE, testResultsBS
+    return testResultsAE, testResultsBS, optimalClusters
 
 
 
@@ -347,6 +382,7 @@ def weightedConfBasedDefsTrainPre(
 
 
     # Compute accuracy for each single model
+    print("[WC-defenses: pre-train - calculate the accuracy of models under attack]")
     printFormat = "{:2}\t{:30}\t{:<6}\n"
     modelsAcc = calAccuracyAllSingleModels(labels, AEPredProb)
     np.save(
@@ -375,6 +411,7 @@ def weightedConfBasedDefsTrainPre(
         classesCnt)
 
     # Comptue expertise matrix for transform models
+    print("[WC-defenses: pre-train - expertise matrix]")
     expertiseMat = np.zeros((numOfTrans, numOfClasses)) 
     for modelID in range(1, numOfModels): # clean model's ID is 0 
         for aeID in range(numOfAEs):
@@ -418,7 +455,7 @@ def weightedConfBasedDefsTrain(
     sortedIndices = np.argsort(-modelsAcc) 
 
     bestTopKEM = {}
-
+    print("[WC-defenses] training")
     for defenseIdx in range(numOfWCDefenses):
         defenseName = wcDefenseNames[defenseIdx]
 
@@ -548,7 +585,7 @@ def weightedConfDefenseEvaluation(
     numOfBSSamples = predProbBS.shape[1]
     BSTestResults = np.zeros((numOfGroups, numOfWCDefenses, 2))
     BSVotedResults = np.zeros((numOfGroups, numOfWCDefenses, numOfBSSamples))
-
+    WCModels = []
     # testResults[2, numOfWCDefenses-1] is non-sense. Same to other three arraies.
     for plIdx, useLogits, AEPredTr, AEPredTe, BSPred in zip(
             list(range(numOfGroups)),
@@ -569,6 +606,7 @@ def weightedConfDefenseEvaluation(
                 modelsAcc[1:],
                 expertiseMat)
 
+        WCModels.append(EMModels)
 
         # TEST
         print("\t\t==== Testing with {} ====".format(predictionType))
@@ -596,9 +634,10 @@ def weightedConfDefenseEvaluation(
     testResultsBSFP = os.path.join(curExprDir, "BS_testResults_WeightedConfDefenses.npy")
     np.save(votesBSFP, BSVotedResults)
     np.save(testResultsBSFP, BSTestResults)
- 
 
-    return AETestResults, BSTestResults
+
+
+    return AETestResults, BSTestResults, WCModels
 
 def curvePlot(xs, ys, xlabel, ylabel, labelFontSize, tickFontSize, lineColor, marker, outputfile, title):
         #print("\t[curvePlot] ploting " + outputfile)
@@ -648,12 +687,13 @@ def drawUBCurve(curDir, predLC, labels, AEType, modelsAcc):
             os.path.join(curDir, "upper_bound_accuracy_vs_topk_models.pdf"),
             AEType)
 
-def boxPlot(data, title, xLabels, yLabel, saveFP):
+def boxPlot(data, title, xLabels, yLabel, saveFP, xstickSize=16, rotationDegrees=0):
     green_diamond = dict(markerfacecolor='g', marker='D')
     fig, ax = plt.subplots()
     ax.set_title(title)
-    ax.boxplot(data, notch=True, flierprops=green_diamond, labels = xLabels)
+    ax.boxplot(data, notch=True, flierprops=green_diamond)
     ax.set_ylabel(yLabel)
+    ax.set_xticklabels(xLabels, rotation=rotationDegrees, fontsize=xstickSize)
     fig.savefig(saveFP, bbox_inches='tight')
     plt.close(fig)
 
@@ -663,6 +703,10 @@ def postAnalysis(
         predictionResultDir,
         foldDirs,
         sampleTypes):
+
+    print("[Post Analysis]")
+    tableHeader = ["SampleType"]
+    tableHeader.extend(defensesList)
 
     AETypes = sampleTypes[1:]
     # for weighted-condience based defenses,
@@ -677,6 +721,31 @@ def postAnalysis(
     postAnaDir=os.path.join(experimentRootDir, "result_of_post_analysis")
     createDirSafely(postAnaDir)
 
+    # plot latency
+    print("\t==== plotting time cost relative to that of probability inference of benign samples on the clean model")
+    predTCs = np.load(os.path.join(predictionResultDir, "predTCs.npy"))
+    cleanModelInfProbTCs = predTCs[:, 0, 1] 
+    xLabels = ["Transformation", "Inference (Probability)", "Inference (Logit)"]
+    yLabel = "Relative Time Cost"
+    for sampleTypeIdx in range(len(sampleTypes)):
+        tcOnCleanModel = cleanModelInfProbTCs[sampleTypeIdx]
+        relativeTCs = np.round(predTCs[sampleTypeIdx]/tcOnCleanModel, decimals=4)
+        sampleType = sampleTypes[sampleTypeIdx]
+        saveFP = os.path.join(predictionResultDir, sampleType+"_latency.pdf")
+        title = sampleType + ": transform_models VS CleanModel ("+str(round(tcOnCleanModel*1000, 6))+" ms)"
+        boxPlot(relativeTCs[1:, :], title, xLabels, yLabel, saveFP)
+        tcTableFP = os.path.join(predictionResultDir, sampleType+"_timeCost.txt")
+        tcTableHeader = ["Model ID", "Transformation", "Infer(Prob)", "Infer(Logit)"]
+        tcRowHeader = list(range(predTCs.shape[1]))
+        create2DTable(
+                relativeTCs,
+                tcTableHeader,
+                tcRowHeader,
+                tcTableFP)
+
+
+
+    print("\t==== collecting accuracy and time cost of each defense")
     defenseTCs = np.zeros((kFold, numOfAETypes, numOfDefenses))
     for foldIdx in range(kFold):
         for AETypeIdx in range(numOfAETypes):
@@ -711,20 +780,21 @@ def postAnalysis(
 
             defenseTCs[foldIdx, AETypeIdx, numOfCVDefenses:] = np.hstack((AETestResultWCD[0, :, 1], AETestResultWCD[1, :, 1]))
 
-        curDefenseTCsFP = os.path.join(foldDirs[foldIdx], "defenseTimeCost_fold"+str(foldIdx+1)+"_in_ms.txt")
+            defenseTCs[foldIdx, AETypeIdx, :] = defenseTCs[foldIdx, AETypeIdx, :]/cleanModelInfProbTCs[AETypeIdx+1] 
+
+        curDefenseTCsFP = os.path.join(foldDirs[foldIdx], "relativeDefenseTimeCost_fold"+str(foldIdx+1)+".txt")
         create2DTable(
-                np.round(defenseTCs[foldIdx, :, :]*1000, decimals=6),
-                defensesList,
+                np.round(defenseTCs[foldIdx, :, :], decimals=4),
+                tableHeader,
                 AETypes,
                 curDefenseTCsFP)
 
-
+    relativeDefenseTCs = np.round(defenseTCs, decimals=4)
     np.save(os.path.join(postAnaDir, "TestLatency_DefenseTimeCost.npy"), defenseTCs)
-    msDefenseTCs = defenseTCs*1000 # ms: millium seconds
-    meanDefenseTCsFP = os.path.join(experimentRootDir, "meanDefenseTimeCostInMS.txt")
-    stdDefenseTCsFP = os.path.join(experimentRootDir, "stdDefenseTimeCostInMS.txt")
-    create2DTable(msDefenseTCs.mean(axis=0).round(decimals=6), defensesList, AETypes, meanDefenseTCsFP)
-    create2DTable(msDefenseTCs.std(axis=0).round(decimals=6), defensesList, AETypes, stdDefenseTCsFP)
+    meanDefenseTCsFP = os.path.join(experimentRootDir, "meanRelativeDefenseTimeCost.txt")
+    stdDefenseTCsFP = os.path.join(experimentRootDir, "stdRelativeDefenseTimeCost.txt")
+    create2DTable(relativeDefenseTCs.mean(axis=0).round(decimals=4), tableHeader, AETypes, meanDefenseTCsFP)
+    create2DTable(relativeDefenseTCs.std(axis=0).round(decimals=4), tableHeader, AETypes, stdDefenseTCsFP)
 
 
 
@@ -732,7 +802,7 @@ def postAnalysis(
     np.save(os.path.join(postAnaDir, "TestAccsAE_fold_AEType.npy"), np.round(TestAccsAE, decimals=4))
     np.save(os.path.join(postAnaDir, "TestAccsBS_fold_AEType.npy"), np.round(TestAccsBS, decimals=4))
 
-
+    print("\t==== Collecting the accuracy of the clean model and random defense, and the upper-bound accuracy")
     # 0 - accuracy of clean model, 1 - upper-bound accuracy
     AccCMAndUB = np.zeros((numOfAETypes, 2))
     AccRD = np.zeros((numOfAETypes))
@@ -770,25 +840,26 @@ def postAnalysis(
     np.round(AccCMAndUB, decimals=4)
     np.save(os.path.join(postAnaDir, "accuracy_clean_model_and_upper_bound.npy"), AccCMAndUB)
 
+    print("\t==== creating tables for average and std of accuracies across folds")
     # create accuracy tables: mean and std
     # for Training part
     aveTrainAccsFP=os.path.join(postAnaDir, "ave_train_accs_table.txt")
     create2DTable(
             np.round(TrainAccs.mean(axis=0), decimals=4),
-            defensesList,
+            tableHeader,
             AETypes,
             aveTrainAccsFP)
     stdTrainAccsFP=os.path.join(postAnaDir, "std_train_accs_table.txt")
     create2DTable(
             np.round(TrainAccs.std(axis=0), decimals=4),
-            defensesList,
+            tableHeader,
             AETypes,
             stdTrainAccsFP)
 
     # for Testing AEs
     aveTestAEAccsFP=os.path.join(postAnaDir, "ave_test_AEs_accs_table.txt")
     TestAccsAE2 = np.hstack((np.round(TestAccsAE.mean(axis=0), decimals=4), AccRD.reshape((numOfAETypes, 1)), AccCMAndUB))
-    colHeaders = defensesList.copy()
+    colHeaders = tableHeader.copy()
     colHeaders.extend(["Random Defense", "Clean Model", "Upper Bound"])
     create2DTable(
             TestAccsAE2,
@@ -798,7 +869,7 @@ def postAnalysis(
     stdTestAEAccsFP=os.path.join(postAnaDir, "std_test_AEs_accs_table.txt")
     create2DTable(
             np.round(TestAccsAE.std(axis=0), decimals=4),
-            defensesList,
+            tableHeader,
             AETypes,
             stdTestAEAccsFP)
 
@@ -806,26 +877,16 @@ def postAnalysis(
     aveTestBSAccsFP=os.path.join(postAnaDir, "ave_test_BSs_accs_table.txt")
     create2DTable(
             np.round(TestAccsBS.mean(axis=0), decimals=4),
-            defensesList,
+            tableHeader,
             AETypes,
             aveTestBSAccsFP)
     stdTestBSAccsFP=os.path.join(postAnaDir, "std_test_BSs_accs_table.txt")
     create2DTable(
             np.round(TestAccsBS.std(axis=0), decimals=4),
-            defensesList,
+            tableHeader,
             AETypes,
             stdTestBSAccsFP)
 
-
-    # plot latency
-    predTCs = np.load(os.path.join(predictionResultDir, "predTCs.npy"))
-    predTCs = predTCs.mean(axis=1)
-    xLabels = ["Transformation", "Inference (Probability)", "Inference (Logit)"]
-    yLabel = "Time Cost in Millium Seconds"
-    for sampleTypeIdx in range(len(sampleTypes)):
-        sampleType = sampleTypes[sampleTypeIdx]
-        saveFP = os.path.join(predictionResultDir, sampleType+"_latency.pdf")
-        boxPlot(predTCs[sampleTypeIdx, 1:, :]*1000, sampleType, xLabels, yLabel, saveFP)
 
 def create2DTable(mat, colHeaders, rowHeaders, filename):
     '''
@@ -837,16 +898,14 @@ def create2DTable(mat, colHeaders, rowHeaders, filename):
 
     with open(filename, "w") as fp:
         # dump the headers
-        fp.write("\t")
         for header in colHeaders:
             fp.write(header+"\t")
         fp.write("\n")
-
         # dump each row
         for rIdx in range(len(rowHeaders)):
-            fp.write(rowHeaders[rIdx]+"\t")
-            for cIdx in range(len(colHeaders)):
-                fp.write(str(mat[rIdx, cIdx])+"\t")
+            fp.write(str(rowHeaders[rIdx])+"\t")
+            for cIdx in range(1, len(colHeaders)):
+                fp.write(str(mat[rIdx, cIdx-1])+"\t")
             fp.write("\n")
 
 def calAccuracyAllSingleModels(
@@ -865,40 +924,6 @@ def calAccuracyAllSingleModels(
     return modelsAcc
  
 
-def calAccuracyAllSingleModels0(
-        curExprDir,
-        numOfModels,
-        labels,
-        AEPredProb,
-        BSPredProb,
-        transformationList):
-    '''
-        Output:
-            modelsAcc: (numOfModels, 2). 2 - AE and BS
-    '''
-    modelsAcc = np.zeros((numOfModels, 2))
-    printFormat = "{:2}\t{:30}\t{:<6}\t{:<6}\n"
-    with open(os.path.join(curExprDir, "accuracy_each_single_model.txt"), "w") as fp:
-        fp.write(printFormat.format(
-            "ID",
-            "Model Name",
-            "Acc(AE)",
-            "Acc(BS)"))
-        for modelID in range(numOfModels):
-            transformType = transformationList[modelID]
-            AEAcc = calAccProb(AEPredProb[modelID, :, :], labels)       
-            BSAcc = calAccProb(BSPredProb[modelID, :, :], labels)  
-            fp.write(printFormat.format(
-                modelID,
-                transformType,
-                AEAcc,
-                BSAcc))
-            modelsAcc[modelID, 0] = AEAcc
-            modelsAcc[modelID, 1] = BSAcc
-    np.save(
-        os.path.join(curExprDir, "accuracy_each_single_model.npy"),
-        modelsAcc)
-    return modelsAcc
  
 
 def kFoldPredictionSetup(
@@ -923,7 +948,7 @@ def kFoldPredictionSetup(
     '''
     # Load models and create models to output logits
     modelFilenamePrefix = datasetName+"-"+architecture
-    models, logitsModels = loadModels(modelsDir, modelFilenamePrefix, transformationList)
+    models, logitsModels = loadModels(modelsDir, modelFilenamePrefix, transformationList, datasetName)
     numOfModels = len(models) # include the clean model, positioning at index 0
 
     # connect input images with predicted results 
@@ -962,21 +987,24 @@ def kFoldPredictionSetup(
 
         for foldIdx in range(1, 1+kFold):
             print("\tPrediction on {} on fold {}".format(sampleType, foldIdx))
-            if foldIdx != kFold:
-                if isKFoldUponTestSet:
-                    foldIndices  = np.array(range((foldIdx-1)*oneFoldAmount, foldIdx*oneFoldAmount))
-                else:
-                    foldIndices = np.hstack((
-                        np.array(range(0, (foldIdx-1)*oneFoldAmount)),
-                        np.array(range(foldIdx*oneFoldAmount, numOfAEs))))
+            if kFold == 1:
+                foldIndices = np.array(range(0, numOfSamples))
             else:
-                if isKFoldUponTestSet:
-                    foldIndices  = np.array(range((foldIdx-1)*oneFoldAmount, numOfSamples))
+                if foldIdx != kFold:
+                    if isKFoldUponTestSet:
+                        foldIndices  = np.array(range((foldIdx-1)*oneFoldAmount, foldIdx*oneFoldAmount))
+                    else:
+                        foldIndices = np.hstack((
+                            np.array(range(0, (foldIdx-1)*oneFoldAmount)),
+                            np.array(range(foldIdx*oneFoldAmount, numOfAEs))))
                 else:
-                    foldIndices = np.array(range(0, (foldIdx-1)*oneFoldAmount))
+                    if isKFoldUponTestSet:
+                        foldIndices  = np.array(range((foldIdx-1)*oneFoldAmount, numOfSamples))
+                    else:
+                        foldIndices = np.array(range(0, (foldIdx-1)*oneFoldAmount))
 
-            curSamples = samples[foldIndices]
-            numOfCurSamples = curSamples.shape[0] 
+            oriCurSamples = samples[foldIndices]
+            numOfCurSamples = oriCurSamples.shape[0] 
 
             # 0 - Transform TC, 1 - Prediction (Prob) TC 2 - Prediction (Logit) TC
             curPredTCs  = np.zeros((numOfModels, 3))
@@ -986,12 +1014,16 @@ def kFoldPredictionSetup(
 
             for modelID in range(numOfModels):
                 transformType = transformationList[modelID]
-
+                curSamples = oriCurSamples.copy()
+                print("\t\t\t [{}] prediction on {} model".format(modelID, transformType))
                 # Transformation cost
                 startTime = time.monotonic()
                 tranSamples = transform_images(curSamples, transformType)
                 endTime = time.monotonic()
                 curPredTCs[modelID, 0] = endTime - startTime
+
+                if datasetName == DATA.cifar_10:
+                    tranSamples = normalize(tranSamples)
 
                 # model prediction cost - using probability-based defense
                 curPredProb[modelID, :, :],   curPredTCs[modelID, 1] = prediction(
@@ -1003,7 +1035,7 @@ def kFoldPredictionSetup(
                         logitsModels[modelID])
 
        
-            predTCs[sampleTypeIdx, foldIdx-1, : ,:] = curPredTCs / numOfCurSamples
+            predTCs[sampleTypeIdx, foldIdx-1, : ,:] = curPredTCs
 
             # stack up the result of the current fold
             if foldIdx == 1:
@@ -1015,171 +1047,218 @@ def kFoldPredictionSetup(
 
         np.save(os.path.join(curExprDir, "predProb.npy"), predProb)
         np.save(os.path.join(curExprDir, "predLogit.npy"), predLogits)
-    
+   
+    predTCs = predTCs.sum(axis=1) / numOfSamples
     np.save(os.path.join(predictionResultDir, "predTCs.npy"), predTCs)
     np.save(os.path.join(predictionResultDir, "labels.npy"), labels)
        
 
-
-
-
-def kFolderPredictionSetup0(
-        experimentRootDir,
-        kFolder,
-        folderDirs,
+def predictionForTest0(
         predictionResultDir,
         datasetName,
         architecture,
         numOfClasses,
         targetModelName,
         modelsDir,
-        AEDir,
-        numOfAEs,
-        AETypes,
-        transformationList,
-        isKFolderUponTestSet=True):
+        samplesDir,
+        numOfSamples,
+        sampleTypes,
+        transformationList):
+        
     '''
         Input:
-            isKFolderUponTestSet = False means to take a folder of samples for training instead of testing.
 
         Output:
     '''
     # Load models and create models to output logits
-    modelFilenamePrefix = datasetName+"_"+architecture
-    models, logitsModels = loadModels(modelsDir, modelFilenamePrefix, transformationList)
-    numOfModels = len(models)
+    modelFilenamePrefix = datasetName+"-"+architecture
+    models, logitsModels = loadModels(modelsDir, modelFilenamePrefix, transformationList, datasetName)
+    numOfModels = len(models) # include the clean model, positioning at index 0
 
-    # connect input images with predicted results 
-    kFolderImgIndices = np.array(range(numOfAEs))
-    np.random.shuffle(kFolderImgIndices)
-    np.save(os.path.join(experimentRootDir, "kFolderImgIndices.npy"), kFolderImgIndices)
-    oneFolderAmount = int(numOfAEs/kFolder)
+    # Load labels
+    sampleFilenameTag = datasetName+"-"+architecture+"-"+targetModelName
+    #labels_raw = np.load(os.path.join(samplesDir, "Label-"+datasetName+"-"+targetModelName+".npy"))
+    #labels = np.argmax(labels_raw, axis=1)
 
-    sampleFilenamePrefix = datasetName+"-"+architecture+"-"+targetModelName
-    numOfAETypes = len(AETypes)
-    # 0 - time cost of the corresponding transformation
-    # 1 - time cost of model inference for probability
-    # 2 - time cost of model inference for logits
-    predTCs = np.zeros((kFolder, numOfAETypes, numOfModels, 3))
-    for AETypeIdx, AEType in zip(list(range(numOfAETypes)), AETypes):
-        curExprDir = os.path.join(predictionResultDir, sampleFilenamePrefix+"_"+AEType)
+
+    numOfSampleTypes = len(sampleTypes)
+
+    # average time cost in seconds 
+    # averaing upon samples
+    predTCs = np.zeros((numOfSampleTypes, numOfModels, 3))
+
+    for sampleTypeIdx, sampleType in zip(list(range(numOfSampleTypes)), sampleTypes):
+        print("Sample type: "+sampleType)
+        if sampleType == "BS":
+            sampleFilename = "BS-"+datasetName+"-"+targetModelName+".npy"
+        else:
+            sampleFilename = "AE-"+sampleFilenameTag+"-"+sampleType+".npy"
+
+        curExprDir = os.path.join(predictionResultDir, sampleType)
         createDirSafely(curExprDir)
 
-        LBs_vec = np.load(os.path.join(AEDir, "label_mnist_cnn_clean_"+AEType+".npy"))
-        LBs = np.argmax(LBs_vec, axis=1)
-        AEs = np.load(os.path.join(AEDir, "adv_mnist_cnn_clean_"+AEType+".npy"))
-        BSs = np.load(os.path.join(AEDir, "orig_mnist_cnn_clean_"+AEType+".npy"))    
-       
-        predProbAE, predProbBS, predLogitsAE, predLogitsBS, newLBs = None, None, None, None, None
+        oriCurSamples = np.load(os.path.join(samplesDir, sampleFilename))
 
-        for folderIdx in range(1, 1+kFolder):
-            print("\tPrediction on {} on fold {}".format(AEType, folderIdx))
-            if folderIdx != kFolder:
-                if isKFolderUponTestSet:
-                    folderIndices  = np.array(range((folderIdx-1)*oneFolderAmount, folderIdx*oneFolderAmount))
-                else:
-                    folderIndices = np.hstack((
-                        np.array(range(0, (folderIdx-1)*oneFolderAmount)),
-                        np.array(range(folderIdx*oneFolderAmount, numOfAEs))))
-            else:
-                if isKFolderUponTestSet:
-                    folderIndices  = np.array(range((folderIdx-1)*oneFolderAmount, numOfAEs))
-                else:
-                    folderIndices = np.array(range(0, (folderIdx-1)*oneFolderAmount))
+        # 0 - Transform TC, 1 - Prediction (Prob) TC 2 - Prediction (Logit) TC
+        curPredTCs  = np.zeros((numOfModels, 3))
+        predShape = (numOfModels, numOfSamples, numOfClasses)
+        curPredProb   = np.zeros(predShape)
+        curPredLogits = np.zeros(predShape)
 
-            curAEs = AEs[kFolderImgIndices[folderIndices]]
-            curBSs = BSs[kFolderImgIndices[folderIndices]]
-            curLBs = LBs[kFolderImgIndices[folderIndices]]
+        for modelID in range(numOfModels):
+            transformType = transformationList[modelID]
+            curSamples = oriCurSamples.copy()
+            print("\t\t\t [{}] prediction on {} model".format(modelID, transformType))
+            # Transformation cost
+            startTime = time.monotonic()
+            tranSamples = transform_images(curSamples, transformType)
+            endTime = time.monotonic()
+            curPredTCs[modelID, 0] = endTime - startTime
 
-            predTCPerModel  = np.zeros((numOfModels, 2, 3))
-            predShape = (numOfModels, numOfAEs, numOfClasses)
-            curPredProbAE   = np.zeros(predShape)
-            curPredProbBS   = np.zeros(predShape)
-            curPredLogitsAE = np.zeros(predShape)
-            curPredLogitsBS = np.zeros(predShape)
+            if datasetName == DATA.cifar_10:
+                tranSamples = normalize(tranSamples)
 
-            for modelID in range(numOfModels):
-                curAEs = np.copy(AEs)
-                curBSs = np.copy(BSs)
-                
-                transformType = transformationList[modelID]
-                print("Predict AE({}) and BS with model {} - {}".format(AEType, modelID, transformType))
+            # model prediction cost - using probability-based defense
+            curPredProb[modelID, :, :],   curPredTCs[modelID, 1] = prediction(
+                    tranSamples,
+                    models[modelID])
+            # model prediction cost - using logits-based defense
+            curPredLogits[modelID, :, :], curPredTCs[modelID, 2] = prediction(
+                    tranSamples,
+                    logitsModels[modelID])
+   
+        predTCs[sampleTypeIdx, : ,:] = curPredTCs
 
-                # AE - transformation cost
-                startTime = time.monotonic()
-                curAEs = transform_images(curAEs, transformType)
-                endTime = time.monotonic()
-                predTCPerModel[modelID, 0, 0] = endTime - startTime
+        np.save(os.path.join(curExprDir, "predProb.npy"), curPredProb)
+        np.save(os.path.join(curExprDir, "predLogit.npy"), curPredLogits)
+   
+    predTCs = predTCs / numOfSamples
+    np.save(os.path.join(predictionResultDir, sampleTypes[0]+"-predTCs.npy"), predTCs)
+ 
 
+def predictionForTest(
+        predictionResultDir,
+        datasetName,
+        architecture,
+        numOfClasses,
+        targetModelName,
+        modelsDir,
+        samplesDir,
+        numOfSamples,
+        AETypes,
+        transformationList):
+        
+    '''
+        Input:
 
-                # AE - model prediction cost - using probability-based defense
-                curPredProbAE[modelID, :, :],   predTCPerModel[modelID, 0, 1] = prediction(
-                        curAEs,
-                        models[modelID])
-                
-                # AE - model prediction cost - using logits-based defense
-                curPredLogitsAE[modelID, :, :], predTCPerModel[modelID, 0, 2] = prediction(
-                        curAEs,
-                        logitsModels[modelID])
+        Output:
+    '''
+    # Load models and create models to output logits
+    modelFilenamePrefix = datasetName+"-"+architecture
+    models, logitsModels = loadModels(modelsDir, modelFilenamePrefix, transformationList, datasetName)
+    numOfModels = len(models) # include the clean model, positioning at index 0
 
-                # BS - transformation cost
-                startTime = time.monotonic()
-                curBSs = transform_images(curBSs, transformType)
-                endTime = time.monotonic()
-                predTCPerModel[modelID, 1, 0] = endTime - startTime
-                           
-                # BS - model prediction cost - using probability-based defense
-                curPredProbBS[modelID, :, :],   predTCPerModel[modelID, 1, 1] = prediction(
-                        curBSs,
-                        models[modelID])
-                
-                # BS - model prediction cost - using logits-based defense
-                curPredLogitsBS[modelID, :, :], predTCPerModel[modelID, 1, 2] = prediction(
-                        curBSs,
-                        logitsModels[modelID])
-         
-            # modelID = 0 => original model
-            predTCs[folderIdx-1, AETypeIdx, : ,:] = predTCPerModel.sum(axis=1)
+    # Load labels
+    sampleFilenameTag = datasetName+"-"+architecture+"-"+targetModelName
+    labels_raw = np.load(os.path.join(samplesDir, "Label-"+datasetName+"-"+targetModelName+".npy"))
+    labels = np.argmax(labels_raw, axis=1)
 
-            # stack up the result of the current folder
-            if folderIdx == 1:
-                predProbAE      = curPredProbAE
-                predProbBS      = curPredProbBS
-                predLogitsAE    = curPredLogitsAE
-                predLogitsBS    = curPredLogitsBS
-                newLBs          = curLBs
-            else:
-                predProbAE      = np.hstack((predProbAE, curPredProbAE))
-                predProbBS      = np.hstack((predProbBS, curPredProbBS))
-                predLogitsAE    = np.hstack((predLogitsAE, curPredLogitsAE))
-                predLogitsBS    = np.hstack((predLogitsBS, curPredLogitsBS))
-                newLBs          = np.hstack((newLBs, curLBs)) # 1D numpy array => hstack
+    sampleTypes =["BS"]
+    sampleTypes.extend(AETypes)
+    numOfAETypes = len(AETypes)
+    numOfSampleTypes = 1+numOfAETypes
 
-        np.save(os.path.join(curExprDir, "predProbAE.npy"), predProbAE)
-        np.save(os.path.join(curExprDir, "predProbBS.npy"), predProbBS)
-        np.save(os.path.join(curExprDir, "predLogitsAE.npy"), predLogitsAE)
-        np.save(os.path.join(curExprDir, "predLogitsBS.npy"), predLogitsBS)
-        np.save(os.path.join(curExprDir, "labels.npy"), newLBs)
+    # average time cost in seconds 
+    # averaing upon samples
+    predTCs = np.zeros((numOfSampleTypes, numOfModels, 3))
 
+    for sampleTypeIdx, sampleType in zip(list(range(numOfSampleTypes)), sampleTypes):
+        print("Sample type: "+sampleType)
+        if sampleType == "BS":
+            sampleFilename = "BS-"+datasetName+"-"+targetModelName+".npy"
+        else:
+            sampleFilename = "AE-"+sampleFilenameTag+"-"+sampleType+".npy"
+
+        curExprDir = os.path.join(predictionResultDir, sampleType)
+        createDirSafely(curExprDir)
+
+        oriCurSamples = np.load(os.path.join(samplesDir, sampleFilename))
+
+        # 0 - Transform TC, 1 - Prediction (Prob) TC 2 - Prediction (Logit) TC
+        curPredTCs  = np.zeros((numOfModels, 3))
+        predShape = (numOfModels, numOfSamples, numOfClasses)
+        curPredProb   = np.zeros(predShape)
+        curPredLogits = np.zeros(predShape)
+
+        for modelID in range(numOfModels):
+            transformType = transformationList[modelID]
+            curSamples = oriCurSamples.copy()
+            print("\t\t\t [{}] prediction on {} model".format(modelID, transformType))
+            # Transformation cost
+            startTime = time.monotonic()
+            tranSamples = transform_images(curSamples, transformType)
+            endTime = time.monotonic()
+            curPredTCs[modelID, 0] = endTime - startTime
+
+            if datasetName == DATA.cifar_10:
+                tranSamples = normalize(tranSamples)
+
+            # model prediction cost - using probability-based defense
+            curPredProb[modelID, :, :],   curPredTCs[modelID, 1] = prediction(
+                    tranSamples,
+                    models[modelID])
+            # model prediction cost - using logits-based defense
+            curPredLogits[modelID, :, :], curPredTCs[modelID, 2] = prediction(
+                    tranSamples,
+                    logitsModels[modelID])
+   
+        predTCs[sampleTypeIdx, : ,:] = curPredTCs
+
+        np.save(os.path.join(curExprDir, "predProb.npy"), curPredProb)
+        np.save(os.path.join(curExprDir, "predLogit.npy"), curPredLogits)
+   
+    predTCs = predTCs / numOfSamples
     np.save(os.path.join(predictionResultDir, "predTCs.npy"), predTCs)
-    return predictionResultDir, numOfModels, folderDirs
+       
 
-def loadModels(modelsDir, modelFilenamePrefix, transformationList):
+
+
+def loadModels(modelsDir, modelFilenamePrefix, transformationList, datasetName):
     models=[]
     logitsModels=[]
-    for transformType in transformationList:
-        modelName = modelFilenamePrefix+"-"+transformType
-        modelNameFP = os.path.join(modelsDir, modelName+".h5")
-        print("load model {}".format(modelName))
-        model = load_model(modelNameFP)
-        models.append(model)
+    print("Number of transformations: {}".format(len(transformationList)))
+    for tIdx in range(len(transformationList)):
+        transformType = transformationList[tIdx]
+        #if transformType == 'noise_s&p':
+        #    transformType = 'noise_s_p'
+        modelName = "model-"+modelFilenamePrefix+"-"+transformType
+        print("loading model {}".format(modelName))
         # Create corresponding model for outputing logits
-        layerName=model.layers[-2].name
-        logitsModel = Model(
-                inputs=model.input,
-                outputs=model.get_layer(layerName).output)
-        logitsModels.append(logitsModel)
+        if datasetName == "cifar10":
+            modelArchNameFP = os.path.join(modelsDir, modelName+".json")
+            modelWeightsNameFP = os.path.join(modelsDir, "weights_"+modelName+".h5")
+            json_file = open(modelArchNameFP, 'r')
+            loaded_model_json = json_file.read()
+            json_file.close()
+            model = model_from_json(loaded_model_json)
+            model.load_weights(modelWeightsNameFP)
+            models.append(model)
 
+            # Temporarily workaround: remove softmax activation in the output layer 
+            loaded_model_json2 = re.sub(r'"activation": "softmax",', "", loaded_model_json)
+            logitsModel = model_from_json(loaded_model_json2)
+            logitsModel.set_weights(model.get_weights())
+        else: # mnist
+            modelNameFP = os.path.join(modelsDir, modelName+".h5")
+            model = load_model(modelNameFP)
+            models.append(model)
+            layerName=model.layers[-2].name
+            logitsModel = Model(
+                    inputs=model.input,
+                    outputs=model.get_layer(layerName).output)
+        logitsModels.append(logitsModel)
+    
+    print("Number of loaded models: {}".format(len(models)))
     return models, logitsModels
 
 
@@ -1314,10 +1393,10 @@ def upperBoundAccuracy(opinions, labels):
     ret = round(cnt/numOfEvents, 4)
     return ret
 
-def votingAsDefense(predLC, clusters, vsac="Majority", measureTC=False):
+def votingAsDefense(predLC, clusters, vsac="CV_Maj", measureTC=False):
     '''
         Input:
-            predLC  :   numOfModels X numOfSamples X 2 numpy array. The 3dr dimension: (label, confidence)
+            predLC  :   numOfTrans X numOfSamples X 2 numpy array. The 3dr dimension: (label, confidence)
             clusters:   a 2D lists where each element is a list of models' ID, representing a cluster
             acvs    :   across-clusters voting strategy, default stragety is majority voting.
                         Note: voting strategy inside cluster is majority voting.
@@ -1334,17 +1413,17 @@ def votingAsDefense(predLC, clusters, vsac="Majority", measureTC=False):
     clusterRepresentatives = []
     for cluster in clusters:
         insideClusterOpinions = []
-        for modelID in cluster: # transform model ID start from 1
-            insideClusterOpinions.append(predLC[modelID-1])
+        for modelID in cluster: # transform model ID start from 0
+            insideClusterOpinions.append(predLC[modelID])
         votedResult = majorityVote(insideClusterOpinions)
         clusterRepresentatives.append(votedResult)
 
-    if vsac == "Majority":
+    if vsac == "CV_Maj":
         votedResult = majorityVote(clusterRepresentatives)
-    elif vsac == "Max":
+    elif vsac == "CV_Max":
         votedResult = maxConfidenceVote(clusterRepresentatives)
     else:
-        raise ValueError("The given across-clusters voting strategy, {}, is not supported. By now, only support 'Majority' and 'Max'".format(vsac))
+        raise ValueError("The given across-clusters voting strategy, {}, is not supported. By now, only support 'CV_Maj' and 'CV_Max'".format(vsac))
 
     if measureTC:
         timeCost = (time.monotonic() - startTime) / numOfSamples
@@ -1392,6 +1471,20 @@ def loadClusteringResult(clusteringResultDir, numOfClusters):
                 cluster.append(int(modelID))
             clusters.append(cluster)
     return clusters
+
+def loadCAVModel(clusteringFP):
+    with open(clusteringFP) as fp:
+        clusters=[]
+        for line in fp:
+            line = line.rstrip()
+            parts = line.split()
+            cluster = []
+            for modelID in parts:
+                cluster.append(int(modelID))
+            clusters.append(cluster)
+        return clusters
+
+
 
 def loadAllClusteringResult(clusteringResultDir, maxNumOfClusters):
     '''
