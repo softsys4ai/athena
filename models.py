@@ -14,7 +14,7 @@ from tensorflow.python.keras.preprocessing.image import ImageDataGenerator
 from config import *
 import data
 import file
-from plot import plotTrainingResult
+from utils.plot import plotTrainingResult
 
 FLAGS = flags.FLAGS
 

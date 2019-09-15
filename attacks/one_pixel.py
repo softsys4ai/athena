@@ -4,20 +4,13 @@ from __future__ import print_function
 from __future__ import unicode_literals
 
 from models import *
-from config import *
 
 from scipy.optimize import differential_evolution
 
 import numpy as np
 import pandas as pd
 
-import os
 
-# TODO: Build out more rigorous testing for targeted and untargeted samples
-# TODO: Test on more datasets and models
-# TODO: Configure any logging methods for statistics that may be relevant
-# TODO: Configure any more files that need reference to one-pixel-attack
-# TODO: Consolidate Division by Zero RunTimeWarning
 class PixelAttacker:
     def __init__(self, models, dataset):
         # Load data and model
@@ -101,6 +94,7 @@ class PixelAttacker:
             x, self.X_test[img], target_class, model, targeted_attack)
 
         # Calling Scipy's Implementation of Differential Evolution
+        print("Running differential evolution")
         attack_result = differential_evolution(
             predict_fn, bounds, maxiter=maxiter, popsize=popmul,
             recombination=1, atol=-1, callback=callback_fn, polish=False)
@@ -131,8 +125,6 @@ class PixelAttacker:
                     for target in targets:
                         if targeted:
                             print('Attacking with target', self.class_names[target])
-                            if target != self.Y_test[img]:
-                                continue
                         result = self.attack(img, model, target, pixel_count,
                                              maxiter=maxiter, population=population)
                         model_results.append(result)
@@ -141,43 +133,9 @@ class PixelAttacker:
         return results
 
 
-def generate(model_name, attack_method, X, Y, attack_params):
-    label_smoothing_rate = 0.1
+def generate(model_name, attack_params):
 
     prefix, dataset, architect, trans_type = model_name.split('-')
-
-    # flag - whether to train a clean model
-    train_new_model = True
-    if os.path.isfile('{}/{}.h5'.format(PATH.MODEL, model_name)):
-        # found a trained model
-        print('Found the trained model.')
-        train_new_model = False
-
-    img_rows, img_cols, nb_channels = X.shape[1:4]
-    nb_classes = Y.shape[1]
-
-    # Force TensorFlow to use single thread to improve reproducibility
-    config = tf.ConfigProto(intra_op_parallelism_threads=1,
-                            inter_op_parallelism_threads=1)
-    sess = tf.Session(config=config)
-    keras.backend.set_session(sess)
-
-    # label smoothing
-    Y -= label_smoothing_rate * (Y - 1. / nb_classes)
-
-    model = None
-    if train_new_model:
-        print('INFO: train a new model then generate adversarial examples.')
-        # create a new model
-        input_shape = (img_rows, img_cols, nb_channels)
-        model = create_model(dataset, input_shape=input_shape, nb_classes=nb_classes)
-    else:
-        # load model
-        model = keras.models.load_model('{}/{}.h5'.format(PATH.MODEL, model_name))
-
-    # to be able to call the model in the custom loss, we need to call it once before.
-    # see https://github.com/tensorflow/tensorflow/issues/23769
-    model(model.input)
 
     attacker = PixelAttacker(models=model, dataset=dataset)
 
@@ -188,29 +146,25 @@ def generate(model_name, attack_method, X, Y, attack_params):
                                   maxiter=attack_params['max_iterations'],
                                   population=attack_params['population']
                                   )
-    print(f"Results:\n"
-          f"{results}")
+    #print(f"Results:\n"
+    #      f"{results}")
     columns = ['model', 'pixels', 'image', 'true', 'predicted', 'success', 'cdiff', 'prior_probs', 'predicted_probs',
                'perturbation', 'attack_image']
     results_table = pd.DataFrame(results, columns=columns)
+    results_table.to_csv(path_or_buf='../data/results/results.csv')
     attack_images = results_table['attack_image']
 
     print("Saving to folder")
     for index, img in enumerate(attack_images):
-        from PIL import Image
-        img = img.reshape((28, 28))
-        img = Image.fromarray(img)
-        img = img.convert('L')
-        file_path = f'../{PATH.ADVERSARIAL_FILE}/example-{index}.jpeg'
-        img.save(file_path)
+        np.save(file=f'data/adversarial_examples/example_{index}.pyn',arr=img)
 
     return (attack_images, results_table['predicted'])
 
 
 if __name__ == '__main__':
-    model = keras.models.load_model('../mnist/models/model-mnist-cnn-clean.h5')
+    model = keras.models.load_model('../data/models/model-mnist-cnn-clean.h5')
     attack_params = {
-        'samples': 25,
+        'samples': 50,
         'pixel_counts': tuple([1]),
         'max_iterations': 100,
         'targeted': True,

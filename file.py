@@ -8,7 +8,7 @@ import os
 
 from config import *
 from data import load_data
-from plot import plot_comparisons
+from utils.plot import plot_comparisons
 
 def dict2csv(dictionary, file_name):
   """

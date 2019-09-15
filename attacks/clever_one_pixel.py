@@ -1,3 +1,6 @@
+# For later implementation if we decide to follow the clever hans framework for implementing this attack.
+# Still has issues
+
 import numpy as np
 import tensorflow as tf
 from tensorflow.python.keras.models import load_model

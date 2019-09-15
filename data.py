@@ -18,7 +18,7 @@ np.random.seed(1000)
 tf.set_random_seed(1000)
 
 def load_data(dataset):
-    assert dataset in DATA.get_supported_datasets()
+    #assert dataset in DATA.get_supported_datasets()
     X_train = None
     Y_train = None
     X_test = None
