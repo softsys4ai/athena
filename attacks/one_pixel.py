@@ -4,6 +4,7 @@ from __future__ import print_function
 from __future__ import unicode_literals
 
 from models import *
+from attacks import attacker
 
 from scipy.optimize import differential_evolution
 
@@ -12,10 +13,12 @@ import pandas as pd
 
 
 class PixelAttacker:
-    def __init__(self, models, dataset):
+    def __init__(self, model, X, Y):
         # Load data and model
-        self.models = models
-        (self.X_test, self.Y_test) = data.load_data(dataset)[1]
+        self.models = model
+        self.X_test = X
+        self.Y_test = Y
+        #(self.X_test, self.Y_test) = data.load_data(dataset)[1]
         # Scaling images (0 - 255)
         self.X_test *= (255.0 / self.X_test.max())
         # Formatting labels into 1-D array
@@ -110,7 +113,7 @@ class PixelAttacker:
         return [model.name, pixel_count, img, actual_class, predicted_class, success, cdiff, prior_probs,
                 predicted_probs, attack_result.x, attack_image]
 
-    def attack_all(self, models, samples=500, pixels=(1, 3, 5), targeted=False,
+    def attack_all(self, models, samples=50, pixels=(1, 3, 5), targeted=False,
                    maxiter=75, population=400):
         results = []
         for model in models:
@@ -133,11 +136,11 @@ class PixelAttacker:
         return results
 
 
-def generate(model_name, attack_params):
+def generate(model_name, X, Y, attack_params):
 
-    prefix, dataset, architect, trans_type = model_name.split('-')
+    model = keras.models.load_model('../{}/{}.h5'.format(PATH.MODEL, model_name))
 
-    attacker = PixelAttacker(models=model, dataset=dataset)
+    attacker = PixelAttacker(model=model, X=X, Y=Y)
 
     results = attacker.attack_all(models=[model],
                                   samples=attack_params['samples'],
@@ -146,23 +149,31 @@ def generate(model_name, attack_params):
                                   maxiter=attack_params['max_iterations'],
                                   population=attack_params['population']
                                   )
-    #print(f"Results:\n"
+    # print(f"Results:\n"
     #      f"{results}")
     columns = ['model', 'pixels', 'image', 'true', 'predicted', 'success', 'cdiff', 'prior_probs', 'predicted_probs',
                'perturbation', 'attack_image']
     results_table = pd.DataFrame(results, columns=columns)
     results_table.to_csv(path_or_buf='../data/results/results.csv')
-    attack_images = results_table['attack_image']
+    attack_images = []
+    predicted_labels = []
+    for index, row in results_table.iterrows():
+        if row['success']:
+            attack_images.append(row['attack_images'])
+            predicted_labels.append(row['predicted'])
 
     print("Saving to folder")
     for index, img in enumerate(attack_images):
-        np.save(file=f'data/adversarial_examples/example_{index}.pyn',arr=img)
+        img *= (1.0/255.0)
+        attack_images[index] = img
+        np.save(file=f'data/adversarial_examples/example_{index}.pyn', arr=img)
 
-    return (attack_images, results_table['predicted'])
+    return (attack_images, Y)
 
 
 if __name__ == '__main__':
     model = keras.models.load_model('../data/models/model-mnist-cnn-clean.h5')
+    (X_test, Y_test) = data.load_data('mnist')[1]
     attack_params = {
         'samples': 50,
         'pixel_counts': tuple([1]),
@@ -170,4 +181,16 @@ if __name__ == '__main__':
         'targeted': True,
         'population': 400
     }
-    generate(model_name='model-mnist-cnn-clean', attack_params=attack_params)
+
+    X_adv, Y = attacker.get_adversarial_examples(model_name='model-mnist-cnn-clean',
+                                                 attack_method=ATTACK.ONE_PIXEL,
+                                                 X=X_test,
+                                                 Y=Y_test,
+                                                 **attack_params)
+
+    import os
+    os.system('mkdir adv_examples')
+    for x in X_adv:
+        np.save(x)
+    print("Test Successful")
+

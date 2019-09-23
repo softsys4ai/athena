@@ -6,11 +6,7 @@
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
-*.py[cod]
-*$py.class
 i
-# C extensions
-*.so
 
 # Distribution / packaging
 .Python
@@ -40,66 +36,10 @@ var/
 pip-log.txt
 pip-delete-this-directory.txt
 
-# Unit test / coverage reports
-htmlcov/
-.tox/
-.coverage
-.coverage.*
-.cache
-nosetests.xml
-coverage.xml
-*,cover
-.hypothesis/
-
-# Translations
-*.mo
-*.pot
-
-# Django stuff:
-*.log
-local_settings.py
-
-# Flask stuff:
-instance/
-.webassets-cache
-
-# Scrapy stuff:
-.scrapy
-
-# Sphinx documentation
-docs/_build/
-
-# PyBuilder
-target/
-
 # IPython Notebook
 .ipynb_checkpoints
-
-# pyenv
-.python-version
-
-# celery beat schedule file
-celerybeat-schedule
-
-# dotenv
-.env
 
 # virtualenv
 .venv/
 venv/
 ENV/
-
-# Spyder project settings
-.spyderproject
-
-# Rope project settings
-.ropeproject
-/data/
-/bk/
-/old_scripts/
-/my_scripts.py
-/my_test.py
-/my_voting_system.py
-/Testing_All_SampleTypes/
-/Detection_Voting_Result/
-/fgsm.py
