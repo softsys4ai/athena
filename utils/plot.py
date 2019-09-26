@@ -8,6 +8,14 @@ import numpy as np
 import matplotlib.pyplot as plt
 from config import PATH, MODE
 
+line_styles = ['-', '--', '-.', ':']
+colors = ['forestgreen', 'blue', 'magenta', 'mediumspringgreen', 'darkorange', 'red', 'deeppink',
+          'limegreen', 'deepskyblue',  'fuchsia', 'orangered',  'darkgray', 'aqua']
+markers = ['.', 'o', 'v', '^', '<', '>', '+', 's', 'p', '*', 'h', 'x', ',',
+           'd', '|', '1', '2', '3', '4', '8', 'P', 'H', 'X', 'D']
+nb_colors = len(colors)
+nb_markers = len(markers)
+
 def plot_difference(controls, treatments, title="None", save=False):
     """
     Plot the original image, corresponding perturbed image, and their difference.
@@ -72,7 +80,6 @@ def plot_difference(controls, treatments, title="None", save=False):
     plt.show()
     plt.close()
 
-
 def plot_comparisons(controls, treatments, title="None", save=False):
     """
     Draw some comparisons of original images and transformed/perturbed images.
@@ -122,8 +129,7 @@ def plot_comparisons(controls, treatments, title="None", save=False):
     plt.show()
     plt.close()
 
-
-def plot_curves(data, title='curves', ylabel='None', save=False):
+def plot_curves(data, title='curves', ylabel='Accuracy', save=False, legend_loc='lower right'):
     """
     Plot curves in one figure, values[keys[i]] vs. values[keys[0]], where i > 0.
     Usage:
@@ -140,11 +146,15 @@ def plot_curves(data, title='curves', ylabel='None', save=False):
     keys = list(data.keys())
 
     for i in range(1, nb_dimensions):
-        plt.plot(data[keys[0]], data[keys[i]], '-+', label=keys[i])
+        m_id = i % nb_markers
+        c_id = i % nb_colors
+        m = '{}{}'.format(line_styles[0], markers[m_id])
+        plt.plot(data[keys[0]], data[keys[i]], m, color=colors[c_id], label=keys[i])
 
+    plt.title(title)
     plt.xlabel(keys[0])
     plt.ylabel(ylabel)
-    plt.legend(loc="lower right")
+    plt.legend(loc=legend_loc)
 
     if save:
         plt.savefig(
