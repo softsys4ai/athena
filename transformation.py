@@ -1076,7 +1076,9 @@ def transform(X, transformation_type):
     :param transformation_type:
     :return: the transformed images (values of pixels in the same range of X).
     """
-    print('Transforming data ({})'.format(transformation_type))
+    TRANSFORMATION.set_cur_transformation_type(transformation_type)
+    print('Current transformation type ({})'.format(TRANSFORMATION.CUR_TRANS_TYPE))
+
     if (transformation_type == TRANSFORMATION.clean):
         """
         Do not apply any transformation for 'clean' type.
@@ -1136,7 +1138,7 @@ def composite_transforms(X, transformation_list):
     """
     X_trans = X
     for trans in transformation_list:
-        X_trans = composite_transforms(X_trans, trans)
+        X_trans = transform(X, trans)
 
     return X_trans
 
