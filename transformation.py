@@ -12,14 +12,13 @@ from skimage import filters, util, color
 from sklearn.cluster import MiniBatchKMeans
 from skimage.restoration import (denoise_bilateral, denoise_nl_means, denoise_tv_bregman, denoise_tv_chambolle,
                                  denoise_wavelet, estimate_sigma)
-from skimage.transform import (rescale, swirl, radon, iradon, iradon_sart)
+from skimage.transform import (swirl, radon, iradon, iradon_sart)
 from skimage.morphology import disk, watershed, skeletonize, thin
 from skimage.filters import (rank, roberts, scharr, prewitt, meijering, sato, frangi, hessian)
 from skimage.util import invert
 
-from config import *
-from data import load_data, normalize
-from plot import plot_comparisons, plot_difference
+from utils.config import *
+from utils.plot import plot_comparisons
 
 
 def rotate(original_images, transformation):
@@ -1067,8 +1066,10 @@ def segmentations(original_images, transformation):
 
     return np.array(transformed_images)
 
-
-def transform_images(X, transformation_type):
+"""
+Entrance --- Apply single transformation.
+"""
+def transform(X, transformation_type):
     """
     Main entrance applying transformations on images, values of pixels are presumed in range [0., 1.].
     :param X: the images (values of pixels in range [0., 1.]) to apply transformation.
@@ -1087,38 +1088,57 @@ def transform_images(X, transformation_type):
     """
     inputs = copy.deepcopy(X)
     if (transformation_type in TRANSFORMATION.ROTATE):
-        return rotate(inputs, transformation_type)
+        X_trans = rotate(inputs, transformation_type)
     elif (transformation_type in TRANSFORMATION.FLIP):
-        return flip(inputs, transformation_type)
+        X_trans = flip(inputs, transformation_type)
     elif (transformation_type in TRANSFORMATION.SHIFT):
-        return shift(inputs, transformation_type)
+        X_trans = shift(inputs, transformation_type)
     elif (transformation_type in TRANSFORMATION.AFFINE_TRANS):
-        return affine_trans(inputs, transformation_type)
+        X_trans = affine_trans(inputs, transformation_type)
     elif (transformation_type in TRANSFORMATION.MORPH_TRANS):
-        return morph_trans(inputs, transformation_type)
+        X_trans = morph_trans(inputs, transformation_type)
     elif (transformation_type in TRANSFORMATION.AUGMENT):
-        return augment(inputs, transformation_type)
+        X_trans = augment(inputs, transformation_type)
     elif (transformation_type in TRANSFORMATION.CARTOONS):
-        return cartoonify(inputs, transformation_type)
+        X_trans = cartoonify(inputs, transformation_type)
     elif (transformation_type in TRANSFORMATION.QUANTIZATIONS):
-        return quantize(inputs, transformation_type)
+        X_trans = quantize(inputs, transformation_type)
     elif (transformation_type in TRANSFORMATION.DISTORTIONS):
-        return distort(inputs, transformation_type)
+        X_trans = distort(inputs, transformation_type)
     elif (transformation_type in TRANSFORMATION.FILTERS):
-        return filter(inputs, transformation_type)
+        X_trans = filter(inputs, transformation_type)
     elif (transformation_type in TRANSFORMATION.NOISES):
-        return add_noise(inputs, transformation_type)
+        X_trans = add_noise(inputs, transformation_type)
     elif (transformation_type in TRANSFORMATION.COMPRESSION):
-        return compress(inputs, transformation_type)
+        X_trans = compress(inputs, transformation_type)
     elif (transformation_type in TRANSFORMATION.DENOISING):
-        return denoising(inputs, transformation_type)
+        X_trans = denoising(inputs, transformation_type)
     elif (transformation_type in TRANSFORMATION.GEOMETRIC):
-        return geometric_transformations(inputs, transformation_type)
+        X_trans = geometric_transformations(inputs, transformation_type)
     elif (transformation_type in TRANSFORMATION.SEGMENTATION):
-        return segmentations(inputs, transformation_type)
+        X_trans = segmentations(inputs, transformation_type)
     else:
         raise ValueError('Transformation type {} is not supported.'.format(transformation_type.upper()))
 
+    # release space
+    del inputs
+    return X_trans
+
+"""
+Entrance --- Apply a sequence of transformations (transformation composition)
+"""
+def composite_transforms(X, transformation_list):
+    """
+    Composition of transformations
+    :param X:
+    :param transformation_list:
+    :return:
+    """
+    X_trans = X
+    for trans in transformation_list:
+        X_trans = composite_transforms(X_trans, trans)
+
+    return X_trans
 
 """
 for testing
@@ -1128,7 +1148,7 @@ def main(*args):
     # _, (X, _) = load_data(args[0])
     X = np.load('data/models/test_BS-cifar10-clean.npy')
     X_orig = np.copy(X[10:20])
-    X_trans = transform_images(X_orig, args[1])
+    X_trans = transform(X_orig, args[1])
 
     plot_comparisons(X_orig, X_trans, '{}-{}'.format(args[0], args[1]))
     # plot_difference(X_orig[:5], X_trans[:5], 'Diff-{}-{}'.format(args[0], args[1]))
