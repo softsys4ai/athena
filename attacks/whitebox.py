@@ -12,10 +12,8 @@ from __future__ import unicode_literals
 import os
 os.environ['KMP_DUPLICATE_LIB_OK'] = 'True'
 
-import data
 from models import *
-from config import *
-from plot import plot_comparisons
+from utils.config import *
 
 from cleverhans.attacks import FastGradientMethod
 from cleverhans.attacks import SaliencyMapMethod
@@ -49,8 +47,8 @@ def generate(model_name, X, Y, attack_method, attack_params):
 
     # flag - whether to train a clean model
     train_new_model = True
-    if (os.path.isfile('{}/{}.h5'.format(PATH.MODEL, model_name)) or
-            (os.path.isfile('{}/{}.json'.format(PATH.MODEL, model_name)))):
+    if (os.path.isfile('{}/{}/{}.h5'.format(PATH.MODEL, dataset, model_name)) or
+            (os.path.isfile('{}/{}/{}.json'.format(PATH.MODEL, dataset, model_name)))):
         # found a trained model
         print('Found the trained model.')
         train_new_model = False
@@ -81,7 +79,7 @@ def generate(model_name, X, Y, attack_method, attack_params):
     else:
         # load model
         if dataset == DATA.mnist:
-            model = keras.models.load_model('{}/{}.h5'.format(PATH.MODEL, model_name))
+            model = keras.models.load_model('{}/{}/{}.h5'.format(PATH.MODEL, dataset, model_name))
         elif dataset == DATA.cifar_10:
             model = load_from_json(model_name)
 
@@ -221,23 +219,30 @@ def generate(model_name, X, Y, attack_method, attack_params):
         )
 
         # save to disk
-        if DATA.cifar_10 == dataset:
-            save_to_json(model, model_name)
+        save_model(model, model_name)
+        # evaluate the new model
+        loaded_model = load_model(model_name)
+        scores = loaded_model.evaluate(X, Y, verbose=2)
+        print('*** Evaluating the new model: {}'.format(scores))
+        del loaded_model
 
-            # for test, evaluate the saved model
-            loaded_model = load_from_json(model_name)
-            scores = loaded_model.evaluate(X, Y, verbose=2)
-            print('*** Evaluating the new model: {}'.format(scores))
-            del loaded_model
-        elif DATA.mnist == dataset:
-            model.save('{}/{}.h5'.format(PATH.MODEL, model_name),
-                       overwrite=True, include_optimizer=True)
-            # for test
-            # evaluate the saved model
-            loaded_model = models.load_model('{}/{}.h5'.format(PATH.MODEL, model_name))
-            scores = loaded_model.evaluate(X, Y, verbose=2)
-            print('*** Evaluating the new model: {}'.format(scores))
-            del loaded_model
+        # if DATA.cifar_10 == dataset:
+        #     save_to_json(model, model_name)
+        #
+        #     # for test, evaluate the saved model
+        #     loaded_model = load_from_json(model_name)
+        #     scores = loaded_model.evaluate(X, Y, verbose=2)
+        #     print('*** Evaluating the new model: {}'.format(scores))
+        #     del loaded_model
+        # elif DATA.mnist == dataset:
+        #     model.save('{}/{}.h5'.format(PATH.MODEL, model_name),
+        #                overwrite=True, include_optimizer=True)
+        #     # for test
+        #     # evaluate the saved model
+        #     loaded_model = models.load_model('{}/{}.h5'.format(PATH.MODEL, model_name))
+        #     scores = loaded_model.evaluate(X, Y, verbose=2)
+        #     print('*** Evaluating the new model: {}'.format(scores))
+        #     del loaded_model
     del model
     sess.close()
 
