@@ -3,9 +3,9 @@ Script to train models.
 @author: Ying Meng (y(dot)meng201011(at)gmail(dot)com)
 """
 import models
-from config import *
+from utils.config import *
 from data import load_data
-from transformation import transform_images
+from transformation import transform
 
 
 def train_model_batch(dataset):
@@ -29,7 +29,7 @@ def train_model(dataset, transform_type):
     (X_train, Y_train), _ = load_data(dataset)
     if transform_type != TRANSFORMATION.clean:
         # transform images on demand.
-        X_train = transform_images(X_train, transform_type)
+        X_train = transform(X_train, transform_type)
 
     model_name = 'model-{}-cnn-{}'.format(dataset, transform_type)
     require_preprocess = False
@@ -57,7 +57,7 @@ def train_models_with_newLabels(
 
     if transform_type != TRANSFORMATION.clean:
         # transform images on demand.
-        X = transform_images(X, transform_type)
+        X = transform(X, transform_type)
 
     model_name = 'model-{}-cnn-{}-{}-{}-{}'.format(
         dataset_name,
@@ -77,8 +77,6 @@ def train_models_with_newLabels(
 """
 For testing
 """
-
-
 def main(dataset, trans_type=TRANSFORMATION.clean, batch=False):
     if batch:
         train_model_batch(dataset)

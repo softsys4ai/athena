@@ -4,6 +4,7 @@ Define global configurations.
         Jianhai Su
 """
 import numpy as np
+from pathlib import Path
 
 # [For defense]
 numOfWCDefenses = 3
@@ -20,6 +21,8 @@ kmeansResultFoldName = "KMeans_result"
 defensesList = ["CV_Maj", "CV_Max", "1s_Mean", "EM_Mean", "EM_MXMV", "1s_Mean_L", "EM_Mean_L", "EM_MXMV_L"]
 
 dropout = 0.5
+
+PROJECT_DIR = Path(__file__).parent.absolute()
 
 class DATA(object):
     """
@@ -499,29 +502,29 @@ class MODE(object):
 
 
 class PATH(object):
-    MODEL = 'data/models'
-    ADVERSARIAL_FILE = 'data/adversarial_examples'
+    MODEL = '{}/data/models'.format(PROJECT_DIR)
+    ADVERSARIAL_FILE = '{}/data/adversarial_examples'.format(PROJECT_DIR)
 
-    FIGURES = 'data/figures'
-    RESULTS = 'data/results'
-    ANALYSE = 'data/analyse'
+    FIGURES = '{}/data/figures'.format(PROJECT_DIR)
+    RESULTS = '{}/data/results'.format(PROJECT_DIR)
+    ANALYSE = '{}/data/analyse'.format(PROJECT_DIR)
 
     @classmethod
     def set_path_of_models(cls, model_base):
-        cls.MODEL = model_base
+        cls.MODEL = '{}/{}'.format(PROJECT_DIR, model_base)
 
     @classmethod
     def set_path_of_ae(cls, ae_base):
-        cls.ADVERSARIAL_FILE = ae_base
+        cls.ADVERSARIAL_FILE = '{}/{}'.format(PROJECT_DIR, ae_base)
 
     @classmethod
     def set_path_of_figs(cls, figure_base):
-        cls.FIGURES = figure_base
+        cls.FIGURES = '{}/{}'.format(PROJECT_DIR, figure_base)
 
     @classmethod
     def set_path_of_results(cls, result_base):
-        cls.RESULTS = result_base
+        cls.RESULTS = '{}/{}'.format(PROJECT_DIR, result_base)
 
     @classmethod
     def set_path_of_analyse(cls, analyse_base):
-        cls.ANALYSE = analyse_base
+        cls.ANALYSE = '{}/{}'.format(PROJECT_DIR, analyse_base)

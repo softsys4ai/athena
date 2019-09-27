@@ -3,9 +3,9 @@ This is the script to craft adversarial examples.
 @author: Ying Meng (y(dot)meng201011(at)gmail(dot)com)
 """
 
-from config import *
+from utils.config import *
 from data import load_data
-from file import save_adv_examples
+from utils.file import save_adv_examples
 from attacks.attacker import get_adversarial_examples
 
 import numpy as np
@@ -14,16 +14,16 @@ import numpy as np
 def craft(dataset, method):
     print('loading original images...')
     # generate for test set
-    _, (X, Y) = load_data(dataset)
-    prefix = 'test'
+    # _, (X, Y) = load_data(dataset)
+    # prefix = 'test'
 
     # ------ for black-box attack ------
     # generate for train set (the last 20% of the original train set)
-    # (X, Y), _ = load_data(dataset)
-    # nb_trainings = int(X.shape[0] * 0.8)
-    # X = X[nb_trainings:]
-    # Y = Y[nb_trainings:]
-    # prefix = 'val'
+    (X, Y), _ = load_data(dataset)
+    nb_trainings = int(X.shape[0] * 0.8)
+    X = X[nb_trainings:]
+    Y = Y[nb_trainings:]
+    prefix = 'val'
     # ---------------------------------
 
     """
@@ -112,5 +112,5 @@ if __name__ == '__main__':
     """
   switch on debugging mode
   """
-    MODE.debug_on()
-    main(DATA.cifar_10, ATTACK.DEEPFOOL)
+    # MODE.debug_on()
+    main(DATA.mnist, ATTACK.JSMA)
