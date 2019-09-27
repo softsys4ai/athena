@@ -22,7 +22,9 @@ defensesList = ["CV_Maj", "CV_Max", "1s_Mean", "EM_Mean", "EM_MXMV", "1s_Mean_L"
 
 dropout = 0.5
 
-PROJECT_DIR = Path(__file__).parent.absolute()
+# file.parent = utils folder
+# file.parent.parent = project base (utils' parent)
+PROJECT_DIR = Path(__file__).parent.parent.absolute()
 
 class DATA(object):
     """
@@ -303,6 +305,17 @@ class TRANSFORMATION(object):
         print('Support {} types of transformations.'.format(len(transformations)))
         return transformations
 
+    """
+    Transformation Compositions
+    """
+    composition1 = [noise_gaussian, affine_both_compress, filter_minimum]
+
+    @classmethod
+    def get_transformation_compositions(cls):
+        compositions = []
+        compositions.extend(cls.composition1)
+
+        return compositions
 
 class ATTACK(object):
     """
@@ -502,6 +515,7 @@ class MODE(object):
 
 
 class PATH(object):
+    print('PROJECT DICTIONARY: {}'.format(PROJECT_DIR))
     MODEL = '{}/data/models'.format(PROJECT_DIR)
     ADVERSARIAL_FILE = '{}/data/adversarial_examples'.format(PROJECT_DIR)
 
