@@ -100,6 +100,8 @@ ENV/
 /my_scripts.py
 /my_test.py
 /my_voting_system.py
+/*result*
+/*Result*
 /Testing_All_SampleTypes/
 /Detection_Voting_Result/
 /fgsm.py
