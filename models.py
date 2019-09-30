@@ -4,6 +4,8 @@ Define models and implement related operations.
 """
 from __future__ import absolute_import, division, print_function
 
+import warnings
+
 import tensorflow as tf
 from tensorflow import keras
 from tensorflow.python.platform import flags
@@ -11,20 +13,24 @@ from tensorflow.python.keras import layers, models, optimizers, regularizers
 from tensorflow.python.keras.callbacks import LearningRateScheduler
 from tensorflow.python.keras.preprocessing.image import ImageDataGenerator
 
-from config import *
+from utils.config import *
 import data
-import file
-from plot import plotTrainingResult
+from utils import file
+from utils.plot import plotTrainingResult
 
 FLAGS = flags.FLAGS
 
-
+# --------------------------------------------
+# Entrance
+# --------------------------------------------
 def create_model(dataset, input_shape, nb_classes):
     if (dataset == DATA.mnist):
         DATA.set_current_dataset_name(DATA.mnist)
         MODEL.set_learning_rate(0.001)
         MODEL.set_batch_size(128)
         MODEL.set_epochs(50)
+        if MODE.DEBUG:
+            MODEL.set_epochs(10)
         return cnn_mnist(input_shape, nb_classes)
     elif (dataset == DATA.fation_mnist):
         DATA.set_current_dataset_name(DATA.fation_mnist)
@@ -39,6 +45,9 @@ def create_model(dataset, input_shape, nb_classes):
         MODEL.set_epochs(100)
         return cnn_cifar(input_shape, nb_classes)
 
+# --------------------------------------------
+# Architectures
+# --------------------------------------------
 def cnn_cifar(input_shape, nb_classes):
     """
     a cnn for cifar
@@ -100,7 +109,7 @@ def cnn_cifar(input_shape, nb_classes):
         print(model.summary())
     return model
 
-def cnn_mnist(input_shape, nb_classes):
+def cnn_mnist(input_shape=(28, 28, 1), nb_classes=10):
     """
     Defines a CNN model using Keras sequential model
     :param input_shape:
@@ -139,7 +148,7 @@ def cnn_mnist(input_shape, nb_classes):
     return model
 
 # --------------------------------------------
-# OPERATIONS
+# Operations
 # --------------------------------------------
 def train_model(model, dataset, model_name, need_augment=False, **kwargs):
     (X_train, Y_train), _ = data.load_data(dataset)
@@ -196,7 +205,7 @@ def train(model, X, Y, model_name, need_augment=False, **kwargs):
             height_shift_range=0.1,
             horizontal_flip=True,
         )
-    datagen.fit(train_examples)
+        datagen.fit(train_examples)
 
     """
     compile data
@@ -249,6 +258,9 @@ def train_and_save(model_name, X, Y, validation_rate=0.2, need_augment=False):
     :param Y: corresponding desired labels.
     :param need_augment: a flag whether to perform data augmentation before training.
     """
+    warnings.warn('This method is deprecated, it will be removed soon. '
+                  'Please use functions train() or train_model() to train a model'
+                  'then save_model() to save the model.', DeprecationWarning)
 
     prefix, dataset, architect, trans_type = model_name.split('-')
     nb_examples, img_rows, img_cols, nb_channels = X.shape
@@ -352,7 +364,7 @@ def evaluate_model(model, X, Y):
     conf_correct = 0.
     conf_misclassified = 0.
 
-    pred_probs = model.predict(X, batch_size=128)
+    pred_probs = model.predict(X)
 
     # iterate over test set
     for pred_prob, true_prob in zip(pred_probs, Y):
@@ -366,12 +378,13 @@ def evaluate_model(model, X, Y):
             conf_misclassified += np.max(pred_prob)
 
     # test accuracy
-    _, test_acc = model.evaluate(X, Y, verbose=0)
+    # _, test_acc = model.evaluate(X, Y, verbose=0)
+    acc = nb_corrections / nb_examples
     # average confidences
     ave_conf_correct = conf_correct / nb_corrections
     ave_conf_miss = conf_misclassified / (nb_examples - nb_corrections)
 
-    return test_acc, ave_conf_correct, ave_conf_miss
+    return acc, ave_conf_correct, ave_conf_miss
 
 def save_model(model, model_name):
     """
@@ -412,13 +425,13 @@ def save_to_json(model, model_name):
 
 def load_from_json(model_name,
                    optimizer=keras.optimizers.RMSprop(lr=0.001, decay=1e-6)):
-    dataset = model_name.split('-')[1]
-    json_file = open('{}/{}/{}.json'.format(PATH.MODEL, dataset, model_name), 'r')
+    #dataset = model_name.split('-')[1]
+    json_file = open('{}/{}.json'.format(PATH.MODEL, model_name), 'r')
     loaded_model_json = json_file.read()
     json_file.close()
 
     model = keras.models.model_from_json(loaded_model_json)
-    model.load_weights('{}/{}/weights_{}.h5'.format(PATH.MODEL, dataset, model_name))
+    model.load_weights('{}/weights_{}.h5'.format(PATH.MODEL, model_name))
 
     model.compile(
         optimizer=optimizer,
@@ -435,7 +448,7 @@ for testing
 def main():
     from data import load_data
 
-    model = models.load_model('data/models/mnist/model-mnist-cnn-clean.h5')
+    model = models.load_model('data/models/model-mnist-cnn-clean.h5')
     _, (X, Y) = load_data(DATA.mnist)
     print(model.evaluate(X, Y, verbose=1))
 
