@@ -2,6 +2,7 @@
 Implement transformations.
 @auther: Ying Meng (y(dot)meng201011(at)gmail(dot)com)
 """
+import collections
 import copy
 import cv2
 from scipy import ndimage
@@ -1067,9 +1068,22 @@ def segmentations(original_images, transformation):
     return np.array(transformed_images)
 
 """
-Entrance --- Apply single transformation.
+Entrance --- Applying transformation(s)
 """
-def transform(X, transformation_type):
+def transform(X, transformations):
+    if isinstance(transformations, (list, np.ndarray)):
+        print('composition of transformations')
+        # composition of transformations
+        return composite_transforms(X, transformations)
+    else:
+        print('single transformation')
+        # single transformation
+        return transform_images(X, transformations)
+
+"""
+Apply single transformation.
+"""
+def transform_images(X, transformation_type):
     """
     Main entrance applying transformations on images, values of pixels are presumed in range [0., 1.].
     :param X: the images (values of pixels in range [0., 1.]) to apply transformation.
@@ -1138,7 +1152,7 @@ def composite_transforms(X, transformation_list):
     """
     X_trans = X
     for trans in transformation_list:
-        X_trans = transform(X, trans)
+        X_trans = transform_images(X, trans)
 
     return X_trans
 
