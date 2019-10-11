@@ -69,14 +69,14 @@ def plot_ideal_accuracy(attack):
     print(data_of_lines)
     print('filled area:')
     print(certainty_borders)
-    plot_scatter_with_certainty(data_of_lines, certainty_borders, title='PGD (eps: 0.75)',
+    plot_scatter_with_certainty(data_of_lines, certainty_borders, title='PGD (eps: 0.5)',
                                 ylabel='Test Accuracy', save=False, legend_loc=LEGEND_LOCATION.upper_center)
 
 def main():
     """
     Evaluate ideal model
     """
-    attack = attacks[13]
+    attack = attacks[12]
     plot_ideal_accuracy(attack)
 
 if __name__ == '__main__':

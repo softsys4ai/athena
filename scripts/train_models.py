@@ -4,7 +4,7 @@ Script to train models.
 """
 import models
 from utils.config import *
-from data import load_data
+from data import load_data, normalize
 from transformation import transform, composite_transforms
 
 
@@ -26,9 +26,11 @@ def train_model(dataset, transform_type):
     """
     print('Training model ({}) on {}...'.format(transform_type, dataset))
     (X_train, Y_train), (X_test, Y_test) = load_data(dataset)
-    if transform_type != TRANSFORMATION.clean:
-        # transform images on demand.
-        X_train = transform(X_train, transform_type)
+    nb_examples, img_rows, img_cols, nb_channels = X_train.shape
+    nb_classes = Y_train.shape[1]
+    input_shape = (img_rows, img_cols, nb_channels)
+
+    X_train = transform(X_train, transform_type)
 
     model_name = 'model-{}-cnn-{}'.format(dataset, transform_type)
     require_preprocess = False
@@ -36,10 +38,12 @@ def train_model(dataset, transform_type):
         require_preprocess = True
 
     # train
-    model = models.train(model_name, X_train, Y_train, require_preprocess)
+    model = models.create_model(dataset, input_shape, nb_classes)
+    models.train(model, X_train, Y_train, model_name, require_preprocess)
     # save to disk
     models.save_model(model, model_name)
     # evaluate the new model
+    X_test = transform(X_test, transform_type)
     loaded_model = models.load_model(model_name)
     scores = loaded_model.evaluate(X_test, Y_test, verbose=2)
     print('*** Evaluating the new model: {}'.format(scores))
@@ -54,22 +58,29 @@ def train_composition(dataset, transformation_list):
     """
     # Apply a sequence of transformations
     (X_train, Y_train), (X_test, Y_test) = load_data(dataset)
-    X_trans = composite_transforms(X_train, transformation_list)
+    X_train = transform(X_train, transformation_list)
+
+    nb_examples, img_rows, img_cols, nb_channels = X_train.shape
+    nb_classes = Y_train.shape[1]
+    input_shape = (img_rows, img_cols, nb_channels)
+
     # Train a model and save
     model_name = 'model-{}-cnn-{}'.format(dataset, 'composition')
     require_preprocess = (dataset == DATA.cifar_10)
 
-    # train(model, X, Y, model_name, need_augment=False, **kwargs)
-    input_shape = X_trans.shape[1:4]
-    nb_classes = Y_train.shape[1]
     model = models.create_model(dataset, input_shape, nb_classes)
-    models.train(model, X_trans, Y_train, model_name, require_preprocess)
+    models.train(model, X_train, Y_train, model_name, require_preprocess)
     # save to disk
     models.save_model(model, model_name)
+
     # evaluate the new model
     loaded_model = models.load_model(model_name)
-    X_trans = composite_transforms(X_test, transformation_list)
-    scores = loaded_model.evaluate(X_trans, Y_test, verbose=2)
+    X_test = transform(X_test, transformation_list)
+
+    if require_preprocess:
+        X_test = normalize(X_test)
+
+    scores = loaded_model.evaluate(X_test, Y_test, verbose=2)
     print('*** Evaluating the new model: {}'.format(scores))
     del loaded_model
 
@@ -113,7 +124,9 @@ def train_models_with_newLabels(
 For testing
 """
 def main(dataset, trans_type=TRANSFORMATION.clean, batch=False):
-    if len(trans_type) > 1:
+    print(trans_type)
+
+    if isinstance(trans_type, (list, np.ndarray)):
         train_composition(dataset, trans_type)
     elif batch:
         train_model_batch(dataset)
@@ -122,8 +135,8 @@ def main(dataset, trans_type=TRANSFORMATION.clean, batch=False):
 
 
 if __name__ == "__main__":
-    MODE.debug_on()
-    # MODE.debug_off()
+    # MODE.debug_on()
+    MODE.debug_off()
     compositions = TRANSFORMATION.get_transformation_compositions()
 
-    main(DATA.mnist, compositions[0], batch=True)
+    main(DATA.mnist, TRANSFORMATION.clean, batch=False)

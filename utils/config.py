@@ -22,10 +22,6 @@ defensesList = ["CV_Maj", "CV_Max", "1s_Mean", "EM_Mean", "EM_MXMV", "1s_Mean_L"
 
 dropout = 0.5
 
-# file.parent = utils folder
-# file.parent.parent = project base (utils' parent)
-PROJECT_DIR = Path(__file__).parent.parent.absolute()
-
 class DATA(object):
     """
     Configuration for data.
@@ -330,6 +326,7 @@ class ATTACK(object):
     CW = 'cw'
     JSMA = 'jsma'
     ONE_PIXEL = 'one-pixel'
+    MIM = 'mim'
     PGD = 'pgd'
     BLACKBOX = 'blackbox'
 
@@ -515,6 +512,10 @@ class MODE(object):
 
 
 class PATH(object):
+    # file.parent = utils folder
+    # file.parent.parent = project base (utils' parent)
+    PROJECT_DIR = Path(__file__).parent.parent.absolute()
+
     print('PROJECT DICTIONARY: {}'.format(PROJECT_DIR))
     MODEL = '{}/data/models'.format(PROJECT_DIR)
     ADVERSARIAL_FILE = '{}/data/adversarial_examples'.format(PROJECT_DIR)

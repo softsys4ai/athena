@@ -9,7 +9,7 @@ import keras
 import tensorflow as tf
 from keras.datasets import mnist, cifar10, fashion_mnist, cifar100
 
-from config import DATA, MODE
+from utils.config import DATA, MODE
 
 """
 set random seed for replication
@@ -34,9 +34,7 @@ def load_data(dataset):
         along with a test set of 10,000 images.
         """
         (X_train, Y_train), (X_test, Y_test) = mnist.load_data()
-        if MODE.DEBUG:
-            print('shapes:\ntrain - {}, {}'.format(X_train.shape, Y_train.shape))
-            print('test - {}, {}'.format(X_test.shape, Y_test.shape))
+
         nb_examples, img_rows, img_cols = X_test.shape
         nb_channels = 1
         nb_classes = 10
@@ -57,9 +55,7 @@ def load_data(dataset):
         9       Ankle boot
         """
         (X_train, Y_train), (X_test, Y_test) = fashion_mnist.load_data()
-        if MODE.DEBUG:
-            print('shapes:\ntrain - {}, {}'.format(X_train.shape, Y_train.shape))
-            print('test - {}, {}'.format(X_test.shape, Y_test.shape))
+
         nb_examples, img_rows, img_cols = X_test.shape
         nb_channels = 1
         nb_classes = 10
@@ -68,16 +64,12 @@ def load_data(dataset):
         Dataset of 50,000 32x32 color training images, labeled over 10 categories, and 10,000 test images.
         """
         (X_train, Y_train), (X_test, Y_test) = cifar10.load_data()
-        if MODE.DEBUG:
-            print('shapes:\ntrain - {}, {}'.format(X_train.shape, Y_train.shape))
-            print('test - {}, {}'.format(X_test.shape, Y_test.shape))
+
         nb_examples, img_rows, img_cols, nb_channels = X_test.shape
         nb_classes = 10
     elif DATA.cifar_100 == dataset:
         (X_train, Y_train), (X_test, Y_test) = cifar100.load_data()
-        if MODE.DEBUG:
-            print('shapes:\ntrain - {}, {}'.format(X_train.shape, Y_train.shape))
-            print('test - {}, {}'.format(X_test.shape, Y_test.shape))
+
         nb_examples, img_rows, img_cols, nb_channels = X_test.shape
         nb_classes = 100
 

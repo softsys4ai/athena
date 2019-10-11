@@ -6,8 +6,7 @@ import logging
 
 import time
 
-from data import normalize
-from config import *
+from utils.config import *
 import attacks.whitebox as whitebox
 
 logger = logging.getLogger('defence_transformers')
@@ -141,6 +140,14 @@ def get_adversarial_examples(model_name, attack_method, X, Y, **kwargs):
         X_adv, Y = whitebox.generate(model_name, X, Y, attack_method, attack_params)
         duration = time.time() - start_time
         logger.info('Time cost: {}'.format(duration))
+
+    elif (attack_method == ATTACK.ONE_PIXEL):
+        # TODO: implement one-pixel
+        pass
+
+    elif (attack_method == ATTACK.MIM):
+        # TODO: implement mim
+        pass
 
     print('*** SHAPE: {}'.format(X_adv.shape))
     return X_adv, Y

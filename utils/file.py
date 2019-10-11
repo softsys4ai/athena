@@ -4,10 +4,15 @@ Implement file operations such as read/write files here.
 """
 
 import csv
+from collections import namedtuple
 
 from utils.config import *
 from data import load_data
 from utils.plot import plot_comparisons
+
+class ORIENT(object):
+    COL = 'col'
+    ROW = 'row'
 
 def dict2csv(dictionary, file_name, list_as_value=False):
     """
@@ -38,11 +43,41 @@ def dict2csv(dictionary, file_name, list_as_value=False):
             for row in dictionary.items():
                 writer.writerow(row)
 
-def csv2dict(file_name):
-    # TODO: not implemented yet
-    dict = np.load(file_name)
-    print(dict.shape)
-    print(dict)
+def csv2dict(file_name, orient=ORIENT.COL, dtype='float'):
+    """
+    Load csv into a dictionary in the form of
+    {
+        key : [values]
+    }
+    :param file_name: csv file name includes the full path
+    :param orient:
+        orient.col: values of the key is in a column
+        orient.row: values of the key is in a row
+    :param dtype: data type of values
+    :return: the dictionary
+    """
+    if ORIENT.COL == orient:
+        with open(file_name) as file:
+            reader = csv.reader(file)
+            col_headers = next(reader, None)
+
+            columns = {}
+            for header in col_headers:
+                columns[header] = []
+
+            for row in reader:
+                for header, value in zip(col_headers, row):
+                    if 'float' == dtype:
+                        value = float(value)
+                    columns[header].append(value)
+
+        return columns
+
+    else: # ORIENT.ROW == orient
+        # TODO: implement
+        rows = {}
+        return rows
+
 
 def save_adv_examples(data, **kwargs):
     """

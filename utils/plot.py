@@ -227,7 +227,7 @@ def plot_scatter_with_certainty(data, certainty_borders, title='lines',
     xticks = []
     xticks_labels = []
     for i in data[keys[0]]:
-        i = int(i) + 1
+        i = int(i)
         if 0 == i % 5:
             xticks.append(i - 1)
             xticks_labels.append(i)
