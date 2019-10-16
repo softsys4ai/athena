@@ -8,8 +8,9 @@ import time
 
 from utils.config import *
 import attacks.whitebox as whitebox
+import attacks.one_pixel as one_pixel
 
-logger = logging.getLogger('defence_transformers')
+logger = logging.getLogger('attacks.attacker...')
 logger.setLevel(logging.INFO)
 
 def get_adversarial_examples(model_name, attack_method, X, Y, **kwargs):
@@ -142,12 +143,24 @@ def get_adversarial_examples(model_name, attack_method, X, Y, **kwargs):
         logger.info('Time cost: {}'.format(duration))
 
     elif (attack_method == ATTACK.ONE_PIXEL):
-        # TODO: implement one-pixel
-        pass
+        # one-pixel was implemented separately.
+        attack_params = {
+            'targeted': False,
+            'pixel_count': 15,
+            'max_iter': 50,
+            'pop_size': 10,
+            'clip_min': 0.,
+            'clip_max': 1.,
+        }
+
+        start_time = time.monotonic()
+        X_adv, Y = one_pixel.generate(model_name, X, Y, attack_params)
+        duration = time.monotonic() - start_time
+        logger.info('Time cost: {}'.format(duration))
 
     elif (attack_method == ATTACK.MIM):
         # TODO: implement mim
         pass
 
-    print('*** SHAPE: {}'.format(X_adv.shape))
+    print('*** SHAPE: {}'.format(np.asarray(X_adv).shape))
     return X_adv, Y

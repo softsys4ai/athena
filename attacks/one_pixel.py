@@ -12,6 +12,7 @@ import tensorflow as tf
 
 from models import *
 from attacks import attacker
+from utils.plot import plot_image
 
 np_dtype = np.dtype('float32')
 
@@ -32,30 +33,38 @@ class OnePixel(object):
         # Rescale value of pixels to [0, 255]
         self.X *= (255.0 / self.X.max())
         self.nb_samples, self.img_rows, self.img_cols, self.nb_channels = self.X.shape
+        self.True_Labels = np.array(
+            [np.where (y == 1)[0][0] for y in self.Y]
+        )
 
     def perturb_image(self, noises, x):
+        if noises.ndim < 2:
+            noises = np.array([noises])
 
-        # copy for perturbation
-        x_adv = copy.copy(x)
+        tile = [len(noises)] + [1] * (noises.ndim + 1)
+        X_adv = np.tile(x, tile)
 
-        new_pixels = np.split(noises.astype(int), len(noises) // 5)
-        for pixel in new_pixels:
-            # At each x_adv's (x_pos, y_pos), update its rgb value
-            x_pos, y_pos, *rgb = pixel
-            x_adv[x_pos, y_pos] = rgb
+        noises = noises.astype(int)
 
-        print('perturb_image, x_adv.shape:', x_adv.shape)
-        return x_adv
+        for pixel, x_adv in zip(noises, X_adv):
+            new_pixels = np.split(pixel, len(pixel) // len(x_adv.shape))
+            for pixel in new_pixels:
+                # At each x_adv's (x_pos, y_pos), update its rgb value
+                x_pos, y_pos, *rgb = pixel
+                x_adv[x_pos, y_pos] = rgb
 
-    def predict(self, noises, x, target_class, minimize=True):
+        # print('perturb_image, x_adv.shape:', X_adv.shape)
+        return X_adv
+
+    def predict_class(self, noises, x, target_class, minimize=True):
         x_adv = self.perturb_image(noises, x)
-        pred_probs = self.model.predict(x_adv)
+        pred_probs = self.model.predict(x_adv)[:, target_class]
 
         return pred_probs if minimize else 1 - pred_probs
 
     def attack_success(self, noises, x, target_label, targeted_attack=False):
         x_adv = self.perturb_image(noises, x)
-        pred_probs = self.model.predict(x_adv)
+        pred_probs = self.model.predict(x_adv)[0]
         pred_label = np.argmax(pred_probs)
 
         if ((targeted_attack and pred_label == target_label) or
@@ -64,38 +73,48 @@ class OnePixel(object):
         else:
             return False
 
-    def attack(self, x, target_label=None):
+    def attack(self, img, target_label=None):
+
         if not self.targeted and target_label is None:
-            target_label = np.argmax(self.model.predict(x))
+            target_label = np.argmax(self.model.predict(img)[0])
 
         bounds = [(0, self.img_rows), (0, self.img_cols)]
         for i in range(self.nb_channels):
-            bounds.append((0, 255))
+            bounds.append((0, 256))
         bounds *= self.pixel_count
 
         popmul = max(1, self.pop_size // len(bounds))
 
-        prediction_func = lambda noises: self.predict(noises, x, target_label, (not self.targeted))
-        callback_func = lambda noises, convergence: self.attack_success(noises, x, target_label, self.targeted)
+        prediction_func = lambda X: self.predict_class(X, img, target_label, (not self.targeted))
+        callback_func = lambda x, convergence: self.attack_success(x, img, target_label, self.targeted)
 
+        print('Differential Evolution')
         perturbations = differential_evolution(
             prediction_func, bounds, maxiter=self.max_iter, popsize=popmul,
-            recombination=1, atol=1, callback=callback_func, polish=False
+            recombination=1, atol=-1, callback=callback_func, polish=False
         )
 
-        x_adv = self.perturb_image(perturbations.noises, x)
+        x_adv = self.perturb_image(perturbations.x, img)
 
-        prior_probs = self.model.predict(x)
+        # img = img.reshape(self.img_rows, self.img_cols, self.nb_channels)
+        # x_adv = x_adv.reshape(self.img_rows, self.img_cols, self.nb_channels)
+
+        x_adv /= 255.
+        if self.clip_min is not None and self.clip_max is not None:
+            x_adv = np.clip(x_adv, self.clip_min, self.clip_max)
+
+        prior_probs = self.model.predict(img)[0]
         prior_label = np.argmax(prior_probs)
-        pred_probs = self.model.predict(x_adv)
+        pred_probs = self.model.predict(x_adv)[0]
         pred_label = np.argmax(pred_probs)
         success = pred_label != prior_label
         confidence_diff = prior_probs[prior_label] - pred_probs[pred_label]
 
+        print('x_adv shape:', x_adv.shape)
         print('{}: ({}, {}), ({}, {}), {}'.format(success, prior_probs, prior_label,
                                                   pred_probs, pred_label, confidence_diff))
 
-        return [x, x_adv, perturbations.noises, prior_probs, prior_label,
+        return [img[0], x_adv[0], perturbations.x, prior_probs, prior_label,
                 pred_probs, pred_label, confidence_diff, success]
 
     def attack_all(self):
@@ -104,7 +123,9 @@ class OnePixel(object):
         log_batch = 10
         log_iter = self.nb_samples / log_batch
 
-        for i, x in enumerate(self.X):
+        for i in range(self.nb_samples):
+            x = self.X[i:i+1]
+
             if i % log_iter == 0:
                 print('Perturbing {}-th input...'.format(i))
 
@@ -116,21 +137,22 @@ class OnePixel(object):
                 raise NotImplementedError('targeted attack is not supported yet')
 
             for target_label in target_labels:
-                x_adv = self.attack(x, target_label)[1]
+                x_orig, x_adv, perturbation, _, prior_label, _, pred_label, _, _ = self.attack(x, target_label)
+
+                if i % 2 == 0:
+                    plot_image(x_adv, title='{} -> {}'.format(prior_label, pred_label))
+                    plot_image((x_orig - x_adv), title='perturbation {}'.format(i))
+
                 X_adv.append(x_adv)
 
-        return X_adv
+        # X_adv = self.attack(self.X, None)
 
-def generate(model, X, Y, attack_params):
-    clip_min = attack_params.get('clip_min', 0.)
-    clip_max = attack_params.get('clip_max', 1.)
+        return X_adv, self.Y
 
+def generate(model_name, X, Y, attack_params):
+    model = load_model(model_name)
     attacker = OnePixel(model, X, Y, attack_params)
     X_adv = attacker.attack_all()
-
-    # clipping as required
-    if clip_min is not None and clip_max is not None:
-        X_adv = np.clip(X_adv, clip_min, clip_max)
 
     return X_adv
 
