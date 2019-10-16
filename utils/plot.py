@@ -3,6 +3,7 @@ Implement methods plotting and drawing figures.
 @author: Ying Meng (y(dot)meng201011(at)gmail(dot)com))
         Jianhai Su
 """
+from enum import Enum
 import numpy as np
 from utils.csv_headers import IdealModelEvalHeaders as headers
 import os
@@ -18,18 +19,121 @@ marks = ['o', 's', 'D', '+', '*', 'v', '^', '<', '>', '.', '+', 'p', 'h',  ',',
 nb_colors = len(colors)
 nb_marks = len(marks)
 
-class LEGEND_LOCATION(object):
-    best = 'best'
-    upper_right = 'upper right'
-    upper_left = 'upper left'
-    lower_left = 'lower left'
-    lower_right = 'lower right'
-    right = 'right'
-    center_left = 'center left'
-    center_right = 'center right'
-    lower_center = 'lower center'
-    upper_center = 'upper center'
-    center = 'center'
+class LEGEND_LOCATION(Enum):
+    BEST = 'best'
+    UPPER_RIGHT = 'upper right'
+    UPPER_LEFT = 'upper left'
+    LOWER_LEFT = 'lower left'
+    LOWER_RIGHT = 'lower right'
+    RIGHT = 'right'
+    CENTER_LEFT = 'center left'
+    CENTER_RIGHT = 'center right'
+    LOWER_CENTER = 'lower center'
+    UPPER_CENTER = 'upper center'
+    CENTER = 'center'
+
+class legend(object):
+    def __init__(self):
+        self.location = LEGEND_LOCATION.UPPER_CENTER.value
+        self.ncol = 2
+        self.box_anchor = None
+        self.fontsize = 10
+        self.fancybox = True
+        self.shadow = True
+
+    def set_location(self, location):
+        self.location = location
+
+    def set_ncol(self, nb_of_cols):
+        self.ncol = nb_of_cols
+
+    def set_box_anchor(self, anchor):
+        self.box_anchor = anchor
+
+    def set_fontsize(self, fontsize):
+        self.fontsize = fontsize
+
+    def set_fancybox(self, fancybox):
+        self.fancybox = fancybox
+
+    def set_shadow(self, shadow):
+        self.shadow = shadow
+
+class plot_settings(object):
+    def __init__(self):
+        self.title = None
+        self.title_fontsize = 14
+
+        self.legend = legend()
+
+        self.xlabel = None
+        self.ylabel = None
+        self.xlabel_fontsize = 12
+        self.ylabel_fontsize = 12
+
+        self.xticks_fontsize = 11
+        self.yticks_fontsize = 11
+
+        # auto-set y-limits
+        self.ylim_min = None
+        self.ylim_max = None
+
+        # auto-set x-limits
+        self.xlim_min = None
+        self.xlim_max = None
+
+    def set_title(self, title):
+        self.title = title
+
+    def set_title_fontsize(self, fontsize):
+        self.title_fontsize = fontsize
+
+    def set_legend(self, legend):
+        self.legend = legend
+
+    def set_xlabel(self, xlabel):
+        self.xlabel = xlabel
+
+    def set_ylabel(self, ylabel):
+        self.ylabel = ylabel
+
+    def set_xlabel_fontsize(self, fontsize):
+        self.xlabel_fontsize = fontsize
+
+    def set_ylabel_fontsize(self, fontsize):
+        self.ylabel_fontsize = fontsize
+
+    def set_xticks_fontsize(self, fontsize):
+        self.xticks_fontsize = fontsize
+
+    def set_yticks_fontsize(self, fontsize):
+        self.yticks_fontsize = fontsize
+
+    def set_ylim(self, min, max):
+        self.ylim_min = min
+        self.ylim_max = max
+
+    def set_xlim(self, min, max):
+        self.xlim_min = min
+        self.xlim_max = max
+
+def plot_image(image, title="None", save=False):
+    img_rows, img_cols, nb_channels = image.shape
+
+    if (nb_channels == 1):
+        plt.imshow(image.reshape(img_rows, img_cols), cmap='gray')
+    else:
+        plt.imshow(image.reshape(img_rows, img_cols, nb_channels))
+
+    plt.title(title)
+
+    if save:
+        plt.savefig(
+            os.path.join(PATH.FIGURES, '{}.pdf'.format(title)),
+            bbox_inches='tight'
+        )
+    plt.show()
+    plt.close()
 
 def plot_difference(controls, treatments, title="None", save=False):
     """
@@ -144,7 +248,7 @@ def plot_comparisons(controls, treatments, title="None", save=False):
     plt.show()
     plt.close()
 
-def plot_lines(data, title='curves', ylabel='Accuracy', save=False, legend_loc=LEGEND_LOCATION.best):
+def plot_lines(data, first_key_as_xlabel=True, setting=plot_settings(), save=False):
     """
     Plot curves in one figure, values[keys[i]] vs. values[keys[0]], where i > 0.
     Usage:
@@ -167,22 +271,27 @@ def plot_lines(data, title='curves', ylabel='Accuracy', save=False, legend_loc=L
         m = '{}{}'.format(line_styles[0], marks[m_id])
         plt.plot(data[keys[0]], data[keys[i]], m, color=colors[c_id], label=keys[i])
 
-    plt.title(title)
-    plt.xlabel(keys[0])
-    plt.ylabel(ylabel)
-    plt.legend(loc=legend_loc)
+    plt.title(setting.title)
+
+    if first_key_as_xlabel:
+        plt.xlabel(keys[0])
+    else:
+        plt.xlabel(setting.xlabel)
+
+    plt.ylabel(setting.ylabel)
+    plt.legend(loc=setting.legend.location)
 
     if save:
         plt.savefig(
-            os.path.join(PATH.FIGURES, '{}.pdf'.format(title)),
+            os.path.join(PATH.FIGURES, '{}.pdf'.format(setting.title)),
             bbox_inches='tight'
         )
 
     plt.show()
     plt.close()
 
-def plot_scatter_with_certainty(data, certainty_borders, title='lines',
-                                ylabel='None', save=False, legend_loc=LEGEND_LOCATION.best):
+def plot_scatter_with_certainty(data, certainty_borders, setting=plot_settings(),
+                                first_key_as_xlabel=True, save=False):
     """
     Plot lines and some filled areas.
     :param data: dictionary. data used to plot lines.
@@ -198,6 +307,7 @@ def plot_scatter_with_certainty(data, certainty_borders, title='lines',
 
     print('keys: ', keys)
     print('keys[0]: ', data[keys[0]])
+
     # plot lines
     for i in range(1, nb_dimensions):
         m_id = (i - 1) % nb_marks
@@ -216,33 +326,49 @@ def plot_scatter_with_certainty(data, certainty_borders, title='lines',
     for i in range(nb_certainty_areas):
         x, upper_bound, lower_bound = certainty_borders[i]
         x1 = [a - 1 for a in x]
-        # x = np.arange(0.0, 73, 1.)
         print('upper_bound:', upper_bound)
         print('lower_bound:', lower_bound)
 
         plt.fill_between(x1, lower_bound, upper_bound, color=colors[-1], alpha=.25)
 
-    plt.title(title, y=1.06, fontsize=14)
+    if setting.title is not None:
+        plt.title(setting.title, fontsize=setting.title_fontsize)
 
     xticks = []
     xticks_labels = []
     for i in data[keys[0]]:
         i = int(i)
-        if 0 == i % 5:
+        if 0 == i % 10:
             xticks.append(i - 1)
             xticks_labels.append(i)
 
-    plt.xticks(xticks, xticks_labels, fontsize=11)
-    plt.yticks(fontsize=11)
-    plt.xlabel(keys[0].replace('_', ' '), fontsize=14)
-    plt.ylabel(ylabel, fontsize=14)
-    plt.ylim(0.0, 1.08)
-    plt.xlim(0.0, len(data[keys[0]]) - 1)
-    plt.legend(loc=legend_loc, bbox_to_anchor=(0.5, 1.05), ncol=4, fancybox=True, shadow=True)
+    plt.xticks(xticks, xticks_labels, fontsize=setting.xticks_fontsize)
+    plt.yticks(fontsize=setting.yticks_fontsize)
+
+    if first_key_as_xlabel:
+        # get xlabel from data
+        plt.xlabel(keys[0].replace('_', ' '), fontsize=setting.xlabel_fontsize)
+    elif setting.xlabel is not None:
+        plt.xlabel(setting.xlabel, fontsize=setting.xlabel_fontsize)
+
+    if setting.ylabel is not None:
+        plt.ylabel(setting.ylabel, fontsize=setting.ylabel_fontsize)
+
+    if setting.ylim_min is not None and setting.ylim_max is not None:
+        plt.ylim(setting.ylim_min, setting.ylim_max)
+
+    if setting.xlim_min is None or setting.xlim_max is None:
+        plt.xlim(0.0, len(data[keys[0]]) - 1)
+    else: # auto set x-limits
+        plt.xlim(setting.xlim_min, setting.xlim_max)
+
+    plt.legend(loc=setting.legend.location, bbox_to_anchor=setting.legend.box_anchor,
+               fontsize=setting.legend.fontsize, ncol=setting.legend.ncol,
+               fancybox=setting.legend.fancybox, shadow=setting.legend.shadow)
 
     if save:
         plt.savefig(
-            os.path.join(PATH.FIGURES, '{}.pdf'.format(title)),
+            os.path.join(PATH.FIGURES, '{}.pdf'.format(setting.title)),
             bbox_inches='tight'
         )
 
