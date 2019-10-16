@@ -69,14 +69,33 @@ def plot_ideal_accuracy(attack):
     print(data_of_lines)
     print('filled area:')
     print(certainty_borders)
-    plot_scatter_with_certainty(data_of_lines, certainty_borders, title='PGD (eps: 0.5)',
-                                ylabel='Test Accuracy', save=False, legend_loc=LEGEND_LOCATION.upper_center)
+
+    """
+    Set plot properties
+    """
+    legend_setting = legend()
+    setting = plot_settings()
+    setting.set_title('BIM_l2 (eps:1.0)')
+    setting.set_title_fontsize(22)
+    legend_setting.set_location(LEGEND_LOCATION.RIGHT.value)
+    legend_setting.set_box_anchor((1.14, 0.33))
+    legend_setting.set_ncol(1)
+    legend_setting.set_fontsize(16)
+    setting.set_legend(legend_setting)
+    setting.set_xticks_fontsize(15)
+    setting.set_yticks_fontsize(15)
+    setting.set_xlabel_fontsize(22)
+    setting.set_ylabel('Test Accuracy')
+    setting.set_ylabel_fontsize(22)
+
+    plot_scatter_with_certainty(data_of_lines, certainty_borders, setting=setting,
+                                first_key_as_xlabel=True, save=False)
 
 def main():
     """
     Evaluate ideal model
     """
-    attack = attacks[12]
+    attack = attacks[1]
     plot_ideal_accuracy(attack)
 
 if __name__ == '__main__':
