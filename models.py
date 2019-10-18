@@ -105,8 +105,7 @@ def cnn_cifar(input_shape, nb_classes):
     for layer in struct:
         model.add(layer)
 
-    if MODE.DEBUG:
-        print(model.summary())
+    print(model.summary())
     return model
 
 def cnn_mnist(input_shape=(28, 28, 1), nb_classes=10):
@@ -364,7 +363,7 @@ def evaluate_model(model, X, Y):
     conf_correct = 0.
     conf_misclassified = 0.
 
-    pred_probs = model.predict(X)
+    pred_probs = model.predict_class(X)
 
     # iterate over test set
     for pred_prob, true_prob in zip(pred_probs, Y):
@@ -386,52 +385,58 @@ def evaluate_model(model, X, Y):
 
     return acc, ave_conf_correct, ave_conf_miss
 
-def save_model(model, model_name):
+def save_model(model, model_name, director=PATH.MODEL):
     """
     Save a model with given name.
     :param model:
     :param model_name:
     :return:
     """
+    model_name = model_name.split('.')[0]
     prefix, dataset, artchitect, trans_type = model_name.split('-')
 
     if dataset == DATA.cifar_10:
-        save_to_json(model, model_name)
+        save_to_json(model, model_name, director)
     elif dataset == DATA.mnist:
-        model.save('{}/{}.h5'.format(PATH.MODEL, model_name))
+        model.save('{}/{}.h5'.format(director, model_name))
 
-def load_model(model_name):
+
+def load_model(model_name, director=PATH.MODEL):
     """
     Load the trained model from given file
     :param model_name:
     :return:
     """
+    model_name = model_name.split('.')[0]
     prefix, dataset, artchitect, trans_type = model_name.split('-')
 
     if dataset == DATA.cifar_10:
-        return load_from_json(model_name)
+        return load_from_json(model_name, director)
     elif dataset == DATA.mnist:
-        return keras.models.load_model('{}/{}.h5'.format(PATH.MODEL, model_name))
+        return keras.models.load_model('{}/{}.h5'.format(director, model_name))
 
 
-def save_to_json(model, model_name):
-    file_name = '{}/{}.json'.format(PATH.MODEL, model_name)
+def save_to_json(model, model_name, director=PATH.MODEL):
+    model_name = model_name.split('.')[0]
+    file_name = '{}/{}.json'.format(director, model_name)
     model_json = model.to_json()
     with open(file_name, 'w') as json_file:
         json_file.write(model_json)
 
-    model.save_weights('{}/weights_{}.h5'.format(PATH.MODEL, model_name))
+    model.save_weights('{}/weights_{}.h5'.format(director, model_name))
 
 
 def load_from_json(model_name,
+                   director=PATH.MODEL,
                    optimizer=keras.optimizers.RMSprop(lr=0.001, decay=1e-6)):
     #dataset = model_name.split('-')[1]
-    json_file = open('{}/{}.json'.format(PATH.MODEL, model_name), 'r')
+    model_name = model_name.split('.')[0]
+    json_file = open('{}/{}.json'.format(director, model_name), 'r')
     loaded_model_json = json_file.read()
     json_file.close()
 
     model = keras.models.model_from_json(loaded_model_json)
-    model.load_weights('{}/weights_{}.h5'.format(PATH.MODEL, model_name))
+    model.load_weights('{}/weights_{}.h5'.format(director, model_name))
 
     model.compile(
         optimizer=optimizer,
