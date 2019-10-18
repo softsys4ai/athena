@@ -325,7 +325,7 @@ class ATTACK(object):
     DEEPFOOL = 'deepfool'
     CW = 'cw'
     JSMA = 'jsma'
-    ONE_PIXEL = 'one-pixel'
+    ONE_PIXEL = 'onepixel'
     MIM = 'mim'
     PGD = 'pgd'
     BLACKBOX = 'blackbox'
@@ -466,6 +466,28 @@ class ATTACK(object):
             return ['pgd_eps250_nbIter100_epsIter10', 'pgd_eps500_nbIter100_epsIter10',
                     'pgd_eps750_nbIter100_epsIter10']
 
+    # --------------------------
+    # One-Pixel
+    # --------------------------
+    @classmethod
+    def get_onepixel_pxCount(cls):
+        # return [1, 3, 5, 10, 15]
+        return [1]
+
+    @classmethod
+    def get_onepixel_maxIter(cls):
+        # return [50, 100, 200]
+        return [50]
+
+    @classmethod
+    def get_onepixel_popsize(cls):
+        # return [30, 50, 100]
+        return [30]
+
+    @classmethod
+    def get_onepixel_AETypes(cls):
+        attack = ATTACK.ONE_PIXEL
+        return ['{}_pxCount1_maxIter50_popsize30'.format(attack)]
 
 class MODEL(object):
     """
@@ -526,20 +548,20 @@ class PATH(object):
 
     @classmethod
     def set_path_of_models(cls, model_base):
-        cls.MODEL = '{}/{}'.format(PROJECT_DIR, model_base)
+        cls.MODEL = '{}/{}'.format(cls.PROJECT_DIR, model_base)
 
     @classmethod
     def set_path_of_ae(cls, ae_base):
-        cls.ADVERSARIAL_FILE = '{}/{}'.format(PROJECT_DIR, ae_base)
+        cls.ADVERSARIAL_FILE = '{}/{}'.format(cls.PROJECT_DIR, ae_base)
 
     @classmethod
     def set_path_of_figs(cls, figure_base):
-        cls.FIGURES = '{}/{}'.format(PROJECT_DIR, figure_base)
+        cls.FIGURES = '{}/{}'.format(cls.PROJECT_DIR, figure_base)
 
     @classmethod
     def set_path_of_results(cls, result_base):
-        cls.RESULTS = '{}/{}'.format(PROJECT_DIR, result_base)
+        cls.RESULTS = '{}/{}'.format(cls.PROJECT_DIR, result_base)
 
     @classmethod
     def set_path_of_analyse(cls, analyse_base):
-        cls.ANALYSE = '{}/{}'.format(PROJECT_DIR, analyse_base)
+        cls.ANALYSE = '{}/{}'.format(cls.PROJECT_DIR, analyse_base)
