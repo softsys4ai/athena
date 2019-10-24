@@ -333,7 +333,7 @@ class ATTACK(object):
     @classmethod
     def get_supported_attacks(cls):
         return [cls.FGSM, cls.BIM, cls.DEEPFOOL, cls.JSMA, cls.CW,
-                cls.ONE_PIXEL, cls.PGD, cls.BLACKBOX]
+                cls.ONE_PIXEL, cls.PGD, cls.MIM, cls.BLACKBOX]
 
     @classmethod
     def get_AETypes(cls):
@@ -343,6 +343,7 @@ class ATTACK(object):
         AETypes.extend(cls.get_bim_AETypes())
         AETypes.extend(cls.get_pgd_AETypes())
         AETypes.extend(cls.get_df_AETypes())
+        AETypes.extend(cls.get_mim_AETypes())
 
         return AETypes
 
@@ -488,6 +489,29 @@ class ATTACK(object):
     def get_onepixel_AETypes(cls):
         attack = ATTACK.ONE_PIXEL
         return ['{}_pxCount1_maxIter50_popsize30'.format(attack)]
+
+    # --------------------------
+    # MIM Parameters
+    # --------------------------
+    @classmethod
+    def get_mim_eps(cls):
+        return [0.3]
+
+    @classmethod
+    def get_mim_epIter(cls):
+        return [0.06]
+
+    @classmethod
+    def get_mim_nbIter(cls):
+        return [10]
+
+    @classmethod
+    def get_mim_decayFactor(cls):
+        return [1.0]
+
+    @classmethod
+    def get_mim_AETypes(cls):
+        return ['mim_eps30_epsIter06_nbIter10_decayFactor100']
 
 class MODEL(object):
     """

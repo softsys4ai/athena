@@ -21,6 +21,7 @@ from cleverhans.attacks import CarliniWagnerL2
 from cleverhans.attacks import DeepFool
 from cleverhans.attacks import BasicIterativeMethod
 from cleverhans.attacks import ProjectedGradientDescent
+from cleverhans.attacks import MomentumIterativeMethod
 from cleverhans.evaluation import batch_eval
 from cleverhans.utils_keras import KerasModelWrapper
 
@@ -160,6 +161,13 @@ def generate(model_name, X, Y, attack_method, attack_params):
         
         """
         attacker = ProjectedGradientDescent(wrap_model)
+    elif attack_method == ATTACK.MIM:
+        """
+        The Momentum Iterative Method
+        by Yinpeng Dong, Fangzhou Liao, Tianyu Pang, Hang Su, Jun Zhu, Xiaolin Hu, Jianguo Li, 2018
+        link: https://arxiv.org/abs/1710.06081
+        """
+        attacker = MomentumIterativeMethod(wrap_model, back='tf', sess=sess)
     else:
         raise ValueError('{} attack is not supported.'.format(attack_method.upper()))
 
