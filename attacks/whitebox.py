@@ -167,7 +167,7 @@ def generate(model_name, X, Y, attack_method, attack_params):
         by Yinpeng Dong, Fangzhou Liao, Tianyu Pang, Hang Su, Jun Zhu, Xiaolin Hu, Jianguo Li, 2018
         link: https://arxiv.org/abs/1710.06081
         """
-        attacker = MomentumIterativeMethod(wrap_model, back='tf', sess=sess)
+        attacker = MomentumIterativeMethod(wrap_model, sess=sess)
     else:
         raise ValueError('{} attack is not supported.'.format(attack_method.upper()))
 
@@ -200,7 +200,7 @@ def generate(model_name, X, Y, attack_method, attack_params):
                             **compile_params)
 
     # define the graph
-    adv_x = attacker.generate(model.input, **attack_params)
+    adv_x = attacker.generate(model, **attack_params)
     # consider the attack to be constant
     adv_x = tf.stop_gradient(adv_x)
 

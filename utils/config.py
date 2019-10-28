@@ -498,10 +498,6 @@ class ATTACK(object):
         return [0.3]
 
     @classmethod
-    def get_mim_epIter(cls):
-        return [0.06]
-
-    @classmethod
     def get_mim_nbIter(cls):
         return [10]
 
@@ -511,7 +507,7 @@ class ATTACK(object):
 
     @classmethod
     def get_mim_AETypes(cls):
-        return ['mim_eps30_epsIter06_nbIter10_decayFactor100']
+        return ['mim_eps30_nbIter10_decayFactor100']
 
 class MODEL(object):
     """
