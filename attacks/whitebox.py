@@ -17,14 +17,16 @@ from utils.config import *
 
 from cleverhans.attacks import FastGradientMethod
 from cleverhans.attacks import SaliencyMapMethod
-from cleverhans.attacks import CarliniWagnerL2
+# from cleverhans.attacks import CarliniWagnerL2
 from cleverhans.attacks import DeepFool
 from cleverhans.attacks import BasicIterativeMethod
 from cleverhans.attacks import ProjectedGradientDescent
+from cleverhans.attacks import MomentumIterativeMethod
 from cleverhans.evaluation import batch_eval
 from cleverhans.utils_keras import KerasModelWrapper
 
-# import attacks.cw_linf as cw_linf
+from attacks.carlini_wagner_l2 import CarliniWagnerL2
+from attacks.carlini_wagner_li import CarliniWagnerLinf
 
 # FLAGS = flags.FLAGS
 
@@ -43,6 +45,7 @@ def generate(model_name, X, Y, attack_method, attack_params):
     """
     label_smoothing_rate = 0.1
 
+    model_name = model_name.split('.')[0]
     prefix, dataset, architect, trans_type = model_name.split('-')
 
     # flag - whether to train a clean model
@@ -118,12 +121,12 @@ def generate(model_name, X, Y, attack_method, attack_params):
         if ord == 2:
             # cleverhans supports only l2 norm so far.
             attacker = CarliniWagnerL2(wrap_model, sess=sess)
+
         elif ord == 0:
             # TODO
             pass
         elif ord == np.inf:
-            # TODO
-            pass
+            attacker = CarliniWagnerLinf(wrap_model, sess=sess)
         else:
             raise ValueError('CW supports only l0, l2, and l-inf norms.')
 
@@ -156,10 +159,17 @@ def generate(model_name, X, Y, attack_method, attack_params):
         attacker = BasicIterativeMethod(wrap_model, back='tf', sess=sess)
     elif attack_method == ATTACK.PGD:
         """
-        The Projected Gradient Descent approch.
+        The Projected Gradient Descent approach.
         
         """
         attacker = ProjectedGradientDescent(wrap_model)
+    elif attack_method == ATTACK.MIM:
+        """
+        The Momentum Iterative Method
+        by Yinpeng Dong, Fangzhou Liao, Tianyu Pang, Hang Su, Jun Zhu, Xiaolin Hu, Jianguo Li, 2018
+        link: https://arxiv.org/abs/1710.06081
+        """
+        attacker = MomentumIterativeMethod(wrap_model, sess=sess)
     else:
         raise ValueError('{} attack is not supported.'.format(attack_method.upper()))
 
@@ -252,8 +262,6 @@ def generate(model_name, X, Y, attack_method, attack_params):
 """
 Define custom loss functions
 """
-
-
 def get_adversarial_metric(model, attacker, attack_params):
     print('INFO: create metrics for adversary generation.')
 
