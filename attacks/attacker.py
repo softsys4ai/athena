@@ -159,8 +159,27 @@ def get_adversarial_examples(model_name, attack_method, X, Y, **kwargs):
         logger.info('Time cost: {}'.format(duration))
 
     elif (attack_method == ATTACK.MIM):
-        # TODO: implement mim
-        pass
+        eps = kwargs.get('eps', 0.3)
+        eps_iter = kwargs.get('eps_iter', 0.06)
+        nb_iter = kwargs.get('nb_iter', 10)
+        decay_factor = kwargs.get('decay_factor', 1.0)
+        y_target = kwargs.get('y_target', None)
+
+        attack_params = {
+            'eps': eps,
+            'eps_iter': eps_iter,
+            'nb_iter': nb_iter,
+            'ord': np.inf,
+            'decay_factor': decay_factor,
+            'y_target': y_target,
+            'clip_min': 0.,
+            'clip_max':1.
+        }
+
+        start_time = time.time()
+        X_adv, Y = whitebox.generate(model_name, X, Y, attack_method, attack_params)
+        duration = time.time() - start_time
+        logger.info('Time cost: {}'.format(duration))
 
     print('*** SHAPE: {}'.format(np.asarray(X_adv).shape))
     return X_adv, Y
