@@ -402,11 +402,23 @@ class ATTACK(object):
         # return [10]
 
     @classmethod
+    def get_df_norm(cls):
+        return [2, np.inf]
+
+    @classmethod
+    def get_df_overshoots(cls, order):
+        if order == 2:
+            # return [5.0, 3.0, 1.5, 1.2, 0.9]
+            return [5.0, 4.5, 4.0, 3.5, 3.0, 2.5, 2.0, 1.5, 1.2]
+        elif order == np.inf:
+            return [0.2, 0.5, 0.9]
+
+    @classmethod
     def get_df_AETypes(cls):
         if DATA.CUR_DATASET_NAME == DATA.cifar_10:
             return ["deepfool_maxIter100", "deepfool_maxIter10000"]
         elif DATA.CUR_DATASET_NAME == DATA.mnist:
-            return ['deepfool_maxIter100', 'deepfool_maxIter10000']
+            return ['deepfool_l2_overshoot9', 'deepfool_l2_overshoot15', 'deepfool_l2_overshoot30']
 
     # ----------------------------
     # JSMA parameters
@@ -438,7 +450,8 @@ class ATTACK(object):
     # ----------------------------
     @classmethod
     def get_cw_order(cls):
-        return [0, 2, np.inf] # full set
+        # return [0, 2, np.inf] # full set
+        return [2]
 
     @classmethod
     def get_cw_maxIter(cls):
@@ -468,25 +481,25 @@ class ATTACK(object):
                     'pgd_eps750_nbIter100_epsIter10']
 
     # --------------------------
-    # One-Pixel
+    # One-Pixel Parameters
     # --------------------------
     @classmethod
-    def get_onepixel_pxCount(cls):
+    def get_op_pxCnt(cls):
         # return [1, 3, 5, 10, 15]
-        return [1]
+        return [30]
 
     @classmethod
-    def get_onepixel_maxIter(cls):
+    def get_op_maxIter(cls):
         # return [50, 100, 200]
-        return [50]
+        return [30]
 
     @classmethod
-    def get_onepixel_popsize(cls):
+    def get_op_popsize(cls):
         # return [30, 50, 100]
         return [30]
 
     @classmethod
-    def get_onepixel_AETypes(cls):
+    def get_op_AETypes(cls):
         attack = ATTACK.ONE_PIXEL
         return ['{}_pxCount1_maxIter50_popsize30'.format(attack)]
 

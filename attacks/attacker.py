@@ -68,12 +68,10 @@ def get_adversarial_examples(model_name, attack_method, X, Y, **kwargs):
         print('Time cost: {}'.format(duration))
     elif (attack_method == ATTACK.DEEPFOOL):
         # Images for inception classifier are normalized to be in [0, 255] interval.
-        max_iterations = kwargs.get('max_iterations', 1)
+        # max_iterations = kwargs.get('max_iterations', 100)
+        max_iterations = 100
         ord = kwargs.get('ord', 2)
-
-        overshoot = 0.9
-        if (dataset == DATA.cifar_10):
-            overshoot = 10.
+        overshoot = kwargs.get('overshoot', 1.0)
 
         attack_params = {
             'ord': ord,
@@ -144,11 +142,16 @@ def get_adversarial_examples(model_name, attack_method, X, Y, **kwargs):
 
     elif (attack_method == ATTACK.ONE_PIXEL):
         # one-pixel was implemented separately.
+        targeted = kwargs.get('targeted', False)
+        pixel_counts = kwargs.get('pixel_counts', 3)
+        max_iter = kwargs.get('max_iter', 10)
+        pop_size = kwargs.get('pop_size', 10)
+
         attack_params = {
-            'targeted': False,
-            'pixel_count': 15,
-            'max_iter': 50,
-            'pop_size': 10,
+            'targeted': targeted,
+            'pixel_counts': pixel_counts,
+            'max_iter': max_iter,
+            'pop_size': pop_size,
             'clip_min': 0.,
             'clip_max': 1.,
         }
