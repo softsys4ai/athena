@@ -1,12 +1,12 @@
 # Adversarial Transformers
 
 ## Table of Contents
-1. **Dependencies**
-2. **Transformation and Defense**
-3. **Project Structure**
-4. **Getting Started**
-5. **How to Contribute**
-6. **References**
+1. [**Dependencies**](#1-dependencies)
+2. [**Attacks and Transformations**](#2-attacks-and-transformations)
+3. [**Project Structure**](#3-project-structure)
+4. [**Getting Started**](#4-getting-started)
+5. [**How to Contribute**](#5-how-to-contribute)
+6. [**References**](#6-references)
 
 ## 1. Dependencies
 ### Software Requirements
