@@ -24,7 +24,7 @@ class OnePixel(object):
         self.Y = Y
 
         self.targeted = kwargs.get('targeted', False)
-        self.pixel_count = kwargs.get('pixel_count', 1)
+        self.pixel_counts = kwargs.get('pixel_counts', 1)
         self.max_iter = kwargs.get('max_iter', 30)
         self.pop_size = kwargs.get('pop_size', 30)
         self.clip_min = kwargs.get('clip_min', 0.)
@@ -32,48 +32,72 @@ class OnePixel(object):
 
         # Rescale value of pixels to [0, 255]
         self.X *= (255.0 / self.X.max())
+
         self.nb_samples, self.img_rows, self.img_cols, self.nb_channels = self.X.shape
         self.True_Labels = np.array(
             [np.where (y == 1)[0][0] for y in self.Y]
         )
 
-    def perturb_image(self, noises, x):
-        if noises.ndim < 2:
-            noises = np.array([noises])
+        if MODE.DEBUG:
+            self.summary()
 
-        tile = [len(noises)] + [1] * (noises.ndim + 1)
-        X_adv = np.tile(x, tile)
 
-        noises = noises.astype(int)
+    def summary(self):
+        print('--------------------------------')
+        print('        Summary')
+        print('--------------------------------')
+        print('target model name:', self.model.name)
+        print('targeted attack:', self.targeted)
+        print('pixel counts:', self.pixel_counts)
+        print('max iteration:', self.max_iter)
+        print('pop size:', self.pop_size)
 
-        for pixel, x_adv in zip(noises, X_adv):
-            new_pixels = np.split(pixel, len(pixel) // len(x_adv.shape))
-            for pixel in new_pixels:
+
+    def perturb_image(self, xs, img):
+        if xs.ndim < 2:
+            xs = np.array([xs])
+
+        tile = [len(xs)] + [1] * (xs.ndim + 1)
+        imgs = np.tile(img, tile)
+
+        xs = xs.astype(int)
+
+        for x, img in zip(xs, imgs):
+            pixels = np.split(x, len(x) // len(img.shape))
+            # pixels = np.split(x, len(x) // 5)
+
+            for pixel in pixels:
                 # At each x_adv's (x_pos, y_pos), update its rgb value
                 x_pos, y_pos, *rgb = pixel
-                x_adv[x_pos, y_pos] = rgb
+                img[x_pos, y_pos] = rgb
 
-        # print('perturb_image, x_adv.shape:', X_adv.shape)
-        return X_adv
+        return imgs
 
-    def predict_class(self, noises, x, target_class, minimize=True):
-        x_adv = self.perturb_image(noises, x)
-        pred_probs = self.model.predict(x_adv)[:, target_class]
+    def predict_class(self, xs, img, target_class, minimize=True):
+        imgs_perturbed = self.perturb_image(xs, img)
+        x_perturbed = imgs_perturbed / 255.
+        pred_probs = self.model.predict(x_perturbed)[:, target_class]
 
         return pred_probs if minimize else 1 - pred_probs
 
-    def attack_success(self, noises, x, target_label, targeted_attack=False):
-        x_adv = self.perturb_image(noises, x)
-        pred_probs = self.model.predict(x_adv)[0]
+    def attack_success(self, x, img, target_label, targeted_attack=False):
+        img_perturbed = self.perturb_image(x, img)
+        x_perturbed = img_perturbed / 255.
+        pred_probs = self.model.predict(x_perturbed)[0]
         pred_label = np.argmax(pred_probs)
 
-        if ((targeted_attack and pred_label == target_label) or
-            (not targeted_attack and pred_label != target_label)):
-            return True
-        else:
-            return False
+        if targeted_attack:
+            if MODE.DEBUG:
+                print('for targeted attack, we expect pred_label == target_label ({})'.format(pred_label == target_label))
+            return (pred_label == target_label)
+        else: # untargeted attack
+            if MODE.DEBUG:
+                print('for untargeted attack, we expect pred_label({}) != target_label({}) ({})'.format(pred_label,
+                                                                                             target_label,
+                                                                                             pred_label != target_label))
+            return (pred_label != target_label)
 
-    def attack(self, img, target_label=None):
+    def attack(self, img, true_label, target_label=None):
 
         if not self.targeted and target_label is None:
             target_label = np.argmax(self.model.predict(img)[0])
@@ -81,11 +105,14 @@ class OnePixel(object):
         bounds = [(0, self.img_rows), (0, self.img_cols)]
         for i in range(self.nb_channels):
             bounds.append((0, 256))
-        bounds *= self.pixel_count
+        bounds *= self.pixel_counts
+
+        if MODE.DEBUG:
+            print('bounds: len/shape -- {}/{}\n{}'.format(len(bounds), np.asarray(bounds).shape, bounds))
 
         popmul = max(1, self.pop_size // len(bounds))
 
-        prediction_func = lambda X: self.predict_class(X, img, target_label, (not self.targeted))
+        prediction_func = lambda xs: self.predict_class(xs, img, target_label, (not self.targeted))
         callback_func = lambda x, convergence: self.attack_success(x, img, target_label, self.targeted)
 
         print('Differential Evolution')
@@ -94,11 +121,13 @@ class OnePixel(object):
             recombination=1, atol=-1, callback=callback_func, polish=False
         )
 
+        if MODE.DEBUG:
+            print('perturbations:', perturbations)
         x_adv = self.perturb_image(perturbations.x, img)
 
         # img = img.reshape(self.img_rows, self.img_cols, self.nb_channels)
         # x_adv = x_adv.reshape(self.img_rows, self.img_cols, self.nb_channels)
-
+        # scale back to [0., 1.] as demand
         x_adv /= 255.
         if self.clip_min is not None and self.clip_max is not None:
             x_adv = np.clip(x_adv, self.clip_min, self.clip_max)
@@ -107,15 +136,12 @@ class OnePixel(object):
         prior_label = np.argmax(prior_probs)
         pred_probs = self.model.predict(x_adv)[0]
         pred_label = np.argmax(pred_probs)
-        success = pred_label != prior_label
-        confidence_diff = prior_probs[prior_label] - pred_probs[pred_label]
+        success = (pred_label != true_label)
+        confidence_diff = prior_probs[true_label] - pred_probs[true_label]
 
-        print('x_adv shape:', x_adv.shape)
-        print('{}: ({}, {}), ({}, {}), {}'.format(success, prior_probs, prior_label,
-                                                  pred_probs, pred_label, confidence_diff))
-
-        return [img[0], x_adv[0], perturbations.x, prior_probs, prior_label,
-                pred_probs, pred_label, confidence_diff, success]
+        # return [img[0], x_adv[0], perturbations.x, prior_probs, prior_label,
+        #         pred_probs, pred_label, confidence_diff, success]
+        return [img[0], x_adv[0], perturbations, prior_label, pred_label, success]
 
     def attack_all(self):
         X_adv = []
@@ -123,8 +149,11 @@ class OnePixel(object):
         log_batch = 10
         log_iter = self.nb_samples / log_batch
 
-        for i in range(self.nb_samples):
-            x = self.X[i:i+1]
+        for i, img in enumerate(self.X):
+        # for i in range(self.nb_samples):
+        #     x = self.X[i:i+1]
+            img = np.expand_dims(img, axis=0)
+            y_true = self.True_Labels[i]
 
             if i % log_iter == 0:
                 print('Perturbing {}-th input...'.format(i))
@@ -137,15 +166,17 @@ class OnePixel(object):
                 raise NotImplementedError('targeted attack is not supported yet')
 
             for target_label in target_labels:
-                x_orig, x_adv, perturbation, _, prior_label, _, pred_label, _, _ = self.attack(x, target_label)
+                # print('y_true/target: {}/{}'.format(y_true, target_label))
+                # x_orig, x_adv, perturbation, _, prior_label, _, pred_label, _, _ = self.attack(img, true_label=y_true, target_label=target_label)
+                x_orig, x_adv, perturbations, prior_label, pred_label, _ = self.attack(img, true_label=y_true, target_label=target_label)
 
-                if i % 2 == 0:
-                    plot_image(x_adv, title='{} -> {}'.format(prior_label, pred_label))
-                    plot_image((x_orig - x_adv), title='perturbation {}'.format(i))
+                if MODE.DEBUG:
+                    print('true/legitimate/adv: {}/{}/{}'.format(y_true, prior_label, pred_label))
+                    # if i % 2 == 0:
+                    #     plot_image(x_adv, title='{} -> {}'.format(prior_label, pred_label))
+                    #     plot_image((x_orig - x_adv), title='perturbation {}'.format(i))
 
                 X_adv.append(x_adv)
-
-        # X_adv = self.attack(self.X, None)
 
         return X_adv, self.Y
 

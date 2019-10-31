@@ -99,6 +99,8 @@ project<br>
   |<br>
   |-- scripts (scripts for experiments)<br>
   |<br>
+  |-- test (``unit`` test scripts for this project)<br>
+  |<br>
   |-- utils (utils for all)<br>
   |<br>
   |-- visualization (visualization representation approaches)<br>
