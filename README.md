@@ -6,7 +6,7 @@
 3. [**Project Structure**](#3-project-structure)
 4. [**Getting Started**](#4-getting-started)
 5. [**How to Contribute**](#5-how-to-contribute)
-6. [**References**](#6-references)
+6. [**Citation and References**](#6-citation-and-references)
 
 ## 1. Dependencies
 ### Software Requirements
@@ -58,21 +58,21 @@ MIM | n/a
 ### Transformations
 **Transform** | **Description**
 --- | ---
-Rotate | n/a
-Shift | n/a
-Flip | n/a
-Affine Transform | n/a
-Morph Transform | n/a
-Augment | n/a
-Cartoonify | n/a
-Quantize | n/a
-Distort | n/a
-Filter | n/a
-Add noise | n/a
-Compress | n/a
-De-noising | n/a
-Geometric transformations | n/a
-Segmentations | n/a
+Rotate | Rotation of images by 90, 180, 270 degrees
+Shift | Shift of images left, right, up, down, top left, top right, bottom left, bottom right
+Flip | Flip of images horizontally, vertically, and both
+Affine Transform | Vertical compression, vertical stretch, horizontal compress, vertical stretch, both compress, both stretch
+Morph Transform | erosion, dilation, opening, closing, gradient
+Augment | samplewise standard norm and featurewise standard norm
+Cartoonify | Mean type 1, mean type 2, mean type 3, mean type 4, gaussian type 1, gaussian type 2, gaussian type 3, gaussian type 4
+Quantization | 2 clusters, 4 clusters, 8 clusters, 16 clusters, 32 clusters, 64 clusters
+Distortion | x-axis and y-axis
+Filter | entropy, gaussian, maximum, median, minimum prewitt, rank, roberts, scharr, sobel
+Noising | gaussian, localvar, pepper, poison, salt, salt & pepper
+Compression | jpeg quality 10, 30, 50, 80 and png compression 1, png compression 5, png compression 8
+De-noising | Non-local means fast, non-local means, Bregmann total variation denoising, 
+Geometric | iradon, iradon sart, swirl
+Segmentation | gradient
 
 ### Defenses
 
@@ -109,17 +109,93 @@ project<br>
   |<br>
   |<br>
 
-TODO
+attacker.py
+whitebox.py       --> return the advserial examples with true labels --> all have generate() method
+one_pixel
+MIM 
+
 
 ## 4. Getting Started
 
-1. Follow the "Manual Installation" instructions in the "Dependencies" section to install all software requirements.
-2. TODO
+### Installation
+1. Navigate to the ["Manual Installation"](#manual-installation) instructions sub-section to install all software requirements.
+2. Use the following tutorials to get up and running
+
+### Important Functions
+
+
+### How to train a weak defense?
+
+### How to train a model of weak defenses?
+each weak defense is a model trained on a transformation (train_new_target_models.py)
+each of these models is saved to a specified training directory ()
+train.py is then used to "train" the ensemble, aka determine the relationship of weak defenses for best defense
+the ensemble can be then be used as a while with ()
+
+### How to evaluate ensemble of weak defenses?
+  util.py + CL parameters
+
+### Script: train.py
+    Description:
+    hello world
+    
+    Command Line Arguments
+    ----------------------
+    
+    
+    Methods
+    -------
+    helloworld(sound=None)
+        Prints the animals name and what sound it makes
+    
+### Script: train_new_target_models.py
+    Description: 
+    hello world
+    
+    Command Line Arguments
+    ----------------------
+    inputImagesFP : str
+        file path of input images to train the weak defense
+    experimentRootDir : str
+        file path of the directory to save experiment
+    datasetName : str
+        name of the dataset to be used for training (mnist, fmnist, cifar10, cifar100)
+    numOfClasses : int
+        number of output classes of the provided dataset
+    
+    Methods
+    -------
+    
+### Script: train_ensemble_model_on_all_types_of_AEs.py
+    Description: 
+    hello world
+    
+    Command Line Arguments
+    ----------------------
+    
+    
+    Methods
+    -------
+    
 
 ## 5. How to Contribute
 TODO
 
-## 6. References
+
+
+## 6. Citation and References
+
+### Cite this work
+```
+@article{ying2019,
+  title={Ensembles of Many Weak Defenses are Strong: Defending Deep Neural Networks Against Adverserial Attacks},
+  author={},
+  journal={},
+  year={2019}
+}
+```
+
+### References
 [1] MariuszBojarski,DavideDelTesta,DanielDworakowski,Bern- hard Firner, Beat Flepp, Prasoon Goyal, Lawrence D Jackel, Mathew Monfort, Urs Muller, Jiakai Zhang, et al. End to end learning for self-driving cars. arXiv preprint arXiv:1604.07316, 2016. <br><br>
 [2] N. Carlini and D. Wagner. Towards evaluating the robustness of neural networks. In 2017 IEEE Symposium on Security and Privacy (SP), pages 39–57, May 2017. <br><br>
 [3] Nicholas Carlini and David Wagner. Magnet and” efficient de- fenses against adversarial attacks” are not robust to adversarial examples. arXiv preprint arXiv:1711.08478, 2017. <br><br>
