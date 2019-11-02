@@ -88,18 +88,54 @@ def get_adversarial_examples(model_name, attack_method, X, Y, **kwargs):
         duration = time.time() - start_time
         print('Time cost: {}'.format(duration))
 
-    elif (attack_method == ATTACK.CW):
+    elif (attack_method == ATTACK.CW_L2):
+        binary_search_steps = kwargs.get('binary_search_steps', 10)
+        batch_size = kwargs.get('cw_batch_size', 2)
+        initial_const = kwargs.get('initial_const', 10)
+        learning_rate = kwargs.get('learning_rate', 0.1)
         max_iterations = kwargs.get('max_iterations', 100)
         ord = kwargs.get('ord', 2)
 
         attack_params = {
             'ord': ord,
+            'batch_size': batch_size,
+            'binary_search_steps': binary_search_steps,
+            'initial_const': initial_const,
+            'learning_rate': learning_rate,
             'max_iterations': max_iterations,
             'clip_min': 0.,
             'clip_max': 1.
         }
 
         logger.info('{}: (ord={}, max_iterations={})'.format(attack_method.upper(), ord, max_iterations))
+
+        start_time = time.time()
+        X_adv, Y = whitebox.generate(model_name, X, Y, attack_method, attack_params)
+        duration = time.time() - start_time
+        logger.info('Time cost: {}'.format(duration))
+
+    elif (attack_method == ATTACK.CW_Linf):
+        decrease_factor = kwargs.get('decrease_factor', 0.9)
+        initial_const = kwargs.get('initial_const', 1e-5)
+        learning_rate = kwargs.get('learning_rate', 0.1)
+        largest_const = kwargs.get('largest_const', 2e+1)
+        max_iterations = kwargs.get('max_iterations', 1000)
+        reduce_const = False
+        const_factor = 3.0
+
+        attack_params = {
+            # 'descrease_factor': decrease_factor,
+            'initial_const': initial_const,
+            'learning_rate': learning_rate,
+            'max_iterations': max_iterations,
+            'largest_const': largest_const,
+            'reduce_const': reduce_const,
+            'const_factor': const_factor,
+            'clip_min': 0.,
+            'clip_max': 1.
+        }
+
+        logger.info('{}: (ord={}, max_iterations={})'.format(attack_method.upper(), np.inf, max_iterations))
 
         start_time = time.time()
         X_adv, Y = whitebox.generate(model_name, X, Y, attack_method, attack_params)
