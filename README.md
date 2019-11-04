@@ -44,16 +44,16 @@ Overview of implemented transformations, attacks, defenses, detections, metrics,
 
 ### White box attacks
 
-**Attacks** | **Description**
+**Attacks** | **Type** | **Description**
 --- | ---
-Deep Fool | n/a
-FGSM | n/a
-BIM | n/a
-CW | n/a
-JSMA | n/a
-PGD | n/a
-One Pixel | n/a
-MIM | n/a
+Deep Fool | Simple algorithm to efficiently fool deep neural networks. [(Moosavi-Dezfooli et al., 2015)](https://arxiv.org/abs/1511.04599)
+FGSM (Fast Gradient Signed Method) | Simple and fast method of generating adverserial examples. [(Goodfellow et al., 2014)](https://arxiv.org/abs/1412.6572)
+BIM (Basic Iterative Method) | Basic iterative black box attack method to fool deep neural networks [(Kurakin et al., 2016)](https://arxiv.org/abs/1607.02533)
+CW (Carlini and Wagner) | Attack algorithm effective against distillation as a defense. [(Carlini and Wagner, 2016)](https://arxiv.org/abs/1608.04644)
+JSMA (Jacobian-based Saliency Map Attack) | Uses an understanding of the mapping between input and output to trick deep neural nets. [(Papernot et al., 2016)](https://arxiv.org/abs/1511.07528)
+PGD (Projected Gradient Descent) | n/a [(Madry et al., 2017)](https://arxiv.org/abs/1706.06083)
+One Pixel | n/a [(Su et al., 2019)](https://arxiv.org/abs/1710.08864)
+MIM (Momentum Iterative Method) | n/a [(Dong et al., 2018)](https://arxiv.org/abs/1710.06081)
 
 ### Transformations
 **Transform** | **Description**
@@ -198,7 +198,7 @@ the ensemble can be then be used as a while with ()
 
 ## 5. How to Contribute
 
-Adding new features (attacks, defenses, transformations), improving documentation, squashing bugs, or creating tutorials are examples of helpful contributions that could be made to this project. Additionally, if you are publishing a new attack, defense, or transformation, we highly encourage you to add it to this project or bring it to our communities attention by creating an enhancement issue.</br></br>
+Adding new features (attacks, defenses, transformations), improving documentation, squashing bugs, or creating tutorials are examples of helpful contributions that could be made to this project. Additionally, if you are publishing a new attack, defense, or transformation, we highly encourage you to add it to this project or bring it to our communities attention by creating an enhancement issue.</br>
 
 Bug fixes can be initiated through GitHub pull requests. When making code contributions to the project, we ask that you write descriptive comments for all significant functions of your addition, follow the [Python PEP 8 style guidelines](https://www.python.org/dev/peps/pep-0008/), and sign all of your commits using the -s flag or by appending "Signed-off-by: <Name>,<Email>" to your commit message.</br>
 
