@@ -26,7 +26,7 @@ keras | 2.2.5
 
 #### Manual Installation
 
-Download or clone the repository:
+Clone the repository:
 ```
 git clone git@github.com:softsys4ai/adversarial_transformers.git
 ```
@@ -115,7 +115,7 @@ MIM
 
 ## 4. Getting Started
 
-### Installation
+### How do I install the project?
 1. Navigate to the ["Manual Installation"](#manual-installation) instructions sub-section to install all software requirements.
 2. Use the following tutorials to get up and running
 
@@ -136,7 +136,7 @@ MIM
     normalize(X)
         Returns one variable: X. Normalizes the four dimensional (num. data samples, width, height, depth) input dataset X in order to use it for training. Normalization scales down dataset values, while preserving relative differences, for use as input to a neural network.
 
-## Available datasets
+#### Available datasets
 **Dataset Name** | **Description**
 --- | ---
 MNIST | Grayscale 28x28 pixel handwritten digit dataset (10 classes) containing 60,000 training and 10,000 validation examples.
@@ -195,7 +195,7 @@ CIFAR-100 | RGB 32x32 pixel dataset (100 classes) containing 50,000 training and
 
     Script: adversarial_transformers/models.py
     Description:
-    To create and train a weak defense you may use this script. To properly train a weak defense, first generate adversarial examples, load them, and provide them 
+    To create and train a weak defense you may use this script. To properly train a weak defense, first generate adversarial examples, load them, and porovide them 
     
     Command Line Arguments
     ----------------------
