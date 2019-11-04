@@ -109,26 +109,21 @@ def generate(model_name, X, Y, attack_method, attack_params):
         """
         batch_size = 64
         attacker = SaliencyMapMethod(wrap_model, sess=sess)
-    elif attack_method == ATTACK.CW:
+    elif attack_method == ATTACK.CW_L2:
         """
         Untageted attack
         """
-        y = tf.placeholder(tf.float32, shape=(None, nb_classes))
+        # y = tf.placeholder(tf.float32, shape=(None, nb_classes))
         ord = attack_params['ord']
         attack_params.pop('ord')
-        attack_params['y'] = y
 
-        if ord == 2:
-            # cleverhans supports only l2 norm so far.
-            attacker = CarliniWagnerL2(wrap_model, sess=sess)
+        attacker = CarliniWagnerL2(wrap_model, sess=sess)
 
-        elif ord == 0:
-            # TODO
-            pass
-        elif ord == np.inf:
-            attacker = CarliniWagnerLinf(wrap_model, sess=sess)
-        else:
-            raise ValueError('CW supports only l0, l2, and l-inf norms.')
+    elif attack_method == ATTACK.CW_Linf:
+        """
+        Untageted attack
+        """
+        attacker = CarliniWagnerLinf(wrap_model, sess=sess)
 
     elif attack_method == ATTACK.DEEPFOOL:
         """
@@ -268,6 +263,7 @@ def get_adversarial_metric(model, attacker, attack_params):
     def adversarial_accuracy(y, _):
         # get the adversarial examples
         x_adv = attacker.generate(model.input, **attack_params)
+        # x_adv = attacker.generate_np(model.input, **attack_params)
         # consider the attack to be constant
         x_adv = tf.stop_gradient(x_adv)
 
@@ -286,6 +282,7 @@ def get_adversarial_loss(model, attacker, attack_params):
 
         # get the adversarial examples
         x_adv = attacker.generate(model.input, **attack_params)
+        # x_adv = attacker.generate_np(model.input, **attack_params)
         # consider the attack to be constant
         x_adv = tf.stop_gradient(x_adv)
 

@@ -323,17 +323,19 @@ class ATTACK(object):
     FGSM = 'fgsm'
     BIM = 'bim'
     DEEPFOOL = 'deepfool'
-    CW = 'cw'
+    CW_L0 = 'cw_l0'
+    CW_L2 = 'cw_l2'
+    CW_Linf = 'cw_linf'
     JSMA = 'jsma'
     ONE_PIXEL = 'onepixel'
     MIM = 'mim'
     PGD = 'pgd'
-    BLACKBOX = 'blackbox'
 
     @classmethod
     def get_supported_attacks(cls):
-        return [cls.FGSM, cls.BIM, cls.DEEPFOOL, cls.JSMA, cls.CW,
-                cls.ONE_PIXEL, cls.PGD, cls.MIM, cls.BLACKBOX]
+        return [cls.FGSM, cls.BIM, cls.DEEPFOOL, cls.JSMA,
+                cls.CW_L0, cls.CW_L2, cls.CW_Linf,
+                cls.ONE_PIXEL, cls.PGD, cls.MIM]
 
     @classmethod
     def get_AETypes(cls):
@@ -344,6 +346,9 @@ class ATTACK(object):
         AETypes.extend(cls.get_pgd_AETypes())
         AETypes.extend(cls.get_df_AETypes())
         AETypes.extend(cls.get_mim_AETypes())
+        AETypes.extend(cls.get_cwl0_AETypes())
+        AETypes.extend(cls.get_cwl2_AETypes())
+        AETypes.extend(cls.get_cwlinf_AETypes())
 
         return AETypes
 
@@ -446,25 +451,37 @@ class ATTACK(object):
             return ['jsma_theta30_gamma50', 'jsma_theta50_gamma70']
 
     # ----------------------------
-    # CW parameters
+    # CW (L0/L2/Linf) parameters
     # ----------------------------
-    @classmethod
-    def get_cw_order(cls):
-        # return [0, 2, np.inf] # full set
-        return [2]
-
     @classmethod
     def get_cw_maxIter(cls):
         # return [1, 10, 100, 1000, 10000, 100000] # full set
         return [100]
 
     @classmethod
-    def get_cw_AETypes(cls):
+    def get_cw_lr(cls):
+        return [0.001]
+
+    @classmethod
+    def get_cwl0_AETypes(cls):
         if DATA.CUR_DATASET_NAME == DATA.cifar_10:
             return []
         elif DATA.CUR_DATASET_NAME == DATA.mnist:
             return []
 
+    @classmethod
+    def get_cwl2_AETypes(cls):
+        if DATA.CUR_DATASET_NAME == DATA.cifar_10:
+            return []
+        elif DATA.CUR_DATASET_NAME == DATA.mnist:
+            return []
+
+    @classmethod
+    def get_cwlinf_AETypes(cls):
+        if DATA.CUR_DATASET_NAME == DATA.cifar_10:
+            return []
+        elif DATA.CUR_DATASET_NAME == DATA.mnist:
+            return []
     # ----------------------------
     # PGD parameters
     # ----------------------------
@@ -508,11 +525,11 @@ class ATTACK(object):
     # --------------------------
     @classmethod
     def get_mim_eps(cls):
-        return [0.3]
+        return [0.2, 0.3, 0.5]
 
     @classmethod
     def get_mim_nbIter(cls):
-        return [10]
+        return [1000]
 
     @classmethod
     def get_mim_decayFactor(cls):
@@ -520,7 +537,7 @@ class ATTACK(object):
 
     @classmethod
     def get_mim_AETypes(cls):
-        return ['mim_eps30_nbIter10_decayFactor100']
+        return ['mim_eps30_nbIter10_decay100']
 
 class MODEL(object):
     """
