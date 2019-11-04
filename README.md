@@ -42,11 +42,11 @@ TODO understand maximum memory usage of the program
 ## 2. Attacks and Transformations
 Overview of implemented transformations, attacks, defenses, detections, metrics, certifications, and verifications
 
-### White box attacks
+### Attacks
 
 **Attacks** | **Type** | **Description**
---- | ---
-Deep Fool | | Simple algorithm to efficiently fool deep neural networks. [(Moosavi-Dezfooli et al., 2015)](https://arxiv.org/abs/1511.04599)
+--- | --- | ---
+Deep Fool | whitebox | Simple algorithm to efficiently fool deep neural networks. [(Moosavi-Dezfooli et al., 2015)](https://arxiv.org/abs/1511.04599)
 FGSM (Fast Gradient Signed Method) | whitebox | Simple and fast method of generating adverserial examples. [(Goodfellow et al., 2014)](https://arxiv.org/abs/1412.6572)
 BIM (Basic Iterative Method) | blackbox | Basic iterative black box attack method to fool deep neural networks [(Kurakin et al., 2016)](https://arxiv.org/abs/1607.02533)
 CW (Carlini and Wagner) | whitebox | Attack algorithm effective against distillation as a defense. [(Carlini and Wagner, 2016)](https://arxiv.org/abs/1608.04644)
@@ -75,7 +75,6 @@ Geometric | iradon, iradon sart, swirl
 Segmentation | gradient
 
 ### Defenses
-
 **Defenses** | **Description**
 --- | ---
 EDMV-probs (Efficient Two-Step Defense for Deep Neural Networks) | Cheap defense strategy to combat adversarial examples that has a robustness comparable to using expensive, multi-step adversarial examples. [(Chang et al., 2018)](https://arxiv.org/abs/1810.03739)
