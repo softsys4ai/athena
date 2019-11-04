@@ -119,31 +119,6 @@ MIM
 1. Navigate to the ["Manual Installation"](#manual-installation) instructions sub-section to install all software requirements.
 2. Use the following tutorials to get up and running
 
-### How do I load a dataset?
-#### Available datasets
-**Dataset Name** | **Description**
---- | ---
-MNIST | Grayscale 28x28 pixel handwritten digit dataset (10 classes) containing 60,000 training and 10,000 validation examples.
-Fashion-MNIST | Grayscale 28x28 pixel clothing dataset (10 classes) containing 60,000 training and 10,000 validation examples. 
-CIFAR-10 | RGB 32x32 pixel dataset (10 classes) containing 50,000 training and 10,000 validation examples.
-CIFAR-100 | RGB 32x32 pixel dataset (100 classes) containing 50,000 training and 10,000 validation examples.
-
-```
-    Script: adversarial_transformers/data.py
-    Description:
-    Generally, the use of this dataset loading class should be left for usage in our scripts. However, if you desire to load a dataset for your own experimentation, you may use this class to do so.
-    
-    Command Line Arguments
-    ----------------------
-    none.
-    
-    Methods
-    -------
-    load_data(dataset)
-        Returns four variables: (X_train, Y_train), (X_test, Y_test). "X_train" and "Y_train" contain neural network inputs and outputs, respectively, for training a neural network. "X_test" and "Y_test" contain neural network inputs and outputs, respectively, for validating the accuracy of the neural network.
-    normalize(X)
-        Returns one variable: X. Normalizes the four dimensional (num. data samples, width, height, depth) input dataset X in order to use it for training. Normalization scales down dataset values, while preserving relative differences, for use as input to a neural network.
-```
 
 ### How do I configure/change project parameters?
 
@@ -178,7 +153,34 @@ CIFAR-100 | RGB 32x32 pixel dataset (100 classes) containing 50,000 training and
 ```
 
 
-### How do I craft adversarial examples?
+### How do I load a dataset?
+#### Available datasets
+**Dataset Name** | **Description**
+--- | ---
+MNIST | Grayscale 28x28 pixel handwritten digit dataset (10 classes) containing 60,000 training and 10,000 validation examples.
+Fashion-MNIST | Grayscale 28x28 pixel clothing dataset (10 classes) containing 60,000 training and 10,000 validation examples. 
+CIFAR-10 | RGB 32x32 pixel dataset (10 classes) containing 50,000 training and 10,000 validation examples.
+CIFAR-100 | RGB 32x32 pixel dataset (100 classes) containing 50,000 training and 10,000 validation examples.
+
+```
+    Script: adversarial_transformers/data.py
+    Description:
+    Generally, the use of this dataset loading class should be left for usage in our scripts. However, if you desire to load a dataset for your own experimentation, you may use this class to do so.
+    
+    Command Line Arguments
+    ----------------------
+    none.
+    
+    Methods
+    -------
+    load_data(dataset)
+        Returns four variables: (X_train, Y_train), (X_test, Y_test). "X_train" and "Y_train" contain neural network inputs and outputs, respectively, for training a neural network. "X_test" and "Y_test" contain neural network inputs and outputs, respectively, for validating the accuracy of the neural network.
+    normalize(X)
+        Returns one variable: X. Normalizes the four dimensional (num. data samples, width, height, depth) input dataset X in order to use it for training. Normalization scales down dataset values, while preserving relative differences, for use as input to a neural network.
+```
+
+
+### How do I use attack methods and craft adversarial examples?
 
 ```
     Script: adversarial_transformers/scripts/craft_adversarial_examples.py
@@ -195,12 +197,12 @@ CIFAR-100 | RGB 32x32 pixel dataset (100 classes) containing 50,000 training and
         Saves adverserial examples to the ADVERSARIAL_FILE path specified in the config.py file.
 ```
 
-### How do I create and train a weak defense?
+### How do I create and train a vanilla model on a vanilla dataset?
 
 ```
     Script: adversarial_transformers/models.py
     Description:
-    To create and train a weak defense you may use this script. To properly train a weak defense, first generate adversarial examples, create a model, and then train the model on the adversarial examples by passing them to the train function as the X parameter and providing the correct associated output label to the Y parameter.
+    To create and train a weak defense you may use this script. To properly train a weak defense, create a model and then train the model on your dataset with an applied transformation.
     
     Command Line Arguments
     ----------------------
@@ -215,7 +217,7 @@ CIFAR-100 | RGB 32x32 pixel dataset (100 classes) containing 50,000 training and
         Returns a trained version of the model provided. Training hyperparameters can be found both in this method and the config.py file if you would like to change any of them for your use case.
 
     train(model, X, Y, model_name, need_augment=False, **kwargs)
-        Returns a trained model. This method is used by the train_model() method but can be called as a standalone method if you choose to train a model on a custom dataset, for example, on a normal dataset inputs or adversarial examples.
+        Returns a trained model. This method is used by the train_model() method but can be called as a standalone method if you choose to train a model on a custom dataset.
 
     evaluate_model(model, X, Y)
         Returns the following variables: acc, ave_conf_correct, ave_conf_miss. This method consumes a model and the test dataset in order to evaluate the accuracy of the model. Accuracy is defined as the percentage of correct classifications by the provided model.
@@ -226,6 +228,53 @@ CIFAR-100 | RGB 32x32 pixel dataset (100 classes) containing 50,000 training and
     load_model(model_name, director=PATH.MODEL)
         Returns a tensorflow model. Loads and compiles a saved model from disk at the path created by concatenating the paths provided in the director and model_name parameters.
 ```
+
+### How do I create and train a weak defenses?
+
+```
+    Script: adversarial_transformers/train.py
+    Description:
+    This script trains a weak defense for each type of transformation and saves each model to the specified models directory to be used to build an ensemble.
+    
+    Command Line Arguments
+    ----------------------
+    samplesDir : str
+        File path of input images to train the weak defense
+    rootDir : str
+        File path of the directory of the project
+    modelsDir : str
+        File path of directory to store trained weak defenses
+    numOfSamples : int
+        Upper bound of the number of the dataset input indices to be used for training/validation.
+    kFold : int
+        Number of folds, used to determine the validation training set size.
+    datasetName : str
+        Name of the dataset to be used for training (mnist, fmnist, cifar10, cifar100)
+    numOfClasses
+        Number of output classes of the provided dataset
+
+    Methods
+    -------
+    usage()
+        Call this method to print instructions for how to use this script to your standard output stream.
+```
+
+### How do I construct an ensemble of weak defenses?
+
+    Now that you have trained weak defenses, you are likely wondering how to build an ensemble of these weak defenses to defend against adversarial attacks? In our project, we construct and use ensembles by loading all of the trained weak defenses from a specified models directory, performing inference on a given datapoint/dataset with each of the weak defenses, then saving all of the models output probabilities and logits to disk at a specified prediction result directory.
+
+
+### How do I evaluate the ensemble of weak defenses?
+    
+    Evaluation Strategies:
+        1. Black box
+            - Attacker has no knowledge of the internal model archictecture.
+        2. Gray box
+            - Attacker only knowledge of weak defense architectures but does not know how the ensemble combines the outputs of the weak defenses.
+        3. White box
+            - Attacker has knowledge of the entire ensemble architecture, including how the ensemble combines the outputs of the weak defenses.
+
+
 
 
 ### main idea of the work
