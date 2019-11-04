@@ -81,7 +81,6 @@ EDMV-probs (Efficient Two-Step Defense for Deep Neural Networks) | Cheap defense
 EDAP-probs (Defense Against Universal Adversarial Perturbations) | Defense strategy to effectively defend against unseen adversarial examples in the real world by introducing pre-input detection of purturbations. [Akhtar et al., 2018](https://arxiv.org/abs/1711.05929)
 EDMV-logits | The same as EDMV-probs but substituting DNN logit outputs for output probabilities.
 EDAP-logits | The same as EDAP-probs but substituting DNN logit outputs for output probabilities.
-allowing defense against adversarial attacks with a robustness level comparable to that of the adversarial training with multi-step adversarial examples.
 
 ## 3. Project Structure
 Navigation of project and component hierarchy
@@ -120,6 +119,105 @@ MIM
 1. Navigate to the ["Manual Installation"](#manual-installation) instructions sub-section to install all software requirements.
 2. Use the following tutorials to get up and running
 
+### How do I load a dataset?
+
+    Script: adversarial_transformers/data.py
+    Description:
+    Generally, the use of this dataset loading class should be left for usage in our scripts. However, if you desire to load a dataset for your own experimentation, you may use this class to do so.
+    
+    Command Line Arguments
+    ----------------------
+    none.
+    
+    Methods
+    -------
+    load_data(dataset)
+        Returns four variables: (X_train, Y_train), (X_test, Y_test). "X_train" and "Y_train" contain neural network inputs and outputs, respectively, for training a neural network. "X_test" and "Y_test" contain neural network inputs and outputs, respectively, for validating the accuracy of the neural network.
+    normalize(X)
+        Returns one variable: X. Normalizes the four dimensional (num. data samples, width, height, depth) input dataset X in order to use it for training. Normalization scales down dataset values, while preserving relative differences, for use as input to a neural network.
+
+## Available datasets
+**Dataset Name** | **Description**
+--- | ---
+MNIST | Grayscale 28x28 pixel handwritten digit dataset (10 classes) containing 60,000 training and 10,000 validation examples.
+Fashion-MNIST | Grayscale 28x28 pixel clothing dataset (10 classes) containing 60,000 training and 10,000 validation examples. 
+CIFAR-10 | RGB 32x32 pixel dataset (10 classes) containing 50,000 training and 10,000 validation examples.
+CIFAR-100 | RGB 32x32 pixel dataset (100 classes) containing 50,000 training and 10,000 validation examples.
+
+### How do I configure/change project parameters?
+
+    Script: adversarial_transformers/utils/config.py
+    Description:
+    This class contains a plethora of variables and class definitions for use across the project.
+    
+    Command Line Arguments
+    ----------------------
+    none.
+    
+    Methods
+    -------
+    class DATA(object)
+        Class to contain information about selected datasets.
+
+    class TRANSFORMATION(object)
+        Contains a dictionary of supported transformations and strings used to reference them.
+
+    class ATTACK(object)
+        Contains a dictionary of supported attacks and strings used to reference them and attack specific parameter values; 
+
+    class MODEL(object)
+        Contains a model's architecture, training/testing dataset, and training hyperparameters.
+    
+    class MODE(object)
+        Contains a "DEBUG" boolean value (default is false) to set the project to toggle the project in and out of debug mode.
+
+    class PATH(object)
+        Contains variables containing the absolute path of the project as well as the relative paths of important project resources, logging, and save locations.
+
+
+### How do I craft adversarial examples?
+
+    Script: adversarial_transformers/scripts/craft_adversarial_examples.py
+    Description:
+    To craft adversarial examples provide this script with the name of a dataset and the name of the attack method you would like to use to generate examples.
+    
+    Command Line Arguments
+    ----------------------
+    none.
+    
+    Methods
+    -------
+    craft(dataset, method)
+        Saves adverserial examples to the ADVERSARIAL_FILE path specified in the config.py file.
+
+
+### How do I create and train a weak defense?
+
+    Script: adversarial_transformers/models.py
+    Description:
+    To create and train a weak defense you may use this script. To properly train a weak defense, first generate adversarial examples, load them, and provide them 
+    
+    Command Line Arguments
+    ----------------------
+    none.
+    
+    Methods
+    -------
+    create_model(dataset, input_shape, nb_classes)
+        Returns a convolutional neural network model built with a representational capacity best suited for the specific dataset that you are using.
+
+    train_model(model, dataset, model_name, need_augment=False, **kwargs)
+        Returns a trained version of the model provided. Training hyperparameters can be found both in this method and the config.py file if you would like to change any of them for your use case.
+
+    evaluate_model(model, X, Y)
+        Returns the following variables: acc, ave_conf_correct, ave_conf_miss. This method consumes a model and the test dataset in order to evaluate the accuracy of the model. Accuracy is defined as the percentage of correct classifications by the provided model.
+
+    save_model(model, model_name, director=PATH.MODEL)
+        Serializes and saves the model to disk at the path created by concatenating the paths provided in the director and model_name parameters. 
+
+    load_model(model_name, director=PATH.MODEL)
+        Returns a tensorflow model. Loads and compiles a saved model from disk at the path created by concatenating the paths provided in the director and model_name parameters.
+    
 
 ### main idea of the work
 target model (regular model trained on the clean dataset) --> original target model
@@ -202,18 +300,6 @@ the ensemble can be then be used as a while with ()
 ### How to evaluate ensemble of weak defenses?
   util.py + CL parameters
 
-### Script: train.py
-    Description:
-    hello world
-    
-    Command Line Arguments
-    ----------------------
-    
-    
-    Methods
-    -------
-    helloworld(sound=None)
-        Prints the animals name and what sound it makes
     
 ### Script: train_new_target_models.py
     Description: 
