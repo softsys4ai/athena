@@ -124,7 +124,25 @@ MIM
 ### Important Functions
 
 
-### How to train a weak defense?
+### In what ways are models trained? What data are they trained on?
+
+
+### How are weak defenses trained?
+
+
+### How are models evaluated? How are ensembles evaluated?
+
+
+### How are the transformations called? Where are they called? How are they used?
+
+
+### How are the attack algorithms called? Where are they called? How are they used?
+
+
+### 
+
+
+
 
 ### How to train a model of weak defenses?
 each weak defense is a model trained on a transformation (train_new_target_models.py)
@@ -179,8 +197,10 @@ the ensemble can be then be used as a while with ()
     
 
 ## 5. How to Contribute
-TODO
 
+Adding new features (attacks, defenses, transformations), improving documentation, squashing bugs, or creating tutorials are examples of helpful contributions that could be made to this project. Additionally, if you are publishing a new attack, defense, or transformation, we highly encourage you to add it to this project or bring it to our communities attention by creating an enhancement issue.</br></br>
+
+Bug fixes can be initiated through GitHub pull requests. When making code contributions to the project, we ask that you write descriptive comments for all significant functions of your addition, follow the [Python PEP 8 style guidelines](https://www.python.org/dev/peps/pep-0008/), and sign all of your commits using the -s flag or by appending "Signed-off-by: <Name>,<Email>" to your commit message.</br>
 
 
 ## 6. Citation and References
