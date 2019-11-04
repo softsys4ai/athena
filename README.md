@@ -46,14 +46,14 @@ Overview of implemented transformations, attacks, defenses, detections, metrics,
 
 **Attacks** | **Type** | **Description**
 --- | ---
-Deep Fool | Simple algorithm to efficiently fool deep neural networks. [(Moosavi-Dezfooli et al., 2015)](https://arxiv.org/abs/1511.04599)
-FGSM (Fast Gradient Signed Method) | Simple and fast method of generating adverserial examples. [(Goodfellow et al., 2014)](https://arxiv.org/abs/1412.6572)
-BIM (Basic Iterative Method) | Basic iterative black box attack method to fool deep neural networks [(Kurakin et al., 2016)](https://arxiv.org/abs/1607.02533)
-CW (Carlini and Wagner) | Attack algorithm effective against distillation as a defense. [(Carlini and Wagner, 2016)](https://arxiv.org/abs/1608.04644)
-JSMA (Jacobian-based Saliency Map Attack) | Uses an understanding of the mapping between input and output to trick deep neural nets. [(Papernot et al., 2016)](https://arxiv.org/abs/1511.07528)
-PGD (Projected Gradient Descent) | n/a [(Madry et al., 2017)](https://arxiv.org/abs/1706.06083)
-One Pixel | n/a [(Su et al., 2019)](https://arxiv.org/abs/1710.08864)
-MIM (Momentum Iterative Method) | n/a [(Dong et al., 2018)](https://arxiv.org/abs/1710.06081)
+Deep Fool | | Simple algorithm to efficiently fool deep neural networks. [(Moosavi-Dezfooli et al., 2015)](https://arxiv.org/abs/1511.04599)
+FGSM (Fast Gradient Signed Method) | whitebox | Simple and fast method of generating adverserial examples. [(Goodfellow et al., 2014)](https://arxiv.org/abs/1412.6572)
+BIM (Basic Iterative Method) | blackbox | Basic iterative black box attack method to fool deep neural networks [(Kurakin et al., 2016)](https://arxiv.org/abs/1607.02533)
+CW (Carlini and Wagner) | whitebox | Attack algorithm effective against distillation as a defense. [(Carlini and Wagner, 2016)](https://arxiv.org/abs/1608.04644)
+JSMA (Jacobian-based Saliency Map Attack) | whitebox | Uses an understanding of the mapping between input and output to trick deep neural nets. [(Papernot et al., 2016)](https://arxiv.org/abs/1511.07528)
+PGD (Projected Gradient Descent) | whitebox | Generates adverserial examples through gradient ascent. [(Madry et al., 2017)](https://arxiv.org/abs/1706.06083)
+One Pixel | blackbox | Low cost generation of adverserial images, by only modifying one pixel of an image, with differential evolution. [(Su et al., 2019)](https://arxiv.org/abs/1710.08864)
+MIM (Momentum Iterative Method) | blackbox | Uses momentum to stabilize update directions for crafting advserial examples, escaping poor local maxima. [(Dong et al., 2018)](https://arxiv.org/abs/1710.06081)
 
 ### Transformations
 **Transform** | **Description**
@@ -78,11 +78,11 @@ Segmentation | gradient
 
 **Defenses** | **Description**
 --- | ---
- | n/a
- | n/a
- | n/a
- | n/a
-
+EDMV-probs (Efficient Two-Step Defense for Deep Neural Networks) | Cheap defense strategy to combat adversarial examples that has a robustness comparable to using expensive, multi-step adversarial examples. [(Chang et al., 2018)](https://arxiv.org/abs/1810.03739)
+EDAP-probs (Defense Against Universal Adversarial Perturbations) | Defense strategy to effectively defend against unseen adversarial examples in the real world by introducing pre-input detection of purturbations. [Akhtar et al., 2018](https://arxiv.org/abs/1711.05929)
+EDMV-logits | The same as EDMV-probs but substituting DNN logit outputs for output probabilities.
+EDAP-logits | The same as EDAP-probs but substituting DNN logit outputs for output probabilities.
+allowing defense against adversarial attacks with a robustness level comparable to that of the adversarial training with multi-step adversarial examples.
 
 ## 3. Project Structure
 Navigation of project and component hierarchy
@@ -121,7 +121,57 @@ MIM
 1. Navigate to the ["Manual Installation"](#manual-installation) instructions sub-section to install all software requirements.
 2. Use the following tutorials to get up and running
 
+
+### main idea of the work
+target model (regular model trained on the clean dataset) --> original target model
+offline
+    image --> transformation --> new image --> weak defense model 
+        each weak model are trained on one or a composition of transformation
+online
+    Transformation 1    Weak defense 1  -->     |
+    Transformation 2    Weak defense 2  -->     |
+    .                                           |--> Ensemble of strategies
+    .                                           |
+    .                                           |
+    Transformation N    Weak defense N  -->     |
+
 ### Important Functions
+
+
+### Main entrances
+- attacks subfolder
+- scripts --> tutorial / demo in this folder
+    - craft adversarial examples --> explains how to call attacks subfolder, how to get AE, how to call parameters, etc.
+- utils -->
+    - config.py --> contains all of the configuration parameters, implemented attacks, implemented defenses
+    - file.py --> saves adverserial examples 
+    - plot.py --> helper functions related plotting for the publications
+- ensemble is still in progress
+- evaluation subfolder
+    - not a general feature, ignore for now
+- models.py
+    - defines the neural network architectures
+    - train the model here
+- data.py --> loads data from the datasets
+- visualizations --> production of visuals for the publication
+- old_scripts 
+    
+
+- evaluating the final ensemble model
+    - black box --> 
+        - build their own dataset of inputs and outputs 
+    - gray box --> attackers know the list of transformations, know everything about the weak defenses
+        - the only thing they do not know is how the combination of the results work
+    - white box --> attackers know everything, including the ensemble strategies
+
+    - still working on gray box and white box
+        - currently using any strategy to choose a weak defense target
+        - for each of the weak defenses, 
+        - concrete example
+            - 72 types of transformations <-> 72 weak defenses
+            - least effective --> choose one with lowest test accuracy 
+            - most effective, least effective, random
+
 
 
 ### In what ways are models trained? What data are they trained on?
@@ -184,7 +234,7 @@ the ensemble can be then be used as a while with ()
     Methods
     -------
     
-### Script: train_ensemble_model_on_all_types_of_AEs.py
+### Script: 
     Description: 
     hello world
     
@@ -194,7 +244,29 @@ the ensemble can be then be used as a while with ()
     
     Methods
     -------
+
+### Script: 
+    Description: 
+    hello world
     
+    Command Line Arguments
+    ----------------------
+    
+    
+    Methods
+    -------
+
+### Script: 
+    Description: 
+    hello world
+    
+    Command Line Arguments
+    ----------------------
+    
+    
+    Methods
+    -------
+
 
 ## 5. How to Contribute
 
