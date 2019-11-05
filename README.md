@@ -266,7 +266,7 @@ CIFAR-100 | RGB 32x32 pixel dataset (100 classes) containing 50,000 training and
 ```
     Script: adversarial_transformers/test_ensemble_model_on_all_types_of_AEs.py
     Description:
-    This script evaluates the ensemble model, the model composed of all of the models trained with train.py, and saves all of the results to a specified test result folder. The results that are saved during the evaluation of the ensemble include: 
+    This script evaluates the ensemble model, the model composed of all of the models trained with train.py, and saves all of the results to a specified test result folder.
     
     Command Line Arguments
     ----------------------
