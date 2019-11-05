@@ -36,7 +36,10 @@ pip install requirements.txt
 ```
 
 ### Hardware Requirements
-TODO understand maximum memory usage of the program
+Processor: 2, 3.0 GHz CPU cores</br>
+Memory: 16 GB RAM minimum</br>
+Disk: 30 GB available on disk partition</br>
+Storage: >=20 MBps
 
 
 ## 2. Attacks and Transformations
@@ -87,35 +90,27 @@ Navigation of project and component hierarchy
 
 project<br>
   |-- attacks (python files implement adversarial attack approaches)<br>
-  |      &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;|-- attacker.py (main entrance of AE generation)<br>
+  |      &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;|-- attacker.py (main entrance of AE generation, orchestrates all latter scripts)<br>
   |      &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;|-- whitebox.py (generating AEs using APIs provided by cleverhans)<br>
   |      &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;|-- one_pixel.py (implements one-pixel attack)<br>
+  |      &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;|-- carlini_wagner_l2.py (implements CW attack)<br>
+  |      &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;|-- momentum_iterative_method.py (implements MIM attack)<br>
   |<br>
   |-- utils (utils for all)<br>
-  |      &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;|-- config.py ()<br>
-  |      &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;|-- file.py ()<br>
+  |      &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;|-- config.py (stores project wide configurations and object definitions)<br>
+  |      &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;|-- file.py (contains helper functions to read/write evalution results from/to disk)<br>
   |<br>
   |-- scripts (scripts for experiments)<br>
-  |      &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;|-- craft_adversarial_examples.py ()<br>
-  |      &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;|-- file.py ()<br>
+  |      &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;|-- craft_adversarial_examples.py (creates AEs given a model, dataset, and attack type)<br>
   |<br>
-  |-- defense (defense strategies)<br>
+  |-- data.py (contains helper functions to load and normalize all datasets)
   |<br>
-  |-- evaluation (files evaluate models, attacks, ect.)<br>
+  |-- models.py (builds, compiles, trains, and evaluates models)
   |<br>
-  |-- test (``unit`` test scripts for this project)<br>
+  |-- train.py (trains weak learners on each transformation and compositions of transformations)<br>
   |<br>
-  |-- visualization (visualization representation approaches)<br>
-  |<br>
-  |-- data.py ()
-  |<br>
-  |<br>
-  |<br>
-
-attacker.py
-whitebox.py       --> return the advserial examples with true labels --> all have generate() method
-one_pixel
-MIM 
+  |-- test_ensemble_model_on_all_types_of_AEs.py (creates and evaluates ensembles of weak defenses on all attack types)<br>
+  |</br>
 
 
 ## 4. Getting Started
@@ -301,10 +296,44 @@ Black box | Attacker has no knowledge of the internal model archictecture.
 Gray box | Attacker only knowledge of weak defense architectures but does not know how the ensemble combines the outputs of the weak defenses.
 White box | Attacker has knowledge of the entire ensemble architecture, including how the ensemble combines the outputs of the weak defenses.
 
-
 </br>
 Each evaluation, performed for each attack type, is done with an ensemble network constructed in three different ways: with the k-best weak defenses, with the k-worst weak defenses, and with k-random weak defenses. The value k starts at one and is incremented by one after each evaluation in order to test the accuracy of the ensemble with an increasing amount of weak defenses. The best and worst weak defenses are determined by testing weak defenses against a subset of adversarial examples produced by a given attack type, ranking them, and choosing the k-best and k-worst. k-random weak defenses are chosen as one would expect, randomly.
 
+
+### What other scripts should I be aware of?
+
+```
+    Script: adversarial_transformers/attacks/attacker.py
+    Description:
+    This script calls orchestrates and calls all other attack scripts in its directory to produce adversarial examples with a given attack type on a given, trained model.
+    
+    Command Line Arguments
+    ----------------------
+    none.
+
+    Methods
+    -------
+    get_adversarial_examples(model_name, attack_method, X, Y, **kwargs)
+        Returns the following variables: X_adv and Y. "X_adv" is a vector containing all of the generated adversarial examples and Y is a vector of the same length containing the correct class labels for each created adversarial example.
+```
+```
+    Script: adversarial_transformers/utils/file.py
+    Description:
+    This is a helper script that provides methods to read and write ensemble model evaluations from and to disk. The methods contained within this script may be called on their own. Currently, this script's functions are leveraged by the "test_ensemble_model_on_all_types_of_AEs.py" script for recording produced ensemble evaluation results.
+    
+    Command Line Arguments
+    ----------------------
+    none.
+
+    Methods
+    -------
+    dict2csv(dictionary, file_name, list_as_value=False)
+        Saves a given dictionary to a csv file located at the path specified by the "file_name" parameter. If only a file name is specified, the csv will be saved in the adversarial_transformers/utils directory.
+    csv2dict(file_name, orient=ORIENT.COL, dtype='float')
+        Reads a csv at the path specified by the "file_name" parameter and returns the dictionary stored in the CSV file.
+    save_adv_examples(data, **kwargs)
+        Saves adversarial examples provided in the "data" parameter to the path specified by the "ADVERSARIAL_FILE" variable in the "config.py" script.
+```
 
 ## 5. How to Contribute
 
@@ -319,8 +348,8 @@ Bug fixes can be initiated through GitHub pull requests. When making code contri
 ```
 @article{ying2019,
   title={Ensembles of Many Weak Defenses are Strong: Defending Deep Neural Networks Against Adverserial Attacks},
-  author={},
-  journal={},
+  author={Ying and Jianhai},
+  journal={n/a},
   year={2019}
 }
 ```
