@@ -91,18 +91,23 @@ project<br>
   |      &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;|-- whitebox.py (generating AEs using APIs provided by cleverhans)<br>
   |      &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;|-- one_pixel.py (implements one-pixel attack)<br>
   |<br>
+  |-- utils (utils for all)<br>
+  |      &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;|-- config.py ()<br>
+  |      &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;|-- file.py ()<br>
+  |<br>
+  |-- scripts (scripts for experiments)<br>
+  |      &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;|-- craft_adversarial_examples.py ()<br>
+  |      &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;|-- file.py ()<br>
+  |<br>
   |-- defense (defense strategies)<br>
   |<br>
   |-- evaluation (files evaluate models, attacks, ect.)<br>
   |<br>
-  |-- scripts (scripts for experiments)<br>
-  |<br>
   |-- test (``unit`` test scripts for this project)<br>
-  |<br>
-  |-- utils (utils for all)<br>
   |<br>
   |-- visualization (visualization representation approaches)<br>
   |<br>
+  |-- data.py ()
   |<br>
   |<br>
   |<br>
@@ -259,156 +264,46 @@ CIFAR-100 | RGB 32x32 pixel dataset (100 classes) containing 50,000 training and
         Call this method to print instructions for how to use this script to your standard output stream.
 ```
 
-### How do I construct an ensemble of weak defenses?
+### How do I construct and evaluate an ensemble of weak defenses?
 
-    Now that you have trained weak defenses, you are likely wondering how to build an ensemble of these weak defenses to defend against adversarial attacks? In our project, we construct and use ensembles by loading all of the trained weak defenses from a specified models directory, performing inference on a given datapoint/dataset with each of the weak defenses, then saving all of the models output probabilities and logits to disk at a specified prediction result directory.
+    Now that you have trained weak defenses, you are likely wondering, how do I build an ensemble of these weak defenses to defend against adversarial attacks? In our project, we construct and use ensembles by loading all of the trained weak defenses from a specified models directory, perform inference on a given subsert of a dataset with each of the weak defenses, and then save all of the models' output probabilities and logits to disk at a specified prediction result directory for further analysis.
 
-
-### How do I evaluate the ensemble of weak defenses?
-    
-    Evaluation Strategies:
-        1. Black box
-            - Attacker has no knowledge of the internal model archictecture.
-        2. Gray box
-            - Attacker only knowledge of weak defense architectures but does not know how the ensemble combines the outputs of the weak defenses.
-        3. White box
-            - Attacker has knowledge of the entire ensemble architecture, including how the ensemble combines the outputs of the weak defenses.
-
-
-
-
-### main idea of the work
-target model (regular model trained on the clean dataset) --> original target model
-offline
-    image --> transformation --> new image --> weak defense model 
-        each weak model are trained on one or a composition of transformation
-online
-    Transformation 1    Weak defense 1  -->     |
-    Transformation 2    Weak defense 2  -->     |
-    .                                           |--> Ensemble of strategies
-    .                                           |
-    .                                           |
-    Transformation N    Weak defense N  -->     |
-
-### Important Functions
-
-
-### Main entrances
-- attacks subfolder
-- scripts --> tutorial / demo in this folder
-    - craft adversarial examples --> explains how to call attacks subfolder, how to get AE, how to call parameters, etc.
-- utils -->
-    - config.py --> contains all of the configuration parameters, implemented attacks, implemented defenses
-    - file.py --> saves adverserial examples 
-    - plot.py --> helper functions related plotting for the publications
-- ensemble is still in progress
-- evaluation subfolder
-    - not a general feature, ignore for now
-- models.py
-    - defines the neural network architectures
-    - train the model here
-- data.py --> loads data from the datasets
-- visualizations --> production of visuals for the publication
-- old_scripts 
-    
-
-- evaluating the final ensemble model
-    - black box --> 
-        - build their own dataset of inputs and outputs 
-    - gray box --> attackers know the list of transformations, know everything about the weak defenses
-        - the only thing they do not know is how the combination of the results work
-    - white box --> attackers know everything, including the ensemble strategies
-
-    - still working on gray box and white box
-        - currently using any strategy to choose a weak defense target
-        - for each of the weak defenses, 
-        - concrete example
-            - 72 types of transformations <-> 72 weak defenses
-            - least effective --> choose one with lowest test accuracy 
-            - most effective, least effective, random
-
-
-
-### In what ways are models trained? What data are they trained on?
-
-
-### How are weak defenses trained?
-
-
-### How are models evaluated? How are ensembles evaluated?
-
-
-### How are the transformations called? Where are they called? How are they used?
-
-
-### How are the attack algorithms called? Where are they called? How are they used?
-
-
-### 
-
-
-
-
-### How to train a model of weak defenses?
-each weak defense is a model trained on a transformation (train_new_target_models.py)
-each of these models is saved to a specified training directory ()
-train.py is then used to "train" the ensemble, aka determine the relationship of weak defenses for best defense
-the ensemble can be then be used as a while with ()
-
-### How to evaluate ensemble of weak defenses?
-  util.py + CL parameters
-
-    
-### Script: train_new_target_models.py
-    Description: 
-    hello world
+```
+    Script: adversarial_transformers/test_ensemble_model_on_all_types_of_AEs.py
+    Description:
+    This script evaluates the ensemble model, the model composed of all of the models trained with train.py, and saves all of the results to a specified test result folder. The results that are saved during the evaluation of the ensemble include: 
     
     Command Line Arguments
     ----------------------
-    inputImagesFP : str
-        file path of input images to train the weak defense
+    samplesDir : str
+        Path to directory containing the correct output labels for the network.
     experimentRootDir : str
-        file path of the directory to save experiment
+        Path to directory of the root of the project.
+    modelsDir : str
+        Path to directory where all of the trained models are saved.
+    numOfSamples : int
+        Upper bound of the number of samples to use for evaluation of the ensemble.
+    testResultFoldName : str
+        Path to directory where test results are to be stored.
     datasetName : str
-        name of the dataset to be used for training (mnist, fmnist, cifar10, cifar100)
+        Name of the dataset to be used for training (mnist, fmnist, cifar10, cifar100)
     numOfClasses : int
-        number of output classes of the provided dataset
+        Number of output classes for the provided dataset.
     
     Methods
     -------
-    
-### Script: 
-    Description: 
-    hello world
-    
-    Command Line Arguments
-    ----------------------
-    
-    
-    Methods
-    -------
+    none.
+```
 
-### Script: 
-    Description: 
-    hello world
-    
-    Command Line Arguments
-    ----------------------
-    
-    
-    Methods
-    -------
+Evaluation Strategy | Description
+--- | ---
+Black box | Attacker has no knowledge of the internal model archictecture.
+Gray box | Attacker only knowledge of weak defense architectures but does not know how the ensemble combines the outputs of the weak defenses.
+White box | Attacker has knowledge of the entire ensemble architecture, including how the ensemble combines the outputs of the weak defenses.
 
-### Script: 
-    Description: 
-    hello world
-    
-    Command Line Arguments
-    ----------------------
-    
-    
-    Methods
-    -------
+
+</br>
+Each evaluation, performed for each attack type, is done with an ensemble network constructed in three different ways: with the k-best weak defenses, with the k-worst weak defenses, and with k-random weak defenses. The value k starts at one and is incremented by one after each evaluation in order to test the accuracy of the ensemble with an increasing amount of weak defenses. The best and worst weak defenses are determined by testing weak defenses against a subset of adversarial examples produced by a given attack type, ranking them, and choosing the k-best and k-worst. k-random weak defenses are chosen as one would expect, randomly.
 
 
 ## 5. How to Contribute
