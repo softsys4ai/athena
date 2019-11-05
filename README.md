@@ -234,7 +234,7 @@ CIFAR-100 | RGB 32x32 pixel dataset (100 classes) containing 50,000 training and
         Returns a tensorflow model. Loads and compiles a saved model from disk at the path created by concatenating the paths provided in the director and model_name parameters.
 ```
 
-### How do I create and train a weak defenses?
+### How do I create and train weak defenses?
 
 ```
     Script: adversarial_transformers/train.py
