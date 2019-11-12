@@ -811,6 +811,9 @@ def add_noise(original_images, transformation):
     transformed_images = []
     noise_mode = transformation.split('_')[1]
 
+    if noise_mode == 'sNp':
+        noise_mode = 's&p'
+
     for img in original_images:
         img_noised = util.random_noise(img, mode=noise_mode)
         transformed_images.append(img_noised)
@@ -1075,6 +1078,7 @@ def transform(X, transformations):
         print('composition of transformations')
         # composition of transformations
         return composite_transforms(X, transformations)
+
     else:
         print('single transformation')
         # single transformation
@@ -1136,6 +1140,7 @@ def transform_images(X, transformation_type):
     else:
         raise ValueError('Transformation type {} is not supported.'.format(transformation_type.upper()))
 
+    X_trans = np.clip(X_trans, 0., 1.)
     # release space
     del inputs
     return X_trans
@@ -1152,7 +1157,7 @@ def composite_transforms(X, transformation_list):
     """
     X_trans = X
     for trans in transformation_list:
-        X_trans = transform_images(X, trans)
+        X_trans = transform_images(X_trans, trans)
 
     return X_trans
 

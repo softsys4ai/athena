@@ -167,7 +167,7 @@ class TRANSFORMATION(object):
     noise_poisson = 'noise_poisson'
     noise_salt = 'noise_salt'
     noise_pepper = 'noise_pepper'
-    noise_saltNpepper = 'noise_s&p'
+    noise_saltNpepper = 'noise_sNp'
     noise_speckle = 'noise_speckle'
 
     """
@@ -357,8 +357,8 @@ class ATTACK(object):
     # ---------------------------
     @classmethod
     def get_fgsm_eps(cls):
-        return [0.25, 0.3, 0.1, 0.05, 0.01, 0.005]  # full set
-        # return [0.25] # for test
+        # return [0.25, 0.3, 0.1, 0.05, 0.01, 0.005]  # full set
+        return [0.15] # for test
 
     @classmethod
     def get_fgsm_AETypes(cls):
@@ -454,13 +454,13 @@ class ATTACK(object):
     # CW (L0/L2/Linf) parameters
     # ----------------------------
     @classmethod
-    def get_cw_maxIter(cls):
+    def get_cwl2_maxIter(cls):
         # return [1, 10, 100, 1000, 10000, 100000] # full set
         return [100]
 
     @classmethod
-    def get_cw_lr(cls):
-        return [0.001]
+    def get_cwl2_lr(cls):
+        return [3.5, 5, 7]
 
     @classmethod
     def get_cwl0_AETypes(cls):
@@ -502,8 +502,8 @@ class ATTACK(object):
     # --------------------------
     @classmethod
     def get_op_pxCnt(cls):
-        # return [1, 3, 5, 10, 15]
-        return [30]
+        # return [5, 15, 30]
+        return [5]
 
     @classmethod
     def get_op_maxIter(cls):
@@ -513,7 +513,7 @@ class ATTACK(object):
     @classmethod
     def get_op_popsize(cls):
         # return [30, 50, 100]
-        return [30]
+        return [100]
 
     @classmethod
     def get_op_AETypes(cls):
