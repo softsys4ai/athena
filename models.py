@@ -23,8 +23,14 @@ FLAGS = flags.FLAGS
 # --------------------------------------------
 # Entrance
 # --------------------------------------------
-def create_model(dataset, input_shape, nb_classes):
+def create_model(dataset, input_shape=None, nb_classes=None):
     if (dataset == DATA.mnist):
+        if input_shape is None:
+            input_shape = (28, 28, 1)
+
+        if nb_classes is None:
+            nb_classes = 10
+
         DATA.set_current_dataset_name(DATA.mnist)
         MODEL.set_learning_rate(0.001)
         MODEL.set_batch_size(128)
@@ -363,7 +369,10 @@ def evaluate_model(model, X, Y):
     conf_correct = 0.
     conf_misclassified = 0.
 
-    pred_probs = model.predict_class(X)
+    if isinstance(model, models.Sequential):
+        pred_probs = model.predict(X)
+    else:
+        pred_probs = model.predict_class(X)
 
     # iterate over test set
     for pred_prob, true_prob in zip(pred_probs, Y):
@@ -382,6 +391,14 @@ def evaluate_model(model, X, Y):
     # average confidences
     ave_conf_correct = conf_correct / nb_corrections
     ave_conf_miss = conf_misclassified / (nb_examples - nb_corrections)
+
+    print('============================')
+    print('    Evaluation Summary')
+    print('---------------------------')
+    print('test accuracy:', acc)
+    print('average confidence (correctly classified):', ave_conf_correct)
+    print('average confidence (mis-classified):', ave_conf_miss)
+    print('============================')
 
     return acc, ave_conf_correct, ave_conf_miss
 
