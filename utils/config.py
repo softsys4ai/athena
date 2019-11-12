@@ -340,15 +340,16 @@ class ATTACK(object):
     @classmethod
     def get_AETypes(cls):
         AETypes = []
-        AETypes.extend(cls.get_jsma_AETypes())
         AETypes.extend(cls.get_fgsm_AETypes())
         AETypes.extend(cls.get_bim_AETypes())
-        AETypes.extend(cls.get_pgd_AETypes())
         AETypes.extend(cls.get_df_AETypes())
-        AETypes.extend(cls.get_mim_AETypes())
-        AETypes.extend(cls.get_cwl0_AETypes())
+        # AETypes.extend(cls.get_cwl0_AETypes())
         AETypes.extend(cls.get_cwl2_AETypes())
-        AETypes.extend(cls.get_cwlinf_AETypes())
+        # AETypes.extend(cls.get_cwlinf_AETypes())
+        AETypes.extend(cls.get_jsma_AETypes())
+        AETypes.extend(cls.get_op_AETypes())
+        AETypes.extend(cls.get_mim_AETypes())
+        AETypes.extend(cls.get_pgd_AETypes())
 
         return AETypes
 
@@ -395,8 +396,8 @@ class ATTACK(object):
             return ['bim_ord2_nbIter100_eps500', 'bim_ord2_nbIter100_eps1000',
                     'bim_ordinf_nbIter100_eps50', 'bim_ordinf_nbIter100_eps100']
         elif DATA.CUR_DATASET_NAME == DATA.mnist:
-            return ['bim_ord2_nbIter100_eps500', 'bim_ord2_nbIter100_eps1000',
-                    'bim_ordinf_nbIter100_eps250', 'bim_ordinf_nbIter100_eps500']
+            return ['bim_ord2_nbIter100_eps250', 'bim_ord2_nbIter100_eps500', 'bim_ord2_nbIter100_eps1000',
+                    'bim_ordinf_nbIter100_eps100', 'bim_ordinf_nbIter100_eps250', 'bim_ordinf_nbIter100_eps500']
 
     # ----------------------------
     # Deepfool parameters
@@ -423,7 +424,7 @@ class ATTACK(object):
         if DATA.CUR_DATASET_NAME == DATA.cifar_10:
             return ["deepfool_maxIter100", "deepfool_maxIter10000"]
         elif DATA.CUR_DATASET_NAME == DATA.mnist:
-            return ['deepfool_l2_overshoot9', 'deepfool_l2_overshoot15', 'deepfool_l2_overshoot30']
+            return ['deepfool_l2_overshoot20', 'deepfool_l2_overshoot30', 'deepfool_l2_overshoot50']
 
     # ----------------------------
     # JSMA parameters
@@ -448,7 +449,7 @@ class ATTACK(object):
         if DATA.CUR_DATASET_NAME == DATA.cifar_10:
             return ['jsma_theta30_gamma50', 'jsma_theta50_gamma70']
         elif DATA.CUR_DATASET_NAME == DATA.mnist:
-            return ['jsma_theta30_gamma50', 'jsma_theta50_gamma70']
+            return ['jsma_theta30_gamma50', 'jsma_theta50_gamma50', 'jsma_theta50_gamma70']
 
     # ----------------------------
     # CW (L0/L2/Linf) parameters
@@ -474,7 +475,7 @@ class ATTACK(object):
         if DATA.CUR_DATASET_NAME == DATA.cifar_10:
             return []
         elif DATA.CUR_DATASET_NAME == DATA.mnist:
-            return []
+            return ['cw_l2_lr350_maxIter100', 'cw_l2_lr500_maxIter100', 'cw_l2_lr700_maxIter100']
 
     @classmethod
     def get_cwlinf_AETypes(cls):
@@ -494,8 +495,7 @@ class ATTACK(object):
         if DATA.CUR_DATASET_NAME == DATA.cifar_10:
             return ['pgd_eps50_nbIter100_epsIter10', 'pgd_eps100_nbIter100_epsIter10']
         elif DATA.CUR_DATASET_NAME == DATA.mnist:
-            return ['pgd_eps250_nbIter100_epsIter10', 'pgd_eps500_nbIter100_epsIter10',
-                    'pgd_eps750_nbIter100_epsIter10']
+            return ['pgd_eps250', 'pgd_eps500', 'pgd_eps750']
 
     # --------------------------
     # One-Pixel Parameters
@@ -517,8 +517,9 @@ class ATTACK(object):
 
     @classmethod
     def get_op_AETypes(cls):
-        attack = ATTACK.ONE_PIXEL
-        return ['{}_pxCount1_maxIter50_popsize30'.format(attack)]
+        return ['onepixel_pxCount5_maxIter30_popsize100',
+                'onepixel_pxCount15_maxIter30_popsize100',
+                'onepixel_pxCount30_maxIter30_popsize100']
 
     # --------------------------
     # MIM Parameters
@@ -537,7 +538,7 @@ class ATTACK(object):
 
     @classmethod
     def get_mim_AETypes(cls):
-        return ['mim_eps30_nbIter10_decay100']
+        return ['mim_eps20_nbIter1000', 'mim_eps30_nbIter1000', 'mim_eps50_nbIter1000']
 
 class MODEL(object):
     """
