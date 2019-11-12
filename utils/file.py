@@ -7,7 +7,6 @@ import csv
 from collections import namedtuple
 
 from utils.config import *
-from data import load_data
 from utils.plot import plot_comparisons
 
 class ORIENT(object):
@@ -51,8 +50,8 @@ def csv2dict(file_name, orient=ORIENT.COL, dtype='float'):
     }
     :param file_name: csv file name includes the full path
     :param orient:
-        orient.col: values of the key is in a column
-        orient.row: values of the key is in a row
+        orient.col: values of the keys are in a column
+        orient.row: values of the keys are in a row
     :param dtype: data type of values
     :return: the dictionary
     """
@@ -92,6 +91,7 @@ def save_adv_examples(data, **kwargs):
     transformation = kwargs.get('transformation', 'clean')
     attack_method = kwargs.get('attack_method', 'fgsm')
     attack_params = kwargs.get('attack_params', None)
+    bs_samples = kwargs.get('bs_samples', None)
 
     prefix = '{}_AE'.format(prefix)
     attack_info = '{}_{}'.format(attack_method, attack_params)
@@ -100,8 +100,12 @@ def save_adv_examples(data, **kwargs):
     np.save('{}/{}'.format(PATH.ADVERSARIAL_FILE, file_name), data)
 
     if MODE.DEBUG:
-        title = '{}-{}'.format(model_info, attack_info)
-        _, (bs_samples, _) = load_data(dataset)
-        plot_comparisons(bs_samples[10:20], data[10:20], title)
+        if bs_samples is not None:
+            title = '{}-{}'.format(model_info, attack_info)
+            plot_comparisons(bs_samples[:10], data[:10], title)
+        else:
+            print('Print AEs only')
+            title = '{}-{}'.format(model_info, attack_info)
+            plot_comparisons(data[:10], data[10:20], title)
 
     print('Adversarial examples saved to {}/{}.'.format(PATH.ADVERSARIAL_FILE, file_name))

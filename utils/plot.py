@@ -10,10 +10,11 @@ import os
 import matplotlib.pyplot as plt
 from utils.config import PATH, MODE
 
-line_styles = ['-', '--', ':', '-.']
-colors = [ 'magenta', 'deepskyblue', 'mediumspringgreen', 'red',
+line_styles = ['-', '--', ':', '-.', '.']
+line_width = 3.0
+colors = ['magenta', 'deepskyblue', 'limegreen', 'red',
             'deeppink', 'darkorange', 'fuchsia', 'forestgreen', 'blue',
-           'aqua', 'orangered', 'limegreen', 'darkgray', 'orange', 'black']
+           'aqua', 'orangered', 'navy', 'darkgray', 'orange', 'black']
 marks = ['o', 's', 'D', '+', '*', 'v', '^', '<', '>', '.', '+', 'p', 'h',  ',',
            'd', '|', '1', '2', '3', '4', '8', 'P', 'H', 'X', 'D']
 nb_colors = len(colors)
@@ -269,7 +270,8 @@ def plot_lines(data, first_key_as_xlabel=True, setting=plot_settings(), save=Fal
         m_id = (i - 1) % nb_marks
         c_id = (i - 1) % nb_colors
         m = '{}{}'.format(line_styles[0], marks[m_id])
-        plt.plot(data[keys[0]], data[keys[i]], m, color=colors[c_id], label=keys[i])
+        plt.plot(data[keys[0]], data[keys[i]], m, color=colors[c_id],
+                 label=keys[i], linewidth=line_width)
 
     plt.title(setting.title)
 
@@ -290,12 +292,12 @@ def plot_lines(data, first_key_as_xlabel=True, setting=plot_settings(), save=Fal
     plt.show()
     plt.close()
 
-def plot_scatter_with_certainty(data, certainty_borders, setting=plot_settings(),
+def plot_scatter_with_certainty(data, filling_borders, setting=plot_settings(),
                                 first_key_as_xlabel=True, save=False):
     """
     Plot lines and some filled areas.
     :param data: dictionary. data used to plot lines.
-    :param certainty_borders: list of tuples. each tuple consists of a sequence of values and corresponding certainties.
+    :param filling_borders: list of tuples. each tuple consists of a sequence of values and corresponding certainties.
     :param title:
     :param ylabel:
     :param save:
@@ -312,33 +314,44 @@ def plot_scatter_with_certainty(data, certainty_borders, setting=plot_settings()
     for i in range(1, nb_dimensions):
         m_id = (i - 1) % nb_marks
         c_id = (i - 1) % nb_colors
-        mark = '{}{}'.format(line_styles[0], marks[m_id])
+        # mark = '{}{}'.format(line_styles[0], marks[m_id])
+        mark = line_styles[(i - 1) % len(line_styles)]
         alpha = 0.9
-        if (headers.GAP.value == keys[i]):
-            mark = line_styles[-1]
-            alpha = 0.6
+        # if (headers.GAP.value == keys[i]):
+        #     mark = line_styles[-1]
+        #     alpha = 0.6
 
         plt.plot(data[keys[i]], mark, markerfacecolor='white',
-                 color=colors[c_id], label=keys[i], alpha=alpha, markersize=4)
+                 color=colors[c_id], label=keys[i], alpha=alpha,
+                 markersize=(line_width + 1), linewidth=line_width)
 
     # fill areas
-    nb_certainty_areas = len(certainty_borders)
-    for i in range(nb_certainty_areas):
-        x, upper_bound, lower_bound = certainty_borders[i]
+    nb_filling_areas = len(filling_borders)
+    for i in range(nb_filling_areas):
+        x, upper_bound, lower_bound = filling_borders[i]
         x1 = [a - 1 for a in x]
+        # x1 = x
         print('upper_bound:', upper_bound)
         print('lower_bound:', lower_bound)
 
-        plt.fill_between(x1, lower_bound, upper_bound, color=colors[-1], alpha=.25)
+        plt.fill_between(x1, lower_bound, upper_bound, color='gold', alpha=.20)
 
     if setting.title is not None:
         plt.title(setting.title, fontsize=setting.title_fontsize)
 
     xticks = []
     xticks_labels = []
+
+    iter = 5
+
     for i in data[keys[0]]:
         i = int(i)
-        if 0 == i % 10:
+        # if i < 40:
+        #     iter = 5
+        # else:
+        #     iter = 10
+
+        if 0 == i % iter:
             xticks.append(i - 1)
             xticks_labels.append(i)
 
