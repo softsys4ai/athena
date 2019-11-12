@@ -127,7 +127,7 @@ class OnePixel(object):
 
         # img = img.reshape(self.img_rows, self.img_cols, self.nb_channels)
         # x_adv = x_adv.reshape(self.img_rows, self.img_cols, self.nb_channels)
-        # scale back to [0., 1.] as demand
+        # re-scale as demanded
         x_adv /= 255.
         if self.clip_min is not None and self.clip_max is not None:
             x_adv = np.clip(x_adv, self.clip_min, self.clip_max)
@@ -180,8 +180,8 @@ class OnePixel(object):
 
         return X_adv, self.Y
 
-def generate(model_name, X, Y, attack_params):
-    model = load_model(model_name)
+def generate(model, X, Y, attack_params):
+    # model = load_model(model_name)
     attacker = OnePixel(model, X, Y, attack_params)
     X_adv = attacker.attack_all()
 

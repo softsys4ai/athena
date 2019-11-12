@@ -17,7 +17,6 @@ from utils.config import *
 
 from cleverhans.attacks import FastGradientMethod
 from cleverhans.attacks import SaliencyMapMethod
-# from cleverhans.attacks import CarliniWagnerL2
 from cleverhans.attacks import DeepFool
 from cleverhans.attacks import BasicIterativeMethod
 from cleverhans.attacks import ProjectedGradientDescent
@@ -25,6 +24,7 @@ from cleverhans.attacks import MomentumIterativeMethod
 from cleverhans.evaluation import batch_eval
 from cleverhans.utils_keras import KerasModelWrapper
 
+from attacks.carlini_wagner_l0 import CarliniWagnerL0
 from attacks.carlini_wagner_l2 import CarliniWagnerL2
 from attacks.carlini_wagner_li import CarliniWagnerLinf
 
@@ -33,7 +33,7 @@ from attacks.carlini_wagner_li import CarliniWagnerLinf
 validation_rate = 0.2
 
 
-def generate(model_name, X, Y, attack_method, attack_params):
+def generate(sess, model, X, Y, attack_method, dataset, attack_params):
     """
     detect adversarial examples
     :param model_name: the name of the target model. Models are named in the form of
@@ -43,48 +43,13 @@ def generate(model_name, X, Y, attack_method, attack_params):
     :param Y: correct label of the examples
     :return: adversarial examples
     """
-    label_smoothing_rate = 0.1
-
-    model_name = model_name.split('.')[0]
-    prefix, dataset, architect, trans_type = model_name.split('-')
-
-    # flag - whether to train a clean model
-    train_new_model = True
-    if (os.path.isfile('{}/{}/{}.h5'.format(PATH.MODEL, dataset, model_name)) or
-            (os.path.isfile('{}/{}/{}.json'.format(PATH.MODEL, dataset, model_name)))):
-        # found a trained model
-        print('Found the trained model.')
-        train_new_model = False
+    batch_size = 128
 
     img_rows, img_cols, nb_channels = X.shape[1:4]
     nb_classes = Y.shape[1]
-
-    # Force TensorFlow to use single thread to improve reproducibility
-    config = tf.ConfigProto(intra_op_parallelism_threads=4,
-                            inter_op_parallelism_threads=4)
-    sess = tf.Session(config=config)
-    keras.backend.set_session(sess)
-
-    # input and output tensors
-    # x = tf.placeholder(tf.float32, shape=(None, img_rows, img_cols, nb_channels))
-    # y = tf.placeholder(tf.float32, shape=(None, nb_classes))
-    batch_size = 128
-
     # label smoothing
+    label_smoothing_rate = 0.1
     Y -= label_smoothing_rate * (Y - 1. / nb_classes)
-
-    model = None
-    if train_new_model:
-        print('INFO: train a new model then generate adversarial examples.')
-        # create a new model
-        input_shape = (img_rows, img_cols, nb_channels)
-        model = create_model(dataset, input_shape=input_shape, nb_classes=nb_classes)
-    else:
-        # load model
-        if dataset == DATA.mnist:
-            model = keras.models.load_model('{}/{}/{}.h5'.format(PATH.MODEL, dataset, model_name))
-        elif dataset == DATA.cifar_10:
-            model = load_from_json(model_name)
 
     # to be able to call the model in the custom loss, we need to call it once before.
     # see https://github.com/tensorflow/tensorflow/issues/23769
@@ -113,17 +78,21 @@ def generate(model_name, X, Y, attack_method, attack_params):
         """
         Untageted attack
         """
-        # y = tf.placeholder(tf.float32, shape=(None, nb_classes))
-        ord = attack_params['ord']
-        attack_params.pop('ord')
-
         attacker = CarliniWagnerL2(wrap_model, sess=sess)
 
     elif attack_method == ATTACK.CW_Linf:
         """
         Untageted attack
         """
+        # TODO: bug fix --- cannot compute gradients correctly
         attacker = CarliniWagnerLinf(wrap_model, sess=sess)
+
+    elif attack_method == ATTACK.CW_L0:
+        """
+        Untargeted attack
+        """
+        # TODO: bug fix --- cannot compute gradients correctly
+        attacker = CarliniWagnerL0(wrap_model, sess=sess)
 
     elif attack_method == ATTACK.DEEPFOOL:
         """
@@ -155,7 +124,6 @@ def generate(model_name, X, Y, attack_method, attack_params):
     elif attack_method == ATTACK.PGD:
         """
         The Projected Gradient Descent approach.
-        
         """
         attacker = ProjectedGradientDescent(wrap_model)
     elif attack_method == ATTACK.MIM:
@@ -168,91 +136,51 @@ def generate(model_name, X, Y, attack_method, attack_params):
     else:
         raise ValueError('{} attack is not supported.'.format(attack_method.upper()))
 
-    # initialize the session
-    # init_op = tf.initialize_all_variables()
-    # sess.run(init_op)
-    # define custom loss
-    adv_accuracy_metric = get_adversarial_metric(model, attacker, attack_params)
-
-    augment = False
-    compile_params = {
-        'optimizer': keras.optimizers.Adam(lr=0.001),
-        'metrics': adv_accuracy_metric
-    }
-    if DATA.cifar_10 == dataset:
-        augment = True
-        compile_params = {
-            'optimizer': keras.optimizers.RMSprop(lr=0.001, decay=1e-6),
-            'metrics': adv_accuracy_metric
-        }
+    # define custom loss function for adversary
+    compile_params = get_compile_params(dataset,
+                                        get_adversarial_metric(model, attacker, attack_params))
 
     print('#### Recompile the model')
     model.compile(optimizer=compile_params['optimizer'],
                   loss=keras.losses.categorical_crossentropy,
-                  metrics=['accuracy', adv_accuracy_metric])
-    # train_model(model, dataset, model_name, need_augment=False, **kwargs)
-    if train_new_model:
-        model = train_model(model, dataset, model_name,
-                            augment,
-                            **compile_params)
+                  metrics=['accuracy', compile_params['metrics']])
 
     # define the graph
+    print('define the graph')
     adv_x = attacker.generate(model.input, **attack_params)
     # consider the attack to be constant
     adv_x = tf.stop_gradient(adv_x)
 
     # generating adversarial examples
+    print('generating adversarial example...')
     adv_examples, = batch_eval(sess, [model.input, model(adv_x)], [adv_x],
                                [X, Y], batch_size=batch_size)
 
     if MODE.DEBUG:
         score = model.evaluate(adv_examples, Y, verbose=2)
         print('*** Evaluation on adversarial examples: {}'.format(score))
-        # title = '{}-{}'.format(dataset, attack_method)
-        # draw_comparisons(X[10:20], adv_examples[10:20], title)
-
-    if train_new_model:
-        """
-        recompile the trained model using default metrics,
-        for the metrics related to adversarial approaches 
-        are NOT required for model evaluation.
-        """
-        model.compile(
-            optimizer=compile_params['optimizer'],
-            loss=keras.losses.categorical_crossentropy,
-            metrics=['accuracy']
-        )
-
-        # save to disk
-        save_model(model, model_name)
-        # evaluate the new model
-        loaded_model = load_model(model_name)
-        scores = loaded_model.evaluate(X, Y, verbose=2)
-        print('*** Evaluating the new model: {}'.format(scores))
-        del loaded_model
-
-        # if DATA.cifar_10 == dataset:
-        #     save_to_json(model, model_name)
-        #
-        #     # for test, evaluate the saved model
-        #     loaded_model = load_from_json(model_name)
-        #     scores = loaded_model.evaluate(X, Y, verbose=2)
-        #     print('*** Evaluating the new model: {}'.format(scores))
-        #     del loaded_model
-        # elif DATA.mnist == dataset:
-        #     model.save('{}/{}.h5'.format(PATH.MODEL, model_name),
-        #                overwrite=True, include_optimizer=True)
-        #     # for test
-        #     # evaluate the saved model
-        #     loaded_model = models.load_model('{}/{}.h5'.format(PATH.MODEL, model_name))
-        #     scores = loaded_model.evaluate(X, Y, verbose=2)
-        #     print('*** Evaluating the new model: {}'.format(scores))
-        #     del loaded_model
-    del model
-    sess.close()
 
     return adv_examples, Y
 
+
+"""
+Prepare compile parameters 
+"""
+def get_compile_params(dataset=DATA.mnist, metrics=None):
+    compile_params = {}
+
+    if dataset == DATA.mnist:
+        compile_params = {
+            'optimizer': keras.optimizers.Adam(lr=0.001),
+            'metrics': metrics
+        }
+    elif dataset == DATA.cifar_10:
+        compile_params = {
+            'optimizer': keras.optimizers.RMSprop(lr=0.001, decay=1e-6),
+            'metrics': metrics
+        }
+
+    return compile_params
 
 """
 Define custom loss functions
@@ -263,7 +191,7 @@ def get_adversarial_metric(model, attacker, attack_params):
     def adversarial_accuracy(y, _):
         # get the adversarial examples
         x_adv = attacker.generate(model.input, **attack_params)
-        # x_adv = attacker.generate_np(model.input, **attack_params)
+
         # consider the attack to be constant
         x_adv = tf.stop_gradient(x_adv)
 
@@ -282,7 +210,7 @@ def get_adversarial_loss(model, attacker, attack_params):
 
         # get the adversarial examples
         x_adv = attacker.generate(model.input, **attack_params)
-        # x_adv = attacker.generate_np(model.input, **attack_params)
+
         # consider the attack to be constant
         x_adv = tf.stop_gradient(x_adv)
 

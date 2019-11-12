@@ -4,17 +4,38 @@ Entrance of generating adversarial examples.
 """
 import logging
 
+import os
+os.environ['KMP_DUPLICATE_LIB_OK'] = 'True'
+
 import time
+import tensorflow as tf
+import tensorflow.keras as keras
 
 from utils.config import *
 import attacks.whitebox as whitebox
 import attacks.one_pixel as one_pixel
+from models import load_model
 
 logger = logging.getLogger('attacks.attacker...')
 logger.setLevel(logging.INFO)
 
 def get_adversarial_examples(model_name, attack_method, X, Y, **kwargs):
+    # remove the file format
+    model_name = model_name.split('.')[0]
     dataset = model_name.split('-')[1]
+
+    if ((not os.path.isfile('{}/{}.h5'.format(PATH.MODEL, model_name))) and
+        (not os.path.isfile('{}/{}.json'.format(PATH.MODEL, model_name)))):
+        raise FileNotFoundError('Could not file target mode [{}].'.format(model_name))
+
+
+    config = tf.ConfigProto(intra_op_parallelism_threads=4,
+                            inter_op_parallelism_threads=4)
+
+    sess = tf.Session(config=config)
+    keras.backend.set_session(sess)
+
+    model = load_model(model_name)
 
     logger.info('Crafting adversarial examples using {} method...'.format(attack_method.upper()))
     X_adv = None
@@ -30,9 +51,9 @@ def get_adversarial_examples(model_name, attack_method, X, Y, **kwargs):
         logger.info('{}: (eps={})'.format(attack_method.upper(), eps))
 
         start_time = time.time()
-        X_adv, Y = whitebox.generate(model_name, X, Y, attack_method, attack_params)
+        X_adv, Y = whitebox.generate(sess, model, X, Y, attack_method, dataset, attack_params)
         duration = time.time() - start_time
-        logger.info('Time cost: {}'.format(duration))
+        logger.info('Time cost for generation: {}'.format(duration))
 
     elif (attack_method == ATTACK.BIM):
         # iterative fast gradient method
@@ -62,7 +83,7 @@ def get_adversarial_examples(model_name, attack_method, X, Y, **kwargs):
 
         logger.info('{}: (ord={}, nb_iter={}, eps={})'.format(attack_method.upper(), ord, nb_iter, eps))
         start_time = time.time()
-        X_adv, Y = whitebox.generate(model_name, X, Y, attack_method, attack_params)
+        X_adv, Y = whitebox.generate(sess, model, X, Y, attack_method, dataset, attack_params)
 
         duration = time.time() - start_time
         print('Time cost: {}'.format(duration))
@@ -84,20 +105,19 @@ def get_adversarial_examples(model_name, attack_method, X, Y, **kwargs):
 
         logger.info('{}: (max_iterations={})'.format(attack_method.upper(), max_iterations))
         start_time = time.time()
-        X_adv, Y = whitebox.generate(model_name, X, Y, attack_method, attack_params)
+        X_adv, Y = whitebox.generate(sess, model, X, Y, attack_method, dataset, attack_params)
         duration = time.time() - start_time
         print('Time cost: {}'.format(duration))
 
     elif (attack_method == ATTACK.CW_L2):
+        ord = 2
         binary_search_steps = kwargs.get('binary_search_steps', 10)
         batch_size = kwargs.get('cw_batch_size', 2)
         initial_const = kwargs.get('initial_const', 10)
         learning_rate = kwargs.get('learning_rate', 0.1)
         max_iterations = kwargs.get('max_iterations', 100)
-        ord = kwargs.get('ord', 2)
 
         attack_params = {
-            'ord': ord,
             'batch_size': batch_size,
             'binary_search_steps': binary_search_steps,
             'initial_const': initial_const,
@@ -110,11 +130,13 @@ def get_adversarial_examples(model_name, attack_method, X, Y, **kwargs):
         logger.info('{}: (ord={}, max_iterations={})'.format(attack_method.upper(), ord, max_iterations))
 
         start_time = time.time()
-        X_adv, Y = whitebox.generate(model_name, X, Y, attack_method, attack_params)
+        X_adv, Y = whitebox.generate(sess, model, X, Y, attack_method, dataset, attack_params)
         duration = time.time() - start_time
         logger.info('Time cost: {}'.format(duration))
 
     elif (attack_method == ATTACK.CW_Linf):
+        ord = np.inf
+
         decrease_factor = kwargs.get('decrease_factor', 0.9)
         initial_const = kwargs.get('initial_const', 1e-5)
         learning_rate = kwargs.get('learning_rate', 0.1)
@@ -135,12 +157,25 @@ def get_adversarial_examples(model_name, attack_method, X, Y, **kwargs):
             'clip_max': 1.
         }
 
-        logger.info('{}: (ord={}, max_iterations={})'.format(attack_method.upper(), np.inf, max_iterations))
+        logger.info('{}: (ord={}, max_iterations={})'.format(attack_method.upper(), ord, max_iterations))
 
         start_time = time.time()
-        X_adv, Y = whitebox.generate(model_name, X, Y, attack_method, attack_params)
+        X_adv, Y = whitebox.generate(sess, model, X, Y, attack_method, dataset, attack_params)
         duration = time.time() - start_time
         logger.info('Time cost: {}'.format(duration))
+
+    elif (attack_method == ATTACK.CW_L0):
+        max_iterations = kwargs.get('max_iterations', 1000)
+        initial_const = kwargs.get('initial_const', 10)
+        largest_const = kwargs.get('largest_const', 15)
+
+        attack_params = {
+            'max_iterations': max_iterations,
+            'initial_const': initial_const,
+            'largest_const': largest_const
+        }
+
+        X_adv, Y = whitebox.generate(sess, model, X, Y, attack_method, attack_params)
 
     elif (attack_method == ATTACK.JSMA):
         theta = kwargs.get('theta', 0.6)
@@ -154,7 +189,7 @@ def get_adversarial_examples(model_name, attack_method, X, Y, **kwargs):
 
         logger.info('{}: (theta={}, gamma={})'.format(attack_method.upper(), theta, gamma))
         start_time = time.time()
-        X_adv, Y = whitebox.generate(model_name, X, Y, attack_method, attack_params)
+        X_adv, Y = whitebox.generate(sess, model, X, Y, attack_method, dataset, attack_params)
         duration = time.time() - start_time
         logger.info('Time cost: {}'.format(duration))
 
@@ -172,7 +207,7 @@ def get_adversarial_examples(model_name, attack_method, X, Y, **kwargs):
         }
 
         start_time = time.time()
-        X_adv, Y = whitebox.generate(model_name, X, Y, attack_method, attack_params)
+        X_adv, Y = whitebox.generate(sess, model, X, Y, attack_method, dataset, attack_params)
         duration = time.time() - start_time
         logger.info('Time cost: {}'.format(duration))
 
@@ -193,7 +228,7 @@ def get_adversarial_examples(model_name, attack_method, X, Y, **kwargs):
         }
 
         start_time = time.monotonic()
-        X_adv, Y = one_pixel.generate(model_name, X, Y, attack_params)
+        X_adv, Y = one_pixel.generate(model, X, Y, attack_params)
         duration = time.monotonic() - start_time
         logger.info('Time cost: {}'.format(duration))
 
@@ -216,9 +251,13 @@ def get_adversarial_examples(model_name, attack_method, X, Y, **kwargs):
         }
 
         start_time = time.time()
-        X_adv, Y = whitebox.generate(model_name, X, Y, attack_method, attack_params)
+        X_adv, Y = whitebox.generate(sess, model, X, Y, attack_method, dataset, attack_params)
         duration = time.time() - start_time
         logger.info('Time cost: {}'.format(duration))
 
     print('*** SHAPE: {}'.format(np.asarray(X_adv).shape))
+
+    # del model
+    # sess.close()
+
     return X_adv, Y
