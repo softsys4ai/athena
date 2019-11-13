@@ -384,7 +384,7 @@ class ATTACK(object):
         if order == 2:
             return [0.25, 0.5, 1]
         elif order == np.inf:
-            return [0.1, 0.25, 0.5]
+            return [0.075, 0.09, 0.1]
 
     @classmethod
     def get_bim_AETypes(cls):
@@ -393,7 +393,7 @@ class ATTACK(object):
                     'bim_ordinf_nbIter100_eps50', 'bim_ordinf_nbIter100_eps100']
         elif DATA.CUR_DATASET_NAME == DATA.mnist:
             return ['bim_ord2_nbIter100_eps250', 'bim_ord2_nbIter100_eps500', 'bim_ord2_nbIter100_eps1000',
-                    'bim_ordinf_nbIter100_eps100', 'bim_ordinf_nbIter100_eps250', 'bim_ordinf_nbIter100_eps500']
+                    'bim_ordinf_nbIter100_eps75', 'bim_ordinf_nbIter100_eps90', 'bim_ordinf_nbIter100_eps100']
 
     # ----------------------------
     # Deepfool parameters
