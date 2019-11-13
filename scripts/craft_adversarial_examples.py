@@ -11,6 +11,16 @@ from transformation import transform
 from utils.config import ATTACK, DATA, MODE, TRANSFORMATION
 from utils.file import save_adv_examples
 
+def reset(X, trans_type):
+    if trans_type == TRANSFORMATION.rotate90:
+        X = transform(X, TRANSFORMATION.rotate270)
+    elif trans_type == TRANSFORMATION.rotate270:
+        X = transform(X, TRANSFORMATION.rotate90)
+    elif trans_type == TRANSFORMATION.rotate180:
+        X = transform(X, TRANSFORMATION.rotate180)
+
+    return X
+
 
 def craft(dataset, method, trans_type=TRANSFORMATION.clean):
     print('loading original images...')
@@ -37,17 +47,17 @@ def craft(dataset, method, trans_type=TRANSFORMATION.clean):
     X = transform(X, trans_type)
     model_name = 'model-{}-cnn-{}'.format(dataset, trans_type)
 
-    X_adv = None
-    attack_params = ''
-
     if method == ATTACK.FGSM:
         for eps in ATTACK.get_fgsm_eps():
             print('{}: (eps={})'.format(method.upper(), eps))
             X_adv, _ = get_adversarial_examples(model_name, method, X, Y, eps=eps)
 
             attack_params = 'eps{}'.format(int(1000 * eps))
-            # save_adv_examples(X_adv, prefix=prefix, dataset=dataset, transformation=trans_type,
-            #                   attack_method=method, attack_params=attack_params)
+
+            reset(X, trans_type)
+            reset(X_adv, trans_type)
+            save_adv_examples(X_adv, prefix=prefix, dataset=dataset, transformation=trans_type,
+                              attack_method=method, attack_params=attack_params)
     elif method == ATTACK.BIM:
         for ord in ATTACK.get_bim_norm():
             for nb_iter in ATTACK.get_bim_nbIter():
@@ -61,8 +71,10 @@ def craft(dataset, method, trans_type=TRANSFORMATION.clean):
                     else:
                         norm = ord
                     attack_params = 'ord{}_nbIter{}_eps{}'.format(norm, nb_iter, int(1000 * eps))
-                    # save_adv_examples(X_adv, prefix=prefix, dataset=dataset, transformation=trans_type,
-                    #                   attack_method=method, attack_params=attack_params)
+                    reset(X, trans_type)
+                    reset(X_adv, trans_type)
+                    save_adv_examples(X_adv, prefix=prefix, dataset=dataset, transformation=trans_type,
+                                      attack_method=method, attack_params=attack_params)
     elif method == ATTACK.DEEPFOOL:
         for order in [2]:
             for overshoot in ATTACK.get_df_overshoots(order):
@@ -71,8 +83,10 @@ def craft(dataset, method, trans_type=TRANSFORMATION.clean):
                                                     ord=order, overshoot=overshoot)
 
                 attack_params = 'l{}_overshoot{}'.format(order, int(overshoot * 10))
-                # save_adv_examples(X_adv, prefix=prefix, bs_samples=X[:10], dataset=dataset, transformation=trans_type,
-                #                   attack_method=method, attack_params=attack_params)
+                reset(X, trans_type)
+                reset(X_adv, trans_type)
+                save_adv_examples(X_adv, prefix=prefix, bs_samples=X, dataset=dataset, transformation=trans_type,
+                                  attack_method=method, attack_params=attack_params)
 
     elif method == ATTACK.CW_L2:
         binary_search_steps = 9
@@ -88,8 +102,10 @@ def craft(dataset, method, trans_type=TRANSFORMATION.clean):
                                                     initial_const=initial_const, learning_rate=learning_rate)
 
                 attack_params = 'lr{}_maxIter{}'.format(int(learning_rate * 100), max_iter)
-                # save_adv_examples(X_adv, prefix=prefix, bs_samples=X, dataset=dataset, transformation=trans_type,
-                #                   attack_method=method, attack_params=attack_params)
+                reset(X, trans_type)
+                reset(X_adv, trans_type)
+                save_adv_examples(X_adv, prefix=prefix, bs_samples=X, dataset=dataset, transformation=trans_type,
+                                  attack_method=method, attack_params=attack_params)
 
     elif method == ATTACK.CW_Linf:
         initial_const = 1e-5
@@ -104,8 +120,10 @@ def craft(dataset, method, trans_type=TRANSFORMATION.clean):
                                                     learning_rate=learning_rate)
 
                 attack_params = 'lr{}_maxIter{}'.format(int(learning_rate * 10), max_iter)
-                # save_adv_examples(X_adv, prefix=prefix, bs_samples=X, dataset=dataset, transformation=trans_type,
-                #                   attack_method=method, attack_params=attack_params)
+                reset(X, trans_type)
+                reset(X_adv, trans_type)
+                save_adv_examples(X_adv, prefix=prefix, bs_samples=X, dataset=dataset, transformation=trans_type,
+                                  attack_method=method, attack_params=attack_params)
 
     elif method == ATTACK.CW_L0:
         initial_const = 1e-5
@@ -119,8 +137,10 @@ def craft(dataset, method, trans_type=TRANSFORMATION.clean):
                                                     learning_rate=learning_rate)
 
                 attack_params = 'lr{}_maxIter{}'.format(int(learning_rate * 10), max_iter)
-                # save_adv_examples(X_adv, prefix=prefix, bs_samples=X, dataset=dataset, transformation=trans_type,
-                #                   attack_method=method, attack_params=attack_params)
+                reset(X, trans_type)
+                reset(X_adv, trans_type)
+                save_adv_examples(X_adv, prefix=prefix, bs_samples=X, dataset=dataset, transformation=trans_type,
+                                  attack_method=method, attack_params=attack_params)
 
     elif method == ATTACK.JSMA:
         for theta in ATTACK.get_jsma_theta():
@@ -130,8 +150,10 @@ def craft(dataset, method, trans_type=TRANSFORMATION.clean):
                                                     theta=theta, gamma=gamma)
 
                 attack_params = 'theta{}_gamma{}'.format(int(100 * theta), int(100 * gamma))
-                # save_adv_examples(X_adv, prefix=prefix, dataset=dataset, transformation=trans_type,
-                #                   attack_method=method, attack_params=attack_params)
+                reset(X, trans_type)
+                reset(X_adv, trans_type)
+                save_adv_examples(X_adv, prefix=prefix, bs_samples=X, dataset=dataset, transformation=trans_type,
+                                  attack_method=method, attack_params=attack_params)
 
     elif method == ATTACK.PGD:
         nb_iter = 100
@@ -142,8 +164,10 @@ def craft(dataset, method, trans_type=TRANSFORMATION.clean):
             attack_params = 'eps{}_nbIter{}_epsIter{}'.format(
                 int(1000 * eps), nb_iter, int(1000 * eps_iter)
             )
-            # save_adv_examples(X_adv, prefix=prefix, dataset=dataset, transformation=trans_type,
-            #                   attack_method=method, attack_params=attack_params)
+            reset(X, trans_type)
+            reset(X_adv, trans_type)
+            save_adv_examples(X_adv, prefix=prefix, bs_samples=X, dataset=dataset, transformation=trans_type,
+                              attack_method=method, attack_params=attack_params)
 
     elif method == ATTACK.ONE_PIXEL:
         for pixel_counts in ATTACK.get_op_pxCnt():
@@ -157,8 +181,10 @@ def craft(dataset, method, trans_type=TRANSFORMATION.clean):
                     X_adv, _ = get_adversarial_examples(model_name, method, X, Y, **attack_params)
                     X_adv = np.asarray(X_adv)
                     attack_params = 'pxCount{}_maxIter{}_popsize{}'.format(pixel_counts, max_iter, pop_size)
-                    # save_adv_examples(X_adv, prefix=prefix, bs_samples=X, dataset=dataset, transformation=trans_type,
-                    #                   attack_method=method, attack_params=attack_params)
+                    reset(X, trans_type)
+                    reset(X_adv, trans_type)
+                    save_adv_examples(X_adv, prefix=prefix, bs_samples=X, dataset=dataset, transformation=trans_type,
+                                      attack_method=method, attack_params=attack_params)
     elif method == ATTACK.MIM:
         for eps in ATTACK.get_mim_eps():
             for nb_iter in ATTACK.get_mim_nbIter():
@@ -169,19 +195,10 @@ def craft(dataset, method, trans_type=TRANSFORMATION.clean):
 
                 X_adv, _ = get_adversarial_examples(model_name, method, X, Y, **attack_params)
                 attack_params = 'eps{}_nbIter{}'.format(int(eps * 100), nb_iter)
-
-    if trans_type == TRANSFORMATION.rotate90:
-        X = transform(X, TRANSFORMATION.rotate270)
-        X_adv = transform(X_adv, TRANSFORMATION.rotate270)
-    elif trans_type == TRANSFORMATION.rotate270:
-        X = transform(X, TRANSFORMATION.rotate90)
-        X_adv = transform(X_adv, TRANSFORMATION.rotate90)
-    elif trans_type == TRANSFORMATION.rotate180:
-        X = transform(X, TRANSFORMATION.rotate180)
-        X_adv = transform(X_adv, TRANSFORMATION.rotate180)
-
-    save_adv_examples(X_adv, prefix=prefix, bs_samples=X, dataset=dataset, transformation=trans_type,
-                      attack_method=method, attack_params=attack_params)
+                reset(X, trans_type)
+                reset(X_adv, trans_type)
+                save_adv_examples(X_adv, prefix=prefix, bs_samples=X, dataset=dataset, transformation=trans_type,
+                                  attack_method=method, attack_params=attack_params)
 
     del X
     del Y
