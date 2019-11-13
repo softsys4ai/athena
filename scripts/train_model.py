@@ -52,7 +52,7 @@ def main():
     for transformation_type in trans_types:
         TRANSFORMATION.set_cur_transformation_type(transformation_type)
         try:
-            # step 1. get a model
+            # step 1. get a model.
             # case 1. train a new model
             model = train_model((X, Y), transformation_type)
 
