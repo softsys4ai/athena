@@ -54,7 +54,7 @@ def main():
         try:
             # step 1. get a model
             # case 1. train a new model
-            model = train_model(X, transformation_type)
+            model = train_model((X, Y), transformation_type)
 
             # or case 2. load an existing model
             # model = models.load_model('model-{}-cnn-{}'.format(DATA.CUR_DATASET_NAME,
