@@ -1,5 +1,12 @@
+import os
+
+import numpy as np
+
 from collections import Counter
 from sklearn.metrics import accuracy_score
+from tensorflow.keras.models import load_model, Model
+
+from transformation import transform
 
 def load_models(modelsDir, modelFilenamePrefix, transformationList, convertToLogit=False):
     models=[]
@@ -12,9 +19,8 @@ def load_models(modelsDir, modelFilenamePrefix, transformationList, convertToLog
 
         modelNameFP = os.path.join(modelsDir, modelName+".h5")
         model = load_model(modelNameFP)
-        models.append(model)
 
-        if converToLogit:
+        if convertToLogit:
             layerName=model.layers[-2].name
             logitsModel = Model(
                     inputs=model.input,
@@ -25,7 +31,7 @@ def load_models(modelsDir, modelFilenamePrefix, transformationList, convertToLog
     print("Number of loaded models: {}".format(len(models)))
     return models
 
-def prediction(data, models, nClasses):
+def prediction(data, models, nClasses, transformationList):
     '''
         input:
             data: nSamples X <Sample Dimension>
@@ -38,6 +44,8 @@ def prediction(data, models, nClasses):
 
     for mIdx in range(nWeakModels):
         testData = data.copy() # some transformation will change the data.
+        transformationType = transformationList[mIdx]
+        testData = transform(testData, transformationType)
         rawPred[mIdx] = models[mIdx].predict(testData)
 
     return rawPred
@@ -62,7 +70,7 @@ def ensemble_random_defense(rawPred):
     return predLabels
 
 # ensemble_ID = 1
-def ensemble_majority_voting(rawPred)
+def ensemble_majority_voting(rawPred):
     '''
         input:
             rawPred: nWeakModels X nSamples X nClasses
@@ -84,7 +92,7 @@ def ensemble_majority_voting(rawPred)
 # ensemble_ID = 2
 # confidence: probability or logit
 # derive two ensemble models
-def ensemble_ave_confidence(rawPred)
+def ensemble_ave_confidence(rawPred):
     '''
         input:
             rawPred: nWeakModels X nSamples X nClasses
@@ -103,7 +111,7 @@ def ensemble_ave_confidence(rawPred)
 
 
 # ensemble_ID = 3
-def ensemble_top2labels_majority_voting(rawPred)
+def ensemble_top2labels_majority_voting(rawPred):
     '''
         input:
             rawPred: nWeakModels X nSamples X nClasses
@@ -148,7 +156,7 @@ def ensemble_defenses(
         datasetFilePath,
         nClasses,
         ensembleID,
-        useLogit=False)):
+        useLogit=False):
     '''
         input:
             modelFilenamePrefix and transformationList are used to obtain the filename of models.
@@ -158,14 +166,14 @@ def ensemble_defenses(
             labels: nSamples
     '''
     if useLogit:
-        converToLogit = True
+        convertToLogit = True
     else:
-        converToLogit = False
-    models = load_models(modelsDir, modelFilenamePrefix, transformationList, datasetName, convertToLogit=converToLogit)
+        convertToLogit = False
+    models = load_models(modelsDir, modelFilenamePrefix, transformationList, convertToLogit=convertToLogit)
 
-    data = load_data(datasetFilePath)
+    data = np.load(datasetFilePath)
     data = np.clip(data, 0, 1) # ensure its values inside [0, 1]
-    rawPred = prediction(data, models, nClasses)
+    rawPred = prediction(data, models, nClasses, transformationList)
 
     return ensemble_defenses_util(rawPred, ensembleID)
 
@@ -177,7 +185,7 @@ def evaluate_ensemble_defenses(
         trueLabelFilePath,
         nClasses,
         ensembleID,
-        useLogit=False)):
+        useLogit=False):
     '''
         input:
             modelFilenamePrefix and transformationList are used to obtain the filename of models.
@@ -193,7 +201,7 @@ def evaluate_ensemble_defenses(
             datasetFilePath,
             nClasses,
             ensembleID,
-            useLogit=useLogit))
+            useLogit=useLogit)
 
     trueLabels = np.load(trueLabelPath)
 
