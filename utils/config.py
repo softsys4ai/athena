@@ -359,7 +359,7 @@ class ATTACK(object):
     @classmethod
     def get_fgsm_eps(cls):
         # return [0.25, 0.3, 0.1, 0.05, 0.01, 0.005]  # full set
-        return [0.15] # for test
+        return [0.1, 0.25, 0.3] # for test
 
     @classmethod
     def get_fgsm_AETypes(cls):
@@ -373,22 +373,18 @@ class ATTACK(object):
     # ---------------------------
     @classmethod
     def get_bim_nbIter(cls):
-        return [1, 10, 100, 1000, 10000, 100000]  # full set
-        # return [100] # for test
+        return [100]
 
     @classmethod
     def get_bim_norm(cls):
         return [np.inf, 2]  # full set
-        # return [np.inf]
 
     @classmethod
     def get_bim_eps(cls, order):
         if order == 2:
-            return [0.1, 0.25, 0.5, 1]
-            # return [0.5, 0.25]
+            return [0.25, 0.5, 1]
         elif order == np.inf:
-            return [0.005, 0.01, 0.05, 0.1, 0.25, 0.5]
-            # return [0.01, 0.005]
+            return [0.1, 0.25, 0.5]
 
     @classmethod
     def get_bim_AETypes(cls):
@@ -404,8 +400,7 @@ class ATTACK(object):
     # ----------------------------
     @classmethod
     def get_df_maxIter(cls):
-        return [1, 10, 100, 1000, 10000, 100000]  # full set
-        # return [10]
+        return [100]
 
     @classmethod
     def get_df_norm(cls):
@@ -414,8 +409,7 @@ class ATTACK(object):
     @classmethod
     def get_df_overshoots(cls, order):
         if order == 2:
-            # return [5.0, 3.0, 1.5, 1.2, 0.9]
-            return [5.0, 4.5, 4.0, 3.5, 3.0, 2.5, 2.0, 1.5, 1.2]
+            return [20, 30, 50]
         elif order == np.inf:
             return [0.2, 0.5, 0.9]
 
@@ -440,9 +434,7 @@ class ATTACK(object):
 
     @classmethod
     def get_jsma_gamma(cls):
-        # gamma: Maximum percentage of perturbed features
-        return [0.05, 0.1, 0.3, 0.5, 0.7, 1.] # full set.
-        # return [0.5]
+        return [0.5, 0.7] # full set.
 
     @classmethod
     def get_jsma_AETypes(cls):
@@ -456,7 +448,6 @@ class ATTACK(object):
     # ----------------------------
     @classmethod
     def get_cwl2_maxIter(cls):
-        # return [1, 10, 100, 1000, 10000, 100000] # full set
         return [100]
 
     @classmethod
@@ -488,12 +479,12 @@ class ATTACK(object):
     # ----------------------------
     @classmethod
     def get_pgd_eps(cls):
-        return [1., 0.75, 0.5, 0.3, 0.25, 0.1, 0.05]
+        return [0.25, 0.5, 0.75]
 
     @classmethod
     def get_pgd_AETypes(cls):
         if DATA.CUR_DATASET_NAME == DATA.cifar_10:
-            return ['pgd_eps50_nbIter100_epsIter10', 'pgd_eps100_nbIter100_epsIter10']
+            return ['pgd_eps500', 'pgd_eps100']
         elif DATA.CUR_DATASET_NAME == DATA.mnist:
             return ['pgd_eps250', 'pgd_eps500', 'pgd_eps750']
 
@@ -502,17 +493,14 @@ class ATTACK(object):
     # --------------------------
     @classmethod
     def get_op_pxCnt(cls):
-        # return [5, 15, 30]
-        return [5]
+        return [5, 15, 30]
 
     @classmethod
     def get_op_maxIter(cls):
-        # return [50, 100, 200]
         return [30]
 
     @classmethod
     def get_op_popsize(cls):
-        # return [30, 50, 100]
         return [100]
 
     @classmethod
