@@ -302,7 +302,7 @@ class TRANSFORMATION(object):
         return transformations
 
     """
-    Transformation Compositions
+    Transformation Compositions.
     """
     composition1 = [noise_gaussian, affine_both_compress, filter_minimum]
 
