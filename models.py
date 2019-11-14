@@ -414,8 +414,10 @@ def save_model(model, model_name, director=PATH.MODEL):
 
     if dataset == DATA.cifar_10:
         save_to_json(model, model_name, director)
-    elif dataset == DATA.mnist:
-        model.save('{}/{}.h5'.format(director, model_name))
+    elif DATA.mnist in dataset:
+        model_fp = '{}/{}.h5'.format(director, model_name)
+        model.save(model_fp)
+        print("saved model to {}".format(model_fp))
 
 
 def load_model(model_name, director=PATH.MODEL):
