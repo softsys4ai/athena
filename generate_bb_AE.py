@@ -91,12 +91,11 @@ def craft(model_name, method, X, Y):
     elif method == ATTACK.PGD:
         nb_iter = 100
         eps_iter = 0.01
-        eps = 0.75 
+        eps = 0.30 
         X_adv, _ = get_adversarial_examples(model_name, method, X, Y,
                                             eps=eps, nb_iter=nb_iter, eps_iter=eps_iter)
-        attack_params = 'eps{}_nbIter{}_epsIter{}'.format(
-            int(1000 * eps), nb_iter, int(1000 * eps_iter)
-        )
+        attack_params = 'eps{}'.format(int(1000 * eps))
+       
         save_adv_examples(
                 X_adv, prefix=prefix, bs_samples=X, dataset=dataset,
                 transformation=trans_type, attack_method=method, attack_params=attack_params)
@@ -142,10 +141,10 @@ def main(argv):
     ensembleTag = argv[2]
     #cleanModelsDir=argv[1]
 
-    maxNumAEs = 1000
+    maxNumAEs = 500
     
     nClasses = 10
-    nSamplesList = [50, 100, 500, 1000, 5000]
+    nSamplesList = [10, 50, 100, 500, 1000]
 
     attack_methods = [
             #'fgsm',
@@ -158,9 +157,9 @@ def main(argv):
             #'onepixel'
             ]
     #ensembleTags = ["prob0", "prob1", "prob2", "prob3", "logit2"]
-    #ensembleTag = "prob1"
+    ensembleTag = "prob1"
 
-    #timeCosts = np.zeros((len(attack_methods), len(nSamplesList)))
+    timeCosts = np.zeros((len(attack_methods), len(nSamplesList)))
 
     for col, nSamples in zip(range(len(nSamplesList)), nSamplesList):
         nAEs = min(nSamples, maxNumAEs)
@@ -183,20 +182,20 @@ def main(argv):
             timeCost = round(end_time - start_time, 2)
             print("{} - {}: {}".format(nAEs, attack_method, timeCost))
 
-            #timeCosts[row, col] = timeCost
+            timeCosts[row, col] = timeCost
         except (FileNotFoundError, OSError) as e:
             print('Failed to load model [{}]: {}.'.format(model_name, e))
             continue
 
-#    with open("AE_time_cost.txt", "w") as fp:
-#        fp.write("\t50\t100\t500\t1000\t5000\n")
-#        for row in range(len(attack_methods)):
-#            fp.write(attack_methods[row]+"\t"
-#                    +str(timeCosts[row, 0])+"\t"
-#                    +str(timeCosts[row, 1])+"\t"
-#                    +str(timeCosts[row, 2])+"\t"
-#                    +str(timeCosts[row, 3])+"\t"
-#                    +str(timeCosts[row, 4])+"\n")
+    with open("AE_time_cost.txt", "w") as fp:
+        fp.write("\t50\t100\t500\t1000\t5000\n")
+        for row in range(len(attack_methods)):
+            fp.write(attack_methods[row]+"\t"
+                    +str(timeCosts[row, 0])+"\t"
+                    +str(timeCosts[row, 1])+"\t"
+                    +str(timeCosts[row, 2])+"\t"
+                    +str(timeCosts[row, 3])+"\t"
+                    +str(timeCosts[row, 4])+"\n")
 
 if __name__ == '__main__':
 
