@@ -60,7 +60,7 @@ AETypes = {
         "jsma":["jsma_theta30_gamma50", "jsma_theta50_gamma50", "jsma_theta50_gamma70"],
         "mim":["mim_eps20_nbIter1000", "mim_eps30_nbIter1000", "mim_eps50_nbIter1000"],
         "op":["onepixel_pxCount15_maxIter30_popsize100", "onepixel_pxCount30_maxIter30_popsize100", "onepixel_pxCount5_maxIter30_popsize100"],
-        "pgd":["pgd_eps250", "pgd_eps500", "pgd_eps750"]
+        "pgd":["pgd_eps250", "pgd_eps100", "pgd_eps300"]
         }
 
 sampleSubDirs=[
