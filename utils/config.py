@@ -452,7 +452,8 @@ class ATTACK(object):
 
     @classmethod
     def get_cwl2_lr(cls):
-        return [5.5, 7.5, 10]
+        # return [5.5, 7.5, 10]
+        return [3.5, 5, 7]
 
     @classmethod
     def get_cwl0_AETypes(cls):
@@ -466,7 +467,7 @@ class ATTACK(object):
         if DATA.CUR_DATASET_NAME == DATA.cifar_10:
             return []
         elif DATA.CUR_DATASET_NAME == DATA.mnist:
-            return ['cw_l2_lr550_maxIter100', 'cw_l2_lr750_maxIter100', 'cw_l2_lr700_maxIter1000']
+            return ['cw_l2_lr350_maxIter100', 'cw_l2_lr500_maxIter100', 'cw_l2_lr700_maxIter100']
 
     @classmethod
     def get_cwlinf_AETypes(cls):
