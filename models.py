@@ -431,7 +431,7 @@ def load_model(model_name, director=PATH.MODEL):
 
     if dataset == DATA.cifar_10:
         return load_from_json(model_name, director)
-    elif dataset == DATA.mnist:
+    elif DATA.mnist in dataset:
         return keras.models.load_model('{}/{}.h5'.format(director, model_name))
 
 
