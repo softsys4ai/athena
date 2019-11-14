@@ -480,14 +480,14 @@ class ATTACK(object):
     # ----------------------------
     @classmethod
     def get_pgd_eps(cls):
-        return [0.25, 0.5, 0.75]
+        return [0.1, 0.25, 0.3]
 
     @classmethod
     def get_pgd_AETypes(cls):
         if DATA.CUR_DATASET_NAME == DATA.cifar_10:
             return ['pgd_eps500', 'pgd_eps100']
         elif DATA.CUR_DATASET_NAME == DATA.mnist:
-            return ['pgd_eps250', 'pgd_eps500', 'pgd_eps750']
+            return ['pgd_eps100', 'pgd_eps250', 'pgd_eps300']
 
     # --------------------------
     # One-Pixel Parameters
