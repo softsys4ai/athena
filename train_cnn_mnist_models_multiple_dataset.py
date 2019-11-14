@@ -20,6 +20,7 @@ def train_model(data, model_name):
 def main(argv):
     BSDataFP=argv[0]
     newLabelDir=argv[1]
+    queriedDataDir=argv[2]
 
     newLabelFNs = [  "label_EnsembleID0_prob.npy",
                     "label_EnsembleID1_prob.npy",
@@ -45,6 +46,10 @@ def main(argv):
                 np.random.shuffle(inds)
                 selectedLabels = labels[inds[:nSamples]]
                 selectedX = X[inds[:nSamples]]
+                # saved for generating AEs later
+                np.save(os.path.join(queriedDataDir, datasetName+"_data.npy"), selectedX)
+                np.save(os.path.join(queriedDataDir, datasetName+"_label.npy"), selectedLabels)
+
                 Y = np.zeros((nSamples, nClasses))
                 for sIdx in range(nSamples):
                     Y[sIdx, selectedLabels[sIdx]] = 1
