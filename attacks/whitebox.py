@@ -169,7 +169,7 @@ Prepare compile parameters
 def get_compile_params(dataset=DATA.mnist, metrics=None):
     compile_params = {}
 
-    if dataset == DATA.mnist:
+    if DATA.mnist in dataset:
         compile_params = {
             'optimizer': keras.optimizers.Adam(lr=0.001),
             'metrics': metrics
