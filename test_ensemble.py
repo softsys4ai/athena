@@ -137,6 +137,7 @@ useLogit=True
 print("Loading logit models")
 logitModels = load_models(modelsDir, modelFilenamePrefix, transformationList, convertToLogit=useLogit)
 
+rowIdx=0
 for datasetFilePath in datasetFilePaths:
     accs[rowIdx, 4], transTCs_Logit[rowIdx], predTCs_Logit[rowIdx], ensembleTCs[rowIdx, 4] = testOneData(
             datasetFilePath,
