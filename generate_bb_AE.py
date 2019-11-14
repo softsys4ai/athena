@@ -142,11 +142,10 @@ def main(argv):
     ensembleTag = argv[2]
     #cleanModelsDir=argv[1]
 
-    nAEs = 10
+    maxNumAEs = 1000
     
     nClasses = 10
     nSamplesList = [50, 100, 500, 1000, 5000]
-    nSamplesList.reverse()
 
     attack_methods = [
             #'fgsm',
@@ -164,15 +163,13 @@ def main(argv):
     #timeCosts = np.zeros((len(attack_methods), len(nSamplesList)))
 
     for col, nSamples in zip(range(len(nSamplesList)), nSamplesList):
+        nAEs = min(nSamples, maxNumAEs)
         datasetName = "mnist"+str(nSamples)+"Samples"+ensembleTag
         model_name = "model-{}-cnn-clean".format(datasetName)
         X = np.load(os.path.join(queriedDir, datasetName+"_data.npy"))[:nAEs]
         labels = np.load(os.path.join(queriedDir, datasetName+"_label.npy"))[:nAEs]
        
         print("Attacking {}.h5".format(model_name))
-        #nSamples = nAEs
-        #datasetName = "mnist"+str(nSamples)+"Samples"+ensembleTag
-        #model_name = "model-{}-cnn-clean".format(datasetName)
 
         try:
             Y = np.zeros((nAEs, nClasses))
@@ -202,7 +199,5 @@ def main(argv):
 #                    +str(timeCosts[row, 4])+"\n")
 
 if __name__ == '__main__':
-    """
-    switch on debugging mode
-    """
+
     main(sys.argv[1:])
