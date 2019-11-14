@@ -139,6 +139,7 @@ def main(argv):
 
     queriedDir=argv[0]
     attack_method = argv[1]
+    ensembleTag = argv[2]
     #cleanModelsDir=argv[1]
 
     nAEs = 10
@@ -158,7 +159,7 @@ def main(argv):
             #'onepixel'
             ]
     #ensembleTags = ["prob0", "prob1", "prob2", "prob3", "logit2"]
-    ensembleTag = "prob1"
+    #ensembleTag = "prob1"
 
     #timeCosts = np.zeros((len(attack_methods), len(nSamplesList)))
 
