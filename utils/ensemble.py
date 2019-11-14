@@ -1,5 +1,5 @@
 import os
-
+import time
 import numpy as np
 
 from collections import Counter
@@ -41,14 +41,21 @@ def prediction(data, models, nClasses, transformationList):
     '''
     nSamples, nWeakModels = data.shape[0], len(models)
     rawPred = np.zeros((nWeakModels, nSamples, nClasses))
-
+    transTCs = []
+    predTCs = []
     for mIdx in range(nWeakModels):
         testData = data.copy() # some transformation will change the data.
+
+        startTime = time.time()
         transformationType = transformationList[mIdx]
         testData = transform(testData, transformationType)
-        rawPred[mIdx] = models[mIdx].predict(testData)
+        transTCs.append(time.time()-startTime)
 
-    return rawPred
+        startTime = time.time()
+        rawPred[mIdx] = models[mIdx].predict(testData)
+        predTCs.append(time.time() - startTime)
+
+    return rawPred, transTCs, predTCs
 
 
 # ensemble_ID = 0
@@ -156,7 +163,8 @@ def ensemble_defenses(
         datasetFilePath,
         nClasses,
         ensembleID,
-        useLogit=False):
+        useLogit=False,
+        checkTimeCost=False):
     '''
         input:
             modelFilenamePrefix and transformationList are used to obtain the filename of models.
@@ -173,7 +181,7 @@ def ensemble_defenses(
 
     data = np.load(datasetFilePath)
     data = np.clip(data, 0, 1) # ensure its values inside [0, 1]
-    rawPred = prediction(data, models, nClasses, transformationList)
+    rawPred, transTCs, predTCs = prediction(data, models, nClasses, transformationList)
 
     return ensemble_defenses_util(rawPred, ensembleID)
 
@@ -185,7 +193,8 @@ def evaluate_ensemble_defenses(
         trueLabelFilePath,
         nClasses,
         ensembleID,
-        useLogit=False):
+        useLogit=False,
+        checkTimeCost=False):
     '''
         input:
             modelFilenamePrefix and transformationList are used to obtain the filename of models.
@@ -201,7 +210,8 @@ def evaluate_ensemble_defenses(
             datasetFilePath,
             nClasses,
             ensembleID,
-            useLogit=useLogit)
+            useLogit=useLogit,
+            checkTimeCost=False)
 
     trueLabels = np.load(trueLabelPath)
 
