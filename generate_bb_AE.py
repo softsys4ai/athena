@@ -160,7 +160,7 @@ def main(argv):
     #ensembleTag = "prob1"
 
     timeCosts = np.zeros((len(attack_methods), len(nSamplesList)))
-    row=1
+    row=0
     for col, nSamples in zip(range(len(nSamplesList)), nSamplesList):
         nAEs = min(nSamples, maxNumAEs)
         datasetName = "mnist"+str(nSamples)+"Samples"+ensembleTag
