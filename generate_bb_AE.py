@@ -146,7 +146,7 @@ def main(argv):
     nClasses = 10
     nSamplesList = [10, 50, 100, 500, 1000]
 
-    attack_methods = [
+    attack_methods = [attack_method
             #'fgsm',
             #'bim',
             #'deepfool',
@@ -160,7 +160,7 @@ def main(argv):
     #ensembleTag = "prob1"
 
     timeCosts = np.zeros((len(attack_methods), len(nSamplesList)))
-
+    row=1
     for col, nSamples in zip(range(len(nSamplesList)), nSamplesList):
         nAEs = min(nSamples, maxNumAEs)
         datasetName = "mnist"+str(nSamples)+"Samples"+ensembleTag
@@ -183,11 +183,11 @@ def main(argv):
             print("{} - {}: {}".format(nAEs, attack_method, timeCost))
 
             timeCosts[row, col] = timeCost
-        except (FileNotFoundError, OSError) as e:
+        except (OSError) as e:
             print('Failed to load model [{}]: {}.'.format(model_name, e))
             continue
 
-    TC_FP = "AE_TimeCost-"+attack_method+"-"ensembleTag+".txt"
+    TC_FP = "AE_TimeCost-"+attack_method+"-"+ensembleTag+".txt"
  
     with open(TC_FP, "w") as fp:
         fp.write("\t10\t50\t100\t500\t1000\n")
