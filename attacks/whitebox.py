@@ -24,9 +24,9 @@ from cleverhans.attacks import MomentumIterativeMethod
 from cleverhans.evaluation import batch_eval
 from cleverhans.utils_keras import KerasModelWrapper
 
-from attacks.carlini_wagner_l0 import CarliniWagnerL0
+#from attacks.carlini_wagner_l0 import CarliniWagnerL0
 from attacks.carlini_wagner_l2 import CarliniWagnerL2
-from attacks.carlini_wagner_li import CarliniWagnerLinf
+#from attacks.carlini_wagner_li import CarliniWagnerLinf
 
 # FLAGS = flags.FLAGS
 
