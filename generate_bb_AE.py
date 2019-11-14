@@ -157,7 +157,7 @@ def main(argv):
             #'onepixel'
             ]
     #ensembleTags = ["prob0", "prob1", "prob2", "prob3", "logit2"]
-    ensembleTag = "prob1"
+    #ensembleTag = "prob1"
 
     timeCosts = np.zeros((len(attack_methods), len(nSamplesList)))
 
@@ -187,8 +187,10 @@ def main(argv):
             print('Failed to load model [{}]: {}.'.format(model_name, e))
             continue
 
-    with open("AE_time_cost.txt", "w") as fp:
-        fp.write("\t50\t100\t500\t1000\t5000\n")
+    TC_FP = "AE_TimeCost-"+attack_method+"-"ensembleTag+".txt"
+ 
+    with open(TC_FP, "w") as fp:
+        fp.write("\t10\t50\t100\t500\t1000\n")
         for row in range(len(attack_methods)):
             fp.write(attack_methods[row]+"\t"
                     +str(timeCosts[row, 0])+"\t"

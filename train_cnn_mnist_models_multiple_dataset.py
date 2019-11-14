@@ -28,7 +28,7 @@ def main(argv):
                     "label_EnsembleID3_prob.npy",
                     "label_EnsembleID2_logit.npy"]
     ensembleTags = ["prob0", "prob1", "prob2", "prob3", "logit2"]
-    nSamplesList = [50, 100, 500, 1000, 5000]
+    nSamplesList = [10, 50, 100, 500, 1000]
 
     nClasses=10
     DATA.set_current_dataset_name(DATA.mnist)
