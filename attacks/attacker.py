@@ -90,22 +90,33 @@ def get_adversarial_examples(model_name, attack_method, X, Y, **kwargs):
     elif (attack_method == ATTACK.DEEPFOOL):
         # Images for inception classifier are normalized to be in [0, 255] interval.
         # max_iterations = kwargs.get('max_iterations', 100)
-        max_iterations = 100
+        # keras.backend.set_learning_phase(True)
+        max_iterations = 50
         ord = kwargs.get('ord', 2)
-        overshoot = kwargs.get('overshoot', 1.0)
+        overshoot = kwargs.get('overshoot', 0.02)
 
         attack_params = {
             'ord': ord,
             'max_iterations': max_iterations,
-            'nb_candidate': Y.shape[1],
+            'nb_candidate': int(Y.shape[1]/2),
             'overshoot': overshoot,
             'clip_min': 0.,
-            'clip_max': 1.
+            'clip_max': 255.
         }
 
+        print(attack_params)
         logger.info('{}: (max_iterations={})'.format(attack_method.upper(), max_iterations))
+
+        X *= 255.
+        Y *= 255
+
         start_time = time.time()
         X_adv, Y = whitebox.generate(sess, model, X, Y, attack_method, dataset, attack_params)
+
+        X /= 255.
+        Y /= 255.
+        X_adv /= 255.
+
         duration = time.time() - start_time
         print('Time cost: {}'.format(duration))
 
@@ -236,7 +247,7 @@ def get_adversarial_examples(model_name, attack_method, X, Y, **kwargs):
         eps = kwargs.get('eps', 0.3)
         eps_iter = kwargs.get('eps_iter', 0.06)
         nb_iter = kwargs.get('nb_iter', 10)
-        decay_factor = kwargs.get('decay_factor', 1.0)
+        decay_factor = kwargs.get('decay_factor', 0.5)
         y_target = kwargs.get('y_target', None)
 
         attack_params = {

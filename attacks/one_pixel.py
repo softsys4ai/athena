@@ -115,7 +115,8 @@ class OnePixel(object):
         prediction_func = lambda xs: self.predict_class(xs, img, target_label, (not self.targeted))
         callback_func = lambda x, convergence: self.attack_success(x, img, target_label, self.targeted)
 
-        print('Differential Evolution')
+        if MODE.DEBUG:
+            print('Differential Evolution')
         perturbations = differential_evolution(
             prediction_func, bounds, maxiter=self.max_iter, popsize=popmul,
             recombination=1, atol=-1, callback=callback_func, polish=False
@@ -170,11 +171,7 @@ class OnePixel(object):
                 # x_orig, x_adv, perturbation, _, prior_label, _, pred_label, _, _ = self.attack(img, true_label=y_true, target_label=target_label)
                 x_orig, x_adv, perturbations, prior_label, pred_label, _ = self.attack(img, true_label=y_true, target_label=target_label)
 
-                if MODE.DEBUG:
-                    print('true/legitimate/adv: {}/{}/{}'.format(y_true, prior_label, pred_label))
-                    # if i % 2 == 0:
-                    #     plot_image(x_adv, title='{} -> {}'.format(prior_label, pred_label))
-                    #     plot_image((x_orig - x_adv), title='perturbation {}'.format(i))
+                print('{}-th >>> true/legitimate/adv: {}/{}/{}'.format(i, y_true, prior_label, pred_label))
 
                 X_adv.append(x_adv)
 

@@ -358,8 +358,7 @@ class ATTACK(object):
     # ---------------------------
     @classmethod
     def get_fgsm_eps(cls):
-        # return [0.25, 0.3, 0.1, 0.05, 0.01, 0.005]  # full set
-        return [0.1, 0.25, 0.3] # for test
+        return [0.1, 0.25, 0.3] # FOR PAPER(MNIST), DON'T REMOVE! COMMENT OUT IF DON'T WANT THESE!
 
     @classmethod
     def get_fgsm_AETypes(cls):
@@ -382,9 +381,9 @@ class ATTACK(object):
     @classmethod
     def get_bim_eps(cls, order):
         if order == 2:
-            return [0.25, 0.5, 1]
+            return [0.75, 1.0, 1.2] # FOR PAPER(MNIST), DON'T REMOVE! COMMENT OUT IF DON'T WANT THESE!
         elif order == np.inf:
-            return [0.075, 0.09, 0.1]
+            return [0.075, 0.09, 0.12] # FOR PAPER(MNIST), DON'T REMOVE! COMMENT OUT IF DON'T WANT THESE!
 
     @classmethod
     def get_bim_AETypes(cls):
@@ -392,24 +391,24 @@ class ATTACK(object):
             return ['bim_ord2_nbIter100_eps500', 'bim_ord2_nbIter100_eps1000',
                     'bim_ordinf_nbIter100_eps50', 'bim_ordinf_nbIter100_eps100']
         elif DATA.CUR_DATASET_NAME == DATA.mnist:
-            return ['bim_ord2_nbIter100_eps250', 'bim_ord2_nbIter100_eps500', 'bim_ord2_nbIter100_eps1000',
-                    'bim_ordinf_nbIter100_eps75', 'bim_ordinf_nbIter100_eps90', 'bim_ordinf_nbIter100_eps100']
+            return ['bim_ord2_nbIter100_eps750', 'bim_ord2_nbIter100_eps1000', 'bim_ord2_nbIter100_eps1200',
+                    'bim_ordinf_nbIter100_eps75', 'bim_ordinf_nbIter100_eps90', 'bim_ordinf_nbIter100_eps120']
 
     # ----------------------------
     # Deepfool parameters
     # ----------------------------
     @classmethod
     def get_df_maxIter(cls):
-        return [100]
+        return [500]
 
     @classmethod
     def get_df_norm(cls):
-        return [2, np.inf]
+        return [2] #, np.inf]
 
     @classmethod
     def get_df_overshoots(cls, order):
         if order == 2:
-            return [20, 30, 50]
+            return [3, 8, 20] # FOR PAPER(MNIST), DON'T REMOVE! COMMENT OUT IF DON'T WANT THESE!
         elif order == np.inf:
             return [0.2, 0.5, 0.9]
 
@@ -418,30 +417,7 @@ class ATTACK(object):
         if DATA.CUR_DATASET_NAME == DATA.cifar_10:
             return ["deepfool_maxIter100", "deepfool_maxIter10000"]
         elif DATA.CUR_DATASET_NAME == DATA.mnist:
-            return ['deepfool_l2_overshoot20', 'deepfool_l2_overshoot30', 'deepfool_l2_overshoot50']
-
-    # ----------------------------
-    # JSMA parameters
-    # ----------------------------
-    @classmethod
-    def get_jsma_theta(cls):
-        # theta: Perturbation introduced to modified components (can be positive or negative)
-        # for Grayscale, positive only.
-        if DATA.CUR_DATASET_NAME == DATA.cifar_10:
-            return [-1., -0.5, -0.3, 0.3, 0.5, 1.]
-        else:
-            return [0.3, 0.5]
-
-    @classmethod
-    def get_jsma_gamma(cls):
-        return [0.5, 0.7] # full set.
-
-    @classmethod
-    def get_jsma_AETypes(cls):
-        if DATA.CUR_DATASET_NAME == DATA.cifar_10:
-            return ['jsma_theta30_gamma50', 'jsma_theta50_gamma70']
-        elif DATA.CUR_DATASET_NAME == DATA.mnist:
-            return ['jsma_theta30_gamma50', 'jsma_theta50_gamma50', 'jsma_theta50_gamma70']
+            return ['deepfool_l2_overshoot3', 'deepfool_l2_overshoot8', 'deepfool_l2_overshoot20']
 
     # ----------------------------
     # CW (L0/L2/Linf) parameters
@@ -452,8 +428,7 @@ class ATTACK(object):
 
     @classmethod
     def get_cwl2_lr(cls):
-        # return [5.5, 7.5, 10]
-        return [3.5, 5, 7]
+        return [0.01, 0.012, 0.015] # FOR PAPER(MNIST), DON'T REMOVE! COMMENT OUT IF DON'T WANT THESE!
 
     @classmethod
     def get_cwl0_AETypes(cls):
@@ -467,7 +442,7 @@ class ATTACK(object):
         if DATA.CUR_DATASET_NAME == DATA.cifar_10:
             return []
         elif DATA.CUR_DATASET_NAME == DATA.mnist:
-            return ['cw_l2_lr350_maxIter100', 'cw_l2_lr500_maxIter100', 'cw_l2_lr700_maxIter100']
+            return ['cw_l2_lr10_maxIter100', 'cw_l2_lr12_maxIter100', 'cw_l2_lr15_maxIter100']
 
     @classmethod
     def get_cwlinf_AETypes(cls):
@@ -475,26 +450,36 @@ class ATTACK(object):
             return []
         elif DATA.CUR_DATASET_NAME == DATA.mnist:
             return []
+
     # ----------------------------
-    # PGD parameters
+    # JSMA parameters
     # ----------------------------
     @classmethod
-    def get_pgd_eps(cls):
-        return [0.1, 0.25, 0.3]
+    def get_jsma_theta(cls):
+        # theta: Perturbation introduced to modified components (can be positive or negative)
+        # for Grayscale, positive only.
+        if DATA.CUR_DATASET_NAME == DATA.cifar_10:
+            return [-1., -0.5, -0.3, 0.3, 0.5, 1.]
+        else:
+            return [0.15, 0.18, 0.21] # FOR PAPER(MNIST), DON'T REMOVE! COMMENT OUT IF DON'T WANT THESE!
 
     @classmethod
-    def get_pgd_AETypes(cls):
+    def get_jsma_gamma(cls):
+        return [0.5]
+
+    @classmethod
+    def get_jsma_AETypes(cls):
         if DATA.CUR_DATASET_NAME == DATA.cifar_10:
-            return ['pgd_eps500', 'pgd_eps100']
+            return ['jsma_theta30_gamma50', 'jsma_theta50_gamma70']
         elif DATA.CUR_DATASET_NAME == DATA.mnist:
-            return ['pgd_eps100', 'pgd_eps250', 'pgd_eps300']
+            return ['jsma_theta15_gamma50', 'jsma_theta18_gamma50', 'jsma_theta21_gamma50']
 
     # --------------------------
     # One-Pixel Parameters
     # --------------------------
     @classmethod
     def get_op_pxCnt(cls):
-        return [5, 15, 30]
+        return [5, 30, 75] # FOR PAPER(MNIST), DON'T REMOVE! COMMENT OUT IF DON'T WANT THESE!
 
     @classmethod
     def get_op_maxIter(cls):
@@ -507,15 +492,15 @@ class ATTACK(object):
     @classmethod
     def get_op_AETypes(cls):
         return ['onepixel_pxCount5_maxIter30_popsize100',
-                'onepixel_pxCount15_maxIter30_popsize100',
-                'onepixel_pxCount30_maxIter30_popsize100']
+                'onepixel_pxCount30_maxIter30_popsize100',
+                'onepixel_pxCount75_maxIter30_popsize100']
 
     # --------------------------
     # MIM Parameters
     # --------------------------
     @classmethod
     def get_mim_eps(cls):
-        return [0.2, 0.3, 0.5]
+        return [0.05, 0.075, 0.1] # FOR PAPER(MNIST), DON'T REMOVE! COMMENT OUT IF DON'T WANT THESE!
 
     @classmethod
     def get_mim_nbIter(cls):
@@ -523,11 +508,26 @@ class ATTACK(object):
 
     @classmethod
     def get_mim_decayFactor(cls):
-        return [1.0]
+        return [0.75]
 
     @classmethod
     def get_mim_AETypes(cls):
-        return ['mim_eps20_nbIter1000', 'mim_eps30_nbIter1000', 'mim_eps50_nbIter1000']
+        return ['mim_eps50_nbIter1000', 'mim_eps75_nbIter1000', 'mim_eps100_nbIter1000']
+
+    # ----------------------------
+    # PGD parameters
+    # ----------------------------
+    @classmethod
+    def get_pgd_eps(cls):
+        return [0.075, 0.09, 0.1] # FOR PAPER(MNIST), DON'T REMOVE! COMMENT OUT IF DON'T WANT THESE!
+
+    @classmethod
+    def get_pgd_AETypes(cls):
+        if DATA.CUR_DATASET_NAME == DATA.cifar_10:
+            return ['pgd_eps500', 'pgd_eps100']
+        elif DATA.CUR_DATASET_NAME == DATA.mnist:
+            return ['pgd_eps75_nbIter1000_epsIter50', 'pgd_eps90_nbIter1000_epsIter50', 'pgd_eps100_nbIter1000_epsIter50']
+
 
 class MODEL(object):
     """
@@ -580,6 +580,7 @@ class PATH(object):
 
     print('PROJECT DICTIONARY: {}'.format(PROJECT_DIR))
     MODEL = '{}/data/models'.format(PROJECT_DIR)
+
     ADVERSARIAL_FILE = '{}/data/adversarial_examples'.format(PROJECT_DIR)
 
     FIGURES = '{}/data/figures'.format(PROJECT_DIR)

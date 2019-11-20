@@ -22,27 +22,27 @@ def reset(X, trans_type):
     return X
 
 
-def craft(dataset, method, trans_type=TRANSFORMATION.clean):
+def craft(dataset, gen_test=True, method=ATTACK.FGSM, trans_type=TRANSFORMATION.clean):
     print('loading original images...')
-    # generate for test set
-    _, (X, Y) = load_data(dataset)
-    prefix = 'test'
 
-    # ------ for black-box attack ------
-    # generate for train set (the last 20% of the original train set)
-    # (X, Y), _ = load_data(dataset)
-    # nb_trainings = int(X.shape[0] * 0.8)
-    # X = X[nb_trainings:]
-    # Y = Y[nb_trainings:]
-    # prefix = 'val'
-    # ---------------------------------
+    if gen_test:
+        # generate for test set
+        _, (X, Y) = load_data(dataset)
+        prefix = 'test'
+    else:
+        # generate for train set (the last 20% of the original train set)
+        (X, Y), _ = load_data(dataset)
+        nb_trainings = int(X.shape[0] * 0.8)
+        X = X[nb_trainings:]
+        Y = Y[nb_trainings:]
+        prefix = 'val'
 
     """
     In debugging mode, crafting for 50 samples.
     """
     if MODE.DEBUG:
-        X = X[:50]
-        Y = Y[:50]
+        X = X[:30]
+        Y = Y[:30]
 
     X = transform(X, trans_type)
     model_name = 'model-{}-cnn-{}'.format(dataset, trans_type)
@@ -82,16 +82,16 @@ def craft(dataset, method, trans_type=TRANSFORMATION.clean):
                 X_adv, _ = get_adversarial_examples(model_name, method, X, Y,
                                                     ord=order, overshoot=overshoot)
 
-                attack_params = 'l{}_overshoot{}'.format(order, int(overshoot * 10))
+                attack_params = 'l{}_overshoot{}'.format(order, int(overshoot))
                 reset(X, trans_type)
                 reset(X_adv, trans_type)
                 save_adv_examples(X_adv, prefix=prefix, bs_samples=X, dataset=dataset, transformation=trans_type,
                                   attack_method=method, attack_params=attack_params)
 
     elif method == ATTACK.CW_L2:
-        binary_search_steps = 9
-        cw_batch_size = 1
-        initial_const = 10
+        binary_search_steps = 16 #9
+        cw_batch_size = 2 #1
+        initial_const = 1 #10
 
         for learning_rate in ATTACK.get_cwl2_lr():
             for max_iter in ATTACK.get_cwl2_maxIter():
@@ -101,7 +101,7 @@ def craft(dataset, method, trans_type=TRANSFORMATION.clean):
                                                     binary_search_steps=binary_search_steps, cw_batch_size=cw_batch_size,
                                                     initial_const=initial_const, learning_rate=learning_rate)
 
-                attack_params = 'lr{}_maxIter{}'.format(int(learning_rate * 100), max_iter)
+                attack_params = 'lr{}_maxIter{}'.format(int(learning_rate * 1000), max_iter)
                 reset(X, trans_type)
                 reset(X_adv, trans_type)
                 save_adv_examples(X_adv, prefix=prefix, bs_samples=X, dataset=dataset, transformation=trans_type,
@@ -156,14 +156,17 @@ def craft(dataset, method, trans_type=TRANSFORMATION.clean):
                                   attack_method=method, attack_params=attack_params)
 
     elif method == ATTACK.PGD:
-        nb_iter = 100
-        eps_iter = 0.01
+        nb_iter = 1000
+        eps_iter = 0.05 #0.01
+
         for eps in ATTACK.get_pgd_eps():
+            if eps < 0.05:
+                eps_iter = 0.01
+            elif eps <= 0.01:
+                eps_iter = 0.005
             X_adv, _ = get_adversarial_examples(model_name, method, X, Y,
                                                 eps=eps, nb_iter=nb_iter, eps_iter=eps_iter)
-            attack_params = 'eps{}_nbIter{}_epsIter{}'.format(
-                int(1000 * eps), nb_iter, int(1000 * eps_iter)
-            )
+            attack_params = 'eps{}_nbIter{}_epsIter{}'.format(int(1000 * eps), nb_iter, int(1000 * eps_iter))
             reset(X, trans_type)
             reset(X_adv, trans_type)
             save_adv_examples(X_adv, prefix=prefix, bs_samples=X, dataset=dataset, transformation=trans_type,
@@ -204,16 +207,12 @@ def craft(dataset, method, trans_type=TRANSFORMATION.clean):
     del Y
 
 
-def main(dataset, attack_method):
+def main(dataset, gen_test, attack_method):
     # trans_types = TRANSFORMATION.supported_types()
-
     trans_types = [TRANSFORMATION.clean]
     for trans in trans_types:
-        # if trans == TRANSFORMATION.clean:
-        #     continue
-
         try:
-            craft(dataset, attack_method, trans)
+            craft(dataset, gen_test, attack_method, trans)
         except (FileNotFoundError, OSError) as e:
             print('Failed to load model [{}]: {}.'.format(trans, e))
             continue
@@ -224,4 +223,5 @@ if __name__ == '__main__':
     """
     # MODE.debug_on()
     MODE.debug_off()
-    main(DATA.mnist, ATTACK.FGSM)
+    gen_test = True
+    main(DATA.mnist, gen_test, ATTACK.DEEPFOOL)

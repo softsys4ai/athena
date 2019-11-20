@@ -85,14 +85,14 @@ def generate(sess, model, X, Y, attack_method, dataset, attack_params):
         Untageted attack
         """
         # TODO: bug fix --- cannot compute gradients correctly
-        attacker = CarliniWagnerLinf(wrap_model, sess=sess)
+        # attacker = CarliniWagnerLinf(wrap_model, sess=sess)
 
     elif attack_method == ATTACK.CW_L0:
         """
         Untargeted attack
         """
         # TODO: bug fix --- cannot compute gradients correctly
-        attacker = CarliniWagnerL0(wrap_model, sess=sess)
+        # attacker = CarliniWagnerL0(wrap_model, sess=sess)
 
     elif attack_method == ATTACK.DEEPFOOL:
         """
@@ -153,7 +153,7 @@ def generate(sess, model, X, Y, attack_method, dataset, attack_params):
 
     # generating adversarial examples
     print('generating adversarial example...')
-    adv_examples, = batch_eval(sess, [model.input, model(adv_x)], [adv_x],
+    adv_examples, = batch_eval(sess, [model.input, wrap_model(adv_x)], [adv_x],
                                [X, Y], batch_size=batch_size)
 
     if MODE.DEBUG:
