@@ -8,6 +8,7 @@ import numpy as np
 from utils.csv_headers import IdealModelEvalHeaders as headers
 import os
 import matplotlib.pyplot as plt
+from matplotlib.ticker import FormatStrFormatter
 from utils.config import PATH, MODE
 
 line_styles = ['-', '--', ':', '-.', '.']
@@ -32,6 +33,7 @@ class LEGEND_LOCATION(Enum):
     LOWER_CENTER = 'lower center'
     UPPER_CENTER = 'upper center'
     CENTER = 'center'
+
 
 class legend(object):
     def __init__(self):
@@ -59,6 +61,7 @@ class legend(object):
 
     def set_shadow(self, shadow):
         self.shadow = shadow
+
 
 class plot_settings(object):
     def __init__(self):
@@ -118,7 +121,79 @@ class plot_settings(object):
         self.xlim_min = min
         self.xlim_max = max
 
-def plot_image(image, title="None", save=False):
+
+def x_iter_schedule(duration):
+    x_iter = 10
+
+    if duration < 10:
+        x_iter = 1
+    elif duration < 20:
+        x_iter = 2
+    elif duration < 50:
+        x_iter = 5
+    elif duration < 100:
+        x_iter = 10
+    elif duration < 1000:
+        x_iter = 50
+    else:
+        x_iter = 100
+
+    return x_iter
+
+
+def boxplot(data_to_plot, title="Boxplot", xticklabels=None,
+            horizontal_box=False, show=False, save=False):
+    fig = plt.figure(1, figsize=(9, 6))
+    ax = fig.add_subplot(111)
+
+    if horizontal_box:
+        ## add patch_artist=True option to ax.boxplot()
+        ## to get fill color
+        bp = ax.boxplot(data_to_plot, patch_artist=True, vert=0)
+    else:
+        ## add patch_artist=True option to ax.boxplot()
+        ## to get fill color
+        bp = ax.boxplot(data_to_plot, patch_artist=True)
+
+    # set tick labels
+    if xticklabels is not None:
+        ax.set_xticklabels(xticklabels)
+
+    ### Styling
+    ## change outline color, fill color and linewidth of the boxes
+    for box in bp['boxes']:
+        # change outline color
+        box.set(color='#7570b3', linewidth=2)
+        # change fill color
+        box.set(facecolor='#1b9e77')
+
+    ## change color and linewidth of the whiskers
+    for whisker in bp['whiskers']:
+        whisker.set(color='#7570b3', linewidth=2)
+
+    ## change color and linewidth of the caps
+    for cap in bp['caps']:
+        cap.set(color='#7570b3', linewidth=2)
+
+    ## change color and linewidth of the medians
+    for median in bp['medians']:
+        median.set(color='#b2df8a', linewidth=2)
+
+    ## change the style of fliers and their fill
+    for flier in bp['fliers']:
+        flier.set(marker='o', color='#e7298a', alpha=0.5)
+
+    if save:
+        plt.savefig(
+            os.path.join(PATH.FIGURES, '{}.pdf'.format(title)),
+            bbox_inches='tight'
+        )
+
+    if show:
+        plt.show()
+        plt.close()
+
+def plot_image(image, title="Image", save=False):
     img_rows, img_cols, nb_channels = image.shape
 
     if (nb_channels == 1):
@@ -326,15 +401,16 @@ def plot_scatter_with_certainty(data, filling_borders, setting=plot_settings(),
                  markersize=(line_width + 1), linewidth=line_width)
 
     # fill areas
-    nb_filling_areas = len(filling_borders)
-    for i in range(nb_filling_areas):
-        x, upper_bound, lower_bound = filling_borders[i]
-        x1 = [a - 1 for a in x]
-        # x1 = x
-        print('upper_bound:', upper_bound)
-        print('lower_bound:', lower_bound)
+    if filling_borders:
+        nb_filling_areas = len(filling_borders)
+        for i in range(nb_filling_areas):
+            x, upper_bound, lower_bound = filling_borders[i]
+            x1 = [a - 1 for a in x]
+            # x1 = x
+            print('upper_bound:', upper_bound)
+            print('lower_bound:', lower_bound)
 
-        plt.fill_between(x1, lower_bound, upper_bound, color='gold', alpha=.20)
+            plt.fill_between(x1, lower_bound, upper_bound, color='silver', alpha=.50)
 
     if setting.title is not None:
         plt.title(setting.title, fontsize=setting.title_fontsize)
@@ -342,21 +418,18 @@ def plot_scatter_with_certainty(data, filling_borders, setting=plot_settings(),
     xticks = []
     xticks_labels = []
 
-    iter = 5
+    iter = x_iter_schedule(setting.xlim_max - setting.xlim_min)
 
     for i in data[keys[0]]:
         i = int(i)
-        # if i < 40:
-        #     iter = 5
-        # else:
-        #     iter = 10
 
         if 0 == i % iter:
-            xticks.append(i - 1)
+            xticks.append(i-1)
             xticks_labels.append(i)
 
     plt.xticks(xticks, xticks_labels, fontsize=setting.xticks_fontsize)
     plt.yticks(fontsize=setting.yticks_fontsize)
+    plt.gca().yaxis.set_major_formatter(FormatStrFormatter('%.2f'))
 
     if first_key_as_xlabel:
         # get xlabel from data
@@ -365,7 +438,7 @@ def plot_scatter_with_certainty(data, filling_borders, setting=plot_settings(),
         plt.xlabel(setting.xlabel, fontsize=setting.xlabel_fontsize)
 
     if setting.ylabel is not None:
-        plt.ylabel(setting.ylabel, fontsize=setting.ylabel_fontsize)
+        plt.ylabel(setting.ylabel, fontsize=setting.ylabel_fontsize, )
 
     if setting.ylim_min is not None and setting.ylim_max is not None:
         plt.ylim(setting.ylim_min, setting.ylim_max)
@@ -378,6 +451,8 @@ def plot_scatter_with_certainty(data, filling_borders, setting=plot_settings(),
     plt.legend(loc=setting.legend.location, bbox_to_anchor=setting.legend.box_anchor,
                fontsize=setting.legend.fontsize, ncol=setting.legend.ncol,
                fancybox=setting.legend.fancybox, shadow=setting.legend.shadow)
+
+    plt.subplots_adjust(left=0.18, right=0.90, top=0.90, bottom=0.15)
 
     if save:
         plt.savefig(
@@ -421,6 +496,7 @@ def plot_training_history(history, model_name):
 
     # save the figure to a pdf
     fig.savefig(os.path.join(PATH.FIGURES, 'hist_{}.pdf'.format(model_name)), bbox_inches='tight')
+
 
 def plotTrainingResult(history, model_name):
     # Plot training & validation accuracy values
