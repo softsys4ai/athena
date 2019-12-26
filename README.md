@@ -8,6 +8,9 @@
 5. [**How to Contribute**](#5-how-to-contribute)
 6. [**Citation and References**](#6-citation-and-references)
 
+## Introduction
+This repository hosts the Adversarial Transformers project source code. This code is currently being developed to support the "Ensembles of Many Weak Defenses are Strong: Defending Deep Neural Networks Against Adversarial Attacks" publication. The main finding of this publication is that many weak learners, neural networks trained on disjointly transformed datasets, can be combined into an ensemble network to effectively and efficiently defend against neural adversarial attacks. This codebase provides a framework for training weak learners with transformations, building ensemble of weak learners, provides implemented attack methods to test the effectiveness of ensembled weak learners, and provides all other subsequent source code and tooling to replicate the results of the experiments that will be presented in this publication.
+
 ## 1. Dependencies
 ### Software Requirements
 **Package** | **Version**
@@ -36,14 +39,18 @@ pip install requirements.txt
 ```
 
 ### Hardware Requirements
-Processor: 2, 3.0 GHz CPU cores</br>
-Memory: 16 GB RAM minimum</br>
-Disk: 30 GB available on disk partition</br>
+Processor (recommended): 2 x 3.0 GHz CPU cores</br>
+Memory: >=16 GB RAM</br>
+Disk: >=30 GB available on disk partition</br>
 Storage: >=20 MBps
 
 
 ## 2. Attacks and Transformations
-Overview of implemented transformations, attacks, defenses, detections, metrics, certifications, and verifications
+This section provides a brief overview of currently implemented transformations, attacks, and defenses.</br>
+
+Each of the transformations are used to transform the entire training dataset. Once transformed, another neural network is trained on the transformed dataset. Each neural network trained on a transformed dataset is what we have coined as a Weak Learner. A composition of these networks trained on transformed datasets is coined as an Ensemble of Weak Learners.</br>
+
+Each of the attacks listed below are used to test an Ensemble of Weak Learners. These ensembles are attacked with these methods to determine the effectiveness of an Ensemble of Weak Learner defenses against each type of adversarial attack.</br>
 
 ### Attacks
 
@@ -194,7 +201,7 @@ CIFAR-100 | RGB 32x32 pixel dataset (100 classes) containing 50,000 training and
     Methods
     -------
     craft(dataset, method)
-        Saves adverserial examples to the ADVERSARIAL_FILE path specified in the config.py file.
+        Saves adversarial examples to the ADVERSARIAL_FILE path specified in the config.py file.
 ```
 
 ### How do I create and train a vanilla model on a vanilla dataset?
@@ -261,7 +268,7 @@ CIFAR-100 | RGB 32x32 pixel dataset (100 classes) containing 50,000 training and
 
 ### How do I construct and evaluate an ensemble of weak defenses?
 
-    Now that you have trained weak defenses, you are likely wondering, how do I build an ensemble of these weak defenses to defend against adversarial attacks? In our project, we construct and use ensembles by loading all of the trained weak defenses from a specified models directory, perform inference on a given subsert of a dataset with each of the weak defenses, and then save all of the models' output probabilities and logits to disk at a specified prediction result directory for further analysis.
+    Now that you have trained weak defenses, you are likely wondering, how do I build an ensemble of these weak defenses to defend against adversarial attacks? In our project, we construct and use ensembles by loading all of the trained weak defenses from a specified models directory, perform inference on a given subset of a dataset with each of the weak defenses, and then save all of the models' output probabilities and logits to disk at a specified prediction result directory for further analysis.
 
 ```
     Script: adversarial_transformers/test_ensemble_model_on_all_types_of_AEs.py
@@ -292,12 +299,12 @@ CIFAR-100 | RGB 32x32 pixel dataset (100 classes) containing 50,000 training and
 
 Evaluation Strategy | Description
 --- | ---
-Black box | Attacker has no knowledge of the internal model archictecture.
+Black box | Attacker has no knowledge of the internal model architecture.
 Gray box | Attacker only knowledge of weak defense architectures but does not know how the ensemble combines the outputs of the weak defenses.
 White box | Attacker has knowledge of the entire ensemble architecture, including how the ensemble combines the outputs of the weak defenses.
 
 </br>
-Each evaluation, performed for each attack type, is done with an ensemble network constructed in three different ways: with the k-best weak defenses, with the k-worst weak defenses, and with k-random weak defenses. The value k starts at one and is incremented by one after each evaluation in order to test the accuracy of the ensemble with an increasing amount of weak defenses. The best and worst weak defenses are determined by testing weak defenses against a subset of adversarial examples produced by a given attack type, ranking them, and choosing the k-best and k-worst. k-random weak defenses are chosen as one would expect, randomly.
+Each evaluation, performed for each attack type, is done with an ensemble network constructed in three different ways: with the k-best weak defenses, with the k-worst weak defenses, and with k-random weak defenses. The value k starts at one and is incremented by one after each evaluation in order to test the accuracy of the ensemble with an increasing number of weak defenses. The best and worst weak defenses are determined by testing weak defenses against a subset of adversarial examples produced by a given attack type, ranking them, and choosing the k-best and k-worst. k-random weak defenses are chosen as one would expect, randomly.
 
 
 ### What other scripts should I be aware of?
@@ -337,7 +344,9 @@ Each evaluation, performed for each attack type, is done with an ensemble networ
 
 ## 5. How to Contribute
 
-Adding new features (attacks, defenses, transformations), improving documentation, squashing bugs, or creating tutorials are examples of helpful contributions that could be made to this project. Additionally, if you are publishing a new attack, defense, or transformation, we highly encourage you to add it to this project or bring it to our communities attention by creating an enhancement issue.</br>
+[Public web page for the Adversarial Transformers project and a link to the GitHub page can be found here (project source code not yet public).](https://pooyanjamshidi.github.io/)
+
+Adding new features (attacks, defenses, transformations), improving documentation, squashing bugs, or creating tutorials are examples of helpful contributions that could be made to this project. Additionally, if you are publishing a new attack, defense, or transformation, we highly encourage you to add it to this project or bring it to our community's attention by creating an enhancement issue.</br>
 
 Bug fixes can be initiated through GitHub pull requests. When making code contributions to the project, we ask that you write descriptive comments for all significant functions of your addition, follow the [Python PEP 8 style guidelines](https://www.python.org/dev/peps/pep-0008/), and sign all of your commits using the -s flag or by appending "Signed-off-by: <Name>,<Email>" to your commit message.</br>
 
@@ -347,7 +356,7 @@ Bug fixes can be initiated through GitHub pull requests. When making code contri
 ### Cite this work
 ```
 @article{ying2019,
-  title={Ensembles of Many Weak Defenses are Strong: Defending Deep Neural Networks Against Adverserial Attacks},
+  title={Ensembles of Many Weak Defenses are Strong: Defending Deep Neural Networks Against adversarial Attacks},
   author={Ying and Jianhai},
   journal={n/a},
   year={2019}
@@ -357,9 +366,9 @@ Bug fixes can be initiated through GitHub pull requests. When making code contri
 ### References
 [1] MariuszBojarski,DavideDelTesta,DanielDworakowski,Bern- hard Firner, Beat Flepp, Prasoon Goyal, Lawrence D Jackel, Mathew Monfort, Urs Muller, Jiakai Zhang, et al. End to end learning for self-driving cars. arXiv preprint arXiv:1604.07316, 2016. <br><br>
 [2] N. Carlini and D. Wagner. Towards evaluating the robustness of neural networks. In 2017 IEEE Symposium on Security and Privacy (SP), pages 39–57, May 2017. <br><br>
-[3] Nicholas Carlini and David Wagner. Magnet and” efficient de- fenses against adversarial attacks” are not robust to adversarial examples. arXiv preprint arXiv:1711.08478, 2017. <br><br>
+[3] Nicholas Carlini and David Wagner. Magnet and” efficient defenses against adversarial attacks” are not robust to adversarial examples. arXiv preprint arXiv:1711.08478, 2017. <br><br>
 [4] Moustapha Cisse, Piotr Bojanowski, Edouard Grave, Yann Dauphin, and Nicolas Usunier. Parseval networks: Improving robustness to adversarial examples. In Proceedings of the 34th In- ternational Conference on Machine Learning-Volume 70, pages 854–863. JMLR. org, 2017. <br><br>
-[5] XiaoDing,YueZhang,TingLiu,andJunwenDuan.Deeplearn- ing for event-driven stock prediction. In Twenty-fourth interna- tional joint conference on artificial intelligence, 2015. <br><br>
+[5] XiaoDing,YueZhang,TingLiu,andJunwenDuan.Deeplearn- ing for event-driven stock prediction. In Twenty-fourth international joint conference on artificial intelligence, 2015. <br><br>
 [6] Gintare Karolina Dziugaite, Zoubin Ghahramani, and Daniel M Roy. A study of the effect of jpg compression on adversarial images. arXiv preprint arXiv:1608.00853, 2016. <br><br>
 [7] Alhussein Fawzi, Omar Fawzi, and Pascal Frossard. Analysis of classifiers robustness to adversarial perturbations. Machine Learning, 107(3):481–508, 2018. <br><br>
 [8] Ian J Goodfellow, Jonathon Shlens, and Christian Szegedy. Ex- plaining and harnessing adversarial examples. arXiv preprint arXiv:1412.6572, 2014. <br><br>
