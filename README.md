@@ -369,3 +369,9 @@ We welcome new features or enhancements of this framework. Bug fixes can be init
 * [Blake Edwards](https://github.com/blakeedwards823)
 * [Stephen Baione](https://github.com/StephenBaione)
 * [Pooyan Jamshidi](https://github.com/pooyanjamshidi)
+
+
+## Acknowledgements
+This project has been partially supported by:
+* Google via GCP cloud research credits
+* NASA (EPSCoR 521340-SC001) 
