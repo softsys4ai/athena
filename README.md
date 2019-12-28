@@ -11,7 +11,7 @@
 ## Introduction
 This repository hosts the Adversarial Transformers project source code. This code is currently being developed to support the "Ensembles of Many Weak Defenses are Strong: Defending Deep Neural Networks Against Adversarial Attacks" publication. The main finding of this publication is that many weak learners, neural networks trained on disjointly transformed datasets, can be combined into an ensemble network to effectively and efficiently defend against neural adversarial attacks. This codebase provides a framework for training weak learners with transformations, building ensemble of weak learners, provides implemented attack methods to test the effectiveness of ensembled weak learners, and provides all other subsequent source code and tooling to replicate the results of the experiments that will be presented in this publication.
 
-## 1. Dependencies
+## Dependencies
 ### Software Requirements
 **Package** | **Version**
 --- | ---
@@ -45,7 +45,7 @@ Disk: >=30 GB available on disk partition</br>
 Storage: >=20 MBps
 
 
-## 2. Attacks and Transformations
+## Attacks and Transformations
 This section provides a brief overview of currently implemented transformations, attacks, and defenses.</br>
 
 Each of the transformations are used to transform the entire training dataset. Once transformed, another neural network is trained on the transformed dataset. Each neural network trained on a transformed dataset is what we have coined as a Weak Learner. A composition of these networks trained on transformed datasets is coined as an Ensemble of Weak Learners.</br>
@@ -120,7 +120,7 @@ project<br>
   |</br>
 
 
-## 4. Getting Started
+## Getting Started
 
 ### How do I install the project?
 1. Navigate to the ["Manual Installation"](#manual-installation) instructions sub-section to install all software requirements.
@@ -303,7 +303,6 @@ Black box | Attacker has no knowledge of the internal model architecture.
 Gray box | Attacker only knowledge of weak defense architectures but does not know how the ensemble combines the outputs of the weak defenses.
 White box | Attacker has knowledge of the entire ensemble architecture, including how the ensemble combines the outputs of the weak defenses.
 
-</br>
 Each evaluation, performed for each attack type, is done with an ensemble network constructed in three different ways: with the k-best weak defenses, with the k-worst weak defenses, and with k-random weak defenses. The value k starts at one and is incremented by one after each evaluation in order to test the accuracy of the ensemble with an increasing number of weak defenses. The best and worst weak defenses are determined by testing weak defenses against a subset of adversarial examples produced by a given attack type, ranking them, and choosing the k-best and k-worst. k-random weak defenses are chosen as one would expect, randomly.
 
 
@@ -342,21 +341,31 @@ Each evaluation, performed for each attack type, is done with an ensemble networ
         Saves adversarial examples provided in the "data" parameter to the path specified by the "ADVERSARIAL_FILE" variable in the "config.py" script.
 ```
 
-## 5. How to Contribute
-
-[Public web page for the Adversarial Transformers project and a link to the GitHub page can be found here (project source code not yet public).](https://pooyanjamshidi.github.io/)
-
-Adding new features (attacks, defenses, transformations), improving documentation, squashing bugs, or creating tutorials are examples of helpful contributions that could be made to this project. Additionally, if you are publishing a new attack, defense, or transformation, we highly encourage you to add it to this project or bring it to our community's attention by creating an enhancement issue.</br>
-
-Bug fixes can be initiated through GitHub pull requests. When making code contributions to the project, we ask that you write descriptive comments for all significant functions of your addition, follow the [Python PEP 8 style guidelines](https://www.python.org/dev/peps/pep-0008/), and sign all of your commits using the -s flag or by appending "Signed-off-by: <Name>,<Email>" to your commit message.</br>
+## How to Contribute
 
 
-## 6. Citation
+We welcome new features or enhancements of this framework. Bug fixes can be initiated through GitHub pull requests. 
+
+
+## Citation
 
 ```
 @article{ying2020,
   title={Ensembles of Many Weak Defenses can be Strong: Defending Deep Neural Networks Against adversarial Attacks},
-  author={Ying and Jianhai},
+  author={Meng, Ying and Su, Jianhai and O’Kane, Jason and Jamshidi, Pooyan},
   year={2020}
 }
 ```
+
+## Contacts
+
+* Pooyan Jamshidi (pooyan.jamshidi@gmail.com)
+* Ying Meng (y.meng201011@gmail.com)
+
+## Contributors
+
+* [Ying Meng](https://github.com/MENG2010)
+* [Jianhai Su](https://github.com/oceank)
+* [Blake Edwards](https://github.com/blakeedwards823)
+* [Stephen Baione](https://github.com/StephenBaione)
+* [Pooyan Jamshidi](https://github.com/pooyanjamshidi)
