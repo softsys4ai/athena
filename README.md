@@ -1,4 +1,6 @@
-# Adversarial Transformers
+# Athena
+A framework of ensemble defense.
+
 
 ## Table of Contents
 1. [**Dependencies**](#1-dependencies)
