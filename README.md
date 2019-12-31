@@ -350,7 +350,9 @@ Each evaluation, performed for each attack type, is done with an ensemble networ
 We welcome new features or enhancements of this framework. Bug fixes can be initiated through GitHub pull requests. 
 
 
-## Citation
+## Citing this work
+
+If you use Athena for academic or industrial research, please feel free to cite the following paper:
 
 ```
 @article{ying2020,
