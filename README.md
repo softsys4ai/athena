@@ -1,7 +1,7 @@
 # Athena
 A framework of ensemble defense.
 
-<img src="https://github.com/softsys4ai/Athena/blob/master/Athena_logo.png" width="30%" height="30%">
+<img src="https://github.com/softsys4ai/Athena/blob/master/Athena_logo.png" width="20%" height="20%">
 
 ## Table of Contents
 1. [**Dependencies**](#1-dependencies)
