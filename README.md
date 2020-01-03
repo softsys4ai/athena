@@ -1,5 +1,4 @@
-# Athena
-A framework of ensemble defense.
+# Athena: A Framework for Defending Machine Learning Systems Against Adversarial Attacks
 
 <img src="https://github.com/softsys4ai/Athena/blob/master/Athena_logo.png" width="20%" height="20%">
 
