@@ -2,6 +2,7 @@ import sys
 import os
 import numpy as np
 import time
+from keras.utils import to_categorical
 
 from attacks.attacker import get_adversarial_examples
 from data import load_data
@@ -17,7 +18,7 @@ def craft(model_name, method, X, Y):
             Y: 2D numpy array - nSamples X nClasses
     '''
     model_prefix, dataset, architect, trans_type = model_name.split('-')
-    prefix = "BB"
+    prefix = "BB_{}".format(model_prefix)
 
     if method == ATTACK.FGSM:
         eps = 0.3
@@ -29,25 +30,37 @@ def craft(model_name, method, X, Y):
         save_adv_examples(X_adv, prefix=prefix, dataset=dataset, transformation=trans_type,
                           attack_method=method, attack_params=attack_params)
 
-    elif method == ATTACK.BIM: # BIM l2 norm and BIM Inf norm
-        for order in ATTACK.get_bim_norm():
-            nb_iter = 100
-            eps = ATTACK.get_bim_eps(order)[-1]
-            print('{}: (ord={}, nb_iter={}, eps={})'.format(method.upper(), order, nb_iter, eps))
-            X_adv, _ = get_adversarial_examples(model_name, method, X, Y,
-                                                ord=order, nb_iter=nb_iter, eps=eps)
+    elif method == "biml2": # BIM l2 norm
+        order = 2
+        nb_iter = 100
+        norm = order
+        eps = 2
+        print('{}: (ord={}, nb_iter={}, eps={})'.format(ATTACK.BIM.upper(), order, nb_iter, eps))
+        X_adv, _ = get_adversarial_examples(model_name, ATTACK.BIM, X, Y,
+                                            ord=order, nb_iter=nb_iter, eps=eps)
 
-            if order == np.inf:
-                norm = 'inf'
-            else:
-                norm = order
-            attack_params = 'ord{}_nbIter{}_eps{}'.format(norm, nb_iter, int(1000 * eps))
-            save_adv_examples(X_adv, prefix=prefix, dataset=dataset, transformation=trans_type,
-                              attack_method=method, attack_params=attack_params)
+        attack_params = 'ord{}_nbIter{}_eps{}'.format(norm, nb_iter, int(1000 * eps))
+        save_adv_examples(X_adv, prefix=prefix, dataset=dataset, transformation=trans_type,
+                          attack_method=ATTACK.BIM, attack_params=attack_params)
+
+    elif method == "bimli": # BIM Inf norm
+        order = np.inf
+        nb_iter = 100
+        norm = 'inf'
+        eps = 0.3
+
+        print('{}: (ord={}, nb_iter={}, eps={})'.format(ATTACK.BIM.upper(), order, nb_iter, eps))
+        X_adv, _ = get_adversarial_examples(model_name, ATTACK.BIM, X, Y,
+                                            ord=order, nb_iter=nb_iter, eps=eps)
+
+        attack_params = 'ord{}_nbIter{}_eps{}'.format(norm, nb_iter, int(1000 * eps))
+        save_adv_examples(X_adv, prefix=prefix, dataset=dataset, transformation=trans_type,
+                          attack_method=ATTACK.BIM, attack_params=attack_params)
+
 
     elif method == ATTACK.DEEPFOOL:
         order=2
-        overshoot = 50
+        overshoot = 0
         print('attack {} -- order: {}; overshoot: {}'.format(method.upper(), order, overshoot))
         X_adv, _ = get_adversarial_examples(model_name, method, X, Y,
                                             ord=order, overshoot=overshoot)
@@ -61,7 +74,7 @@ def craft(model_name, method, X, Y):
         cw_batch_size = 1
         initial_const = 10
 
-        learning_rate = 7
+        learning_rate = 1
         max_iter = 100
         print('{}: (ord={}, max_iterations={})'.format(method.upper(), 2, max_iter))
         X_adv, _ = get_adversarial_examples(model_name, method, X, Y,
@@ -117,7 +130,7 @@ def craft(model_name, method, X, Y):
                 transformation=trans_type, attack_method=method, attack_params=attack_params)
 
     elif method == ATTACK.MIM:
-        eps = 0.5
+        eps = 0.3
         nb_iter = 1000
         attack_params = {
             'eps': eps,
@@ -136,63 +149,56 @@ def craft(model_name, method, X, Y):
 
 def main(argv):
 
-    queriedDir=argv[0]
-    attack_method = argv[1]
-    ensembleTag = argv[2]
-    #cleanModelsDir=argv[1]
+    BSDir=argv[0]
+    ensembleTag = argv[1]
 
-    maxNumAEs = 500
-    
     nClasses = 10
     nSamplesList = [10, 50, 100, 500, 1000]
 
-    attack_methods = [attack_method
-            #'fgsm',
-            #'bim',
-            #'deepfool',
-            #'cw_l2',
-            #'jsma',
-            #'mim',
-            #'pgd',
-            #'onepixel'
+    attackMethods = [
+            'fgsm',
+            'biml2',
+            'bimli',
+            'deepfool',
+            'cw_l2',
+            'mim',
+            'pgd',
+            'jsma',
+            'onepixel'
             ]
-    #ensembleTags = ["prob0", "prob1", "prob2", "prob3", "logit2"]
-    #ensembleTag = "prob1"
 
-    timeCosts = np.zeros((len(attack_methods), len(nSamplesList)))
+    timeCosts = np.zeros((len(attackMethods), len(nSamplesList)))
     row=0
-    for col, nSamples in zip(range(len(nSamplesList)), nSamplesList):
-        nAEs = min(nSamples, maxNumAEs)
-        datasetName = "mnist"+str(nSamples)+"Samples"+ensembleTag
-        model_name = "model-{}-cnn-clean".format(datasetName)
-        X = np.load(os.path.join(queriedDir, datasetName+"_data.npy"))[:nAEs]
-        labels = np.load(os.path.join(queriedDir, datasetName+"_label.npy"))[:nAEs]
-       
-        print("Attacking {}.h5".format(model_name))
+    for attackMethod in attackMethods:
+        for col, nSamples in zip(range(len(nSamplesList)), nSamplesList):
+            modelNamePrefix = "model_"+str(nSamples)+"Samples_"+ensembleTag
+            modelName = "{}-mnist-cnn-clean".format(modelNamePrefix)
 
-        try:
-            Y = np.zeros((nAEs, nClasses))
-            for sIdx in range(nAEs):
-                Y[sIdx, labels[sIdx]] = 1
-            print("\n[{} - {}]".format(nAEs, attack_method))
+            try:
+                X = np.load(os.path.join(BSDir, "BS_1k_data_For_AE.npy"))
+                Y = np.load(os.path.join(BSDir, "BS_1k_label_For_AE.npy"))
+                Y = to_categorical(Y)
 
-            start_time = time.time()
-            craft(model_name, attack_method, X, Y)
-            end_time = time.time()
-            timeCost = round(end_time - start_time, 2)
-            print("{} - {}: {}".format(nAEs, attack_method, timeCost))
+                print("Use {} to attack {}.h5".format(attackMethod, modelName))
+                startTime = time.time()
+                craft(modelName, attackMethod, X, Y)
+                endTime = time.time()
+                timeCost = round(endTime - startTime, 2)
+                print("Time cost ({}): {}\n".format(attackMethod, timeCost))
 
-            timeCosts[row, col] = timeCost
-        except (OSError) as e:
-            print('Failed to load model [{}]: {}.'.format(model_name, e))
-            continue
+                timeCosts[row, col] = timeCost
 
-    TC_FP = "AE_TimeCost-"+attack_method+"-"+ensembleTag+".txt"
+            except (OSError) as e:
+                print('Failed to load model [{}]: {}.'.format(modelName, e))
+                continue
+        row += 1
+
+    TC_FP = "AE_TimeCost_target-"+ensembleTag+".csv"
  
     with open(TC_FP, "w") as fp:
         fp.write("\t10\t50\t100\t500\t1000\n")
-        for row in range(len(attack_methods)):
-            fp.write(attack_methods[row]+"\t"
+        for row in range(len(attackMethods)):
+            fp.write(attackMethods[row]+"\t"
                     +str(timeCosts[row, 0])+"\t"
                     +str(timeCosts[row, 1])+"\t"
                     +str(timeCosts[row, 2])+"\t"

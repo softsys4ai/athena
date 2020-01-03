@@ -155,11 +155,12 @@ def cnn_mnist(input_shape=(28, 28, 1), nb_classes=10):
 # --------------------------------------------
 # Operations
 # --------------------------------------------
-def train_model(model, dataset, model_name, need_augment=False, **kwargs):
+# is_BB: if the training is triggered in the black-box threat model
+def train_model(model, dataset, model_name, need_augment=False, is_BB=False, **kwargs):
     (X_train, Y_train), _ = data.load_data(dataset)
-    return train(model, X_train, Y_train, model_name, need_augment, **kwargs)
+    return train(model, X_train, Y_train, model_name, need_augment, is_BB=is_BB, **kwargs)
 
-def train(model, X, Y, model_name, need_augment=False, **kwargs):
+def train(model, X, Y, model_name, need_augment=False, is_BB=False, **kwargs):
     """
     Train a model on given dataset.
     :param model: the model to train
@@ -191,11 +192,21 @@ def train(model, X, Y, model_name, need_augment=False, **kwargs):
         """
         X = data.normalize(X)
 
-    nb_training = int(nb_examples * (1. - validation_rate))
-    train_examples = X[:nb_training]
-    train_labels = Y[:nb_training]
-    val_examples = X[nb_training:]
-    val_labels = Y[nb_training:]
+    if not is_BB:
+        nb_training = int(nb_examples * (1. - validation_rate))
+        train_examples = X[:nb_training]
+        train_labels = Y[:nb_training]
+        val_examples = X[nb_training:]
+        val_labels = Y[nb_training:]
+
+    else:
+        num_val = 9000
+        train_examples = X[num_val:]
+        train_labels = Y[num_val:]
+        val_examples = X[:num_val]
+        val_labels = Y[:num_val]
+
+
 
     """
     augment data
@@ -247,7 +258,7 @@ def train(model, X, Y, model_name, need_augment=False, **kwargs):
     print('\t\t\t loss, \tacc, \tadv_acc')
     print('Evaluation score on training set: {}'.format(scores_train))
     print('Evaluation score on validation set: {}'.format(scores_val))
-    file_name = 'checkpoints-{}-{}-{}.csv'.format(dataset, architect, trans_type)
+    file_name = 'checkpoints-{}-{}-{}-{}.csv'.format(prefix, dataset, architect, trans_type)
     file.dict2csv(history.history, '{}/{}'.format(PATH.RESULTS, file_name))
     plotTrainingResult(history, model_name)
 
