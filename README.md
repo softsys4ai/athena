@@ -18,23 +18,7 @@ This repository hosts the Athena framework source code. The main finding of this
 ![Athena](reports/figures/architecture/athena.png)
 
 
-## Dependencies
-### Software Requirements
-**Package** | **Version**
---- | ---
-pillow | n/a
-scipy | n/a
-scikit-learn | n/a
-cleverhans | 3.0.1
-tensorboard | 1.13.1
-tensorflow | 1.13.1
-tensorflow-gpu | 1.13.1
-numpy | n/a
-scikit-image | 0.15.0
-opencv-python | 4.1.0
-keras | 2.2.5
-
-#### Manual Installation
+## Manual Installation
 
 Clone the repository:
 ```
@@ -47,86 +31,11 @@ pip install requirements.txt
 
 ### Hardware Requirements
 ```
-Processor (recommended): 2 x 3.0 GHz CPU cores</br>
-Memory: >=16 GB RAM</br>
-Disk: >=30 GB available on disk partition</br>
+Processor (recommended): 2 x 3.0 GHz CPU cores
+Memory: >=16 GB RAM
+Disk: >=30 GB available on disk partition
 Storage: >=20 MBps
 ```
-
-## Attacks and Transformations
-This section provides a brief overview of currently implemented transformations, attacks, and defenses.</br>
-
-Each of the transformations are used to transform the entire training dataset. Once transformed, another neural network is trained on the transformed dataset. Each neural network trained on a transformed dataset is what we have coined as a Weak Learner. A composition of these networks trained on transformed datasets is coined as an Ensemble of Weak Learners.</br>
-
-Each of the attacks listed below are used to test an Ensemble of Weak Learners. These ensembles are attacked with these methods to determine the effectiveness of an Ensemble of Weak Learner defenses against each type of adversarial attack.</br>
-
-### Attacks
-
-**Attacks** | **Type** | **Description**
---- | --- | ---
-Deep Fool | whitebox | Simple algorithm to efficiently fool deep neural networks. [(Moosavi-Dezfooli et al., 2015)](https://arxiv.org/abs/1511.04599)
-FGSM (Fast Gradient Signed Method) | whitebox | Simple and fast method of generating adverserial examples. [(Goodfellow et al., 2014)](https://arxiv.org/abs/1412.6572)
-BIM (Basic Iterative Method) | whitebox | Basic iterative white box attack method to fool deep neural networks [(Kurakin et al., 2016)](https://arxiv.org/abs/1607.02533)
-CW (Carlini and Wagner) | whitebox | Attack algorithm effective against distillation as a defense. [(Carlini and Wagner, 2016)](https://arxiv.org/abs/1608.04644)
-JSMA (Jacobian-based Saliency Map Attack) | whitebox | Uses an understanding of the mapping between input and output to trick deep neural nets. [(Papernot et al., 2016)](https://arxiv.org/abs/1511.07528)
-PGD (Projected Gradient Descent) | whitebox | Generates adverserial examples through gradient ascent. [(Madry et al., 2017)](https://arxiv.org/abs/1706.06083)
-One Pixel | blackbox | Low cost generation of adverserial images, by only modifying one pixel of an image, with differential evolution. [(Su et al., 2019)](https://arxiv.org/abs/1710.08864)
-MIM (Momentum Iterative Method) | whitebox | Uses momentum to stabilize update directions for crafting advserial examples, escaping poor local maxima. [(Dong et al., 2018)](https://arxiv.org/abs/1710.06081)
-
-### Transformations
-**Transform** | **Description**
---- | ---
-Rotate | Rotation of images by 90, 180, 270 degrees
-Shift | Shift of images left, right, up, down, top left, top right, bottom left, bottom right
-Flip | Flip of images horizontally, vertically, and both
-Affine Transform | Vertical compression, vertical stretch, horizontal compress, vertical stretch, both compress, both stretch
-Morph Transform | erosion, dilation, opening, closing, gradient
-Augment | samplewise standard norm and featurewise standard norm
-Cartoonify | Mean type 1, mean type 2, mean type 3, mean type 4, gaussian type 1, gaussian type 2, gaussian type 3, gaussian type 4
-Quantization | 2 clusters, 4 clusters, 8 clusters, 16 clusters, 32 clusters, 64 clusters
-Distortion | x-axis and y-axis
-Filter | entropy, gaussian, maximum, median, minimum prewitt, rank, roberts, scharr, sobel
-Noising | gaussian, localvar, pepper, poison, salt, salt & pepper
-Compression | jpeg quality 10, 30, 50, 80 and png compression 1, png compression 5, png compression 8
-De-noising | Non-local means fast, non-local means, Bregmann total variation denoising, 
-Geometric | iradon, iradon sart, swirl
-Segmentation | gradient
-
-### Defenses
-**Defenses** | **Description**
---- | ---
-EDMV-probs (Efficient Two-Step Defense for Deep Neural Networks) | Cheap defense strategy to combat adversarial examples that has a robustness comparable to using expensive, multi-step adversarial examples. [(Chang et al., 2018)](https://arxiv.org/abs/1810.03739)
-EDAP-probs (Defense Against Universal Adversarial Perturbations) | Defense strategy to effectively defend against unseen adversarial examples in the real world by introducing pre-input detection of purturbations. [Akhtar et al., 2018](https://arxiv.org/abs/1711.05929)
-EDMV-logits | The same as EDMV-probs but substituting DNN logit outputs for output probabilities.
-EDAP-logits | The same as EDAP-probs but substituting DNN logit outputs for output probabilities.
-
-## 3. Project Structure
-Navigation of project and component hierarchy
-
-project<br>
-  |-- attacks (python files implement adversarial attack approaches)<br>
-  |      &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;|-- attacker.py (main entrance of AE generation, orchestrates all latter scripts)<br>
-  |      &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;|-- whitebox.py (generating AEs using APIs provided by cleverhans)<br>
-  |      &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;|-- one_pixel.py (implements one-pixel attack)<br>
-  |      &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;|-- carlini_wagner_l2.py (implements CW attack)<br>
-  |      &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;|-- momentum_iterative_method.py (implements MIM attack)<br>
-  |<br>
-  |-- utils (utils for all)<br>
-  |      &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;|-- config.py (stores project wide configurations and object definitions)<br>
-  |      &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;|-- file.py (contains helper functions to read/write evalution results from/to disk)<br>
-  |<br>
-  |-- scripts (scripts for experiments)<br>
-  |      &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;|-- craft_adversarial_examples.py (creates AEs given a model, dataset, and attack type)<br>
-  |<br>
-  |-- data.py (contains helper functions to load and normalize all datasets)
-  |<br>
-  |-- models.py (builds, compiles, trains, and evaluates models)
-  |<br>
-  |-- train.py (trains weak learners on each transformation and compositions of transformations)<br>
-  |<br>
-  |-- test_ensemble_model_on_all_types_of_AEs.py (creates and evaluates ensembles of weak defenses on all attack types)<br>
-  |</br>
-
 
 ## Getting Started
 
@@ -304,14 +213,6 @@ CIFAR-100 | RGB 32x32 pixel dataset (100 classes) containing 50,000 training and
     -------
     none.
 ```
-
-Evaluation Strategy | Description
---- | ---
-Black box | Attacker has no knowledge of the internal model architecture.
-Gray box | Attacker only knowledge of weak defense architectures but does not know how the ensemble combines the outputs of the weak defenses.
-White box | Attacker has knowledge of the entire ensemble architecture, including how the ensemble combines the outputs of the weak defenses.
-
-Each evaluation, performed for each attack type, is done with an ensemble network constructed in three different ways: with the k-best weak defenses, with the k-worst weak defenses, and with k-random weak defenses. The value k starts at one and is incremented by one after each evaluation in order to test the accuracy of the ensemble with an increasing number of weak defenses. The best and worst weak defenses are determined by testing weak defenses against a subset of adversarial examples produced by a given attack type, ranking them, and choosing the k-best and k-worst. k-random weak defenses are chosen as one would expect, randomly.
 
 
 ### What other scripts should I be aware of?
