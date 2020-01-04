@@ -46,11 +46,12 @@ pip install requirements.txt
 ```
 
 ### Hardware Requirements
+```
 Processor (recommended): 2 x 3.0 GHz CPU cores</br>
 Memory: >=16 GB RAM</br>
 Disk: >=30 GB available on disk partition</br>
 Storage: >=20 MBps
-
+```
 
 ## Attacks and Transformations
 This section provides a brief overview of currently implemented transformations, attacks, and defenses.</br>
