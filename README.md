@@ -11,7 +11,12 @@
 6. [**Citation and References**](#6-citation-and-references)
 
 ## Introduction
-This repository hosts the Adversarial Transformers project source code. This code is currently being developed to support the "Ensembles of Many Weak Defenses are Strong: Defending Deep Neural Networks Against Adversarial Attacks" publication. The main finding of this publication is that many weak learners, neural networks trained on disjointly transformed datasets, can be combined into an ensemble network to effectively and efficiently defend against neural adversarial attacks. This codebase provides a framework for training weak learners with transformations, building ensemble of weak learners, provides implemented attack methods to test the effectiveness of ensembled weak learners, and provides all other subsequent source code and tooling to replicate the results of the experiments that will be presented in this publication.
+This repository hosts the Athena framework source code. The main finding of this work is that many weak defenses, neural networks trained on disjointly transformed datasets, can be combined into an ensemble network to effectively and efficiently defend against deep neural network adversarial attacks. This codebase provides a framework for training weak defenses with transformations, building ensemble of weak defenses, provides implemented attack methods to test the effectiveness of Athena, and provides all other subsequent source code and tooling to replicate the results of the experiments in this [publication](https://arxiv.org/pdf/2001.00308.pdf).
+
+## Framework Architecture
+
+![Athena](reports/figures/architecture/athena.png)
+
 
 ## Dependencies
 ### Software Requirements
@@ -33,7 +38,7 @@ keras | 2.2.5
 
 Clone the repository:
 ```
-git clone git@github.com:softsys4ai/adversarial_transformers.git
+git clone git@github.com:softsys4ai/athena.git
 ```
 Navigate to the directory where the repository was downloaded and run the following commend to install software dependencies:
 ```
@@ -132,7 +137,7 @@ project<br>
 ### How do I configure/change project parameters?
 
 ```
-    Script: adversarial_transformers/utils/config.py
+    Script: athena/utils/config.py
     Description:
     This class contains a plethora of variables and class definitions for use across the project.
     
@@ -172,7 +177,7 @@ CIFAR-10 | RGB 32x32 pixel dataset (10 classes) containing 50,000 training and 1
 CIFAR-100 | RGB 32x32 pixel dataset (100 classes) containing 50,000 training and 10,000 validation examples.
 
 ```
-    Script: adversarial_transformers/data.py
+    Script: athena/data.py
     Description:
     Generally, the use of this dataset loading class should be left for usage in our scripts. However, if you desire to load a dataset for your own experimentation, you may use this class to do so.
     
@@ -192,7 +197,7 @@ CIFAR-100 | RGB 32x32 pixel dataset (100 classes) containing 50,000 training and
 ### How do I use attack methods and craft adversarial examples?
 
 ```
-    Script: adversarial_transformers/scripts/craft_adversarial_examples.py
+    Script: athena/scripts/craft_adversarial_examples.py
     Description:
     To craft adversarial examples provide this script with the name of a dataset and the name of the attack method you would like to use to generate examples.
     
@@ -209,7 +214,7 @@ CIFAR-100 | RGB 32x32 pixel dataset (100 classes) containing 50,000 training and
 ### How do I create and train a vanilla model on a vanilla dataset?
 
 ```
-    Script: adversarial_transformers/models.py
+    Script: athena/models.py
     Description:
     To create and train a weak defense you may use this script. To properly train a weak defense, create a model and then train the model on your dataset with an applied transformation.
     
@@ -241,7 +246,7 @@ CIFAR-100 | RGB 32x32 pixel dataset (100 classes) containing 50,000 training and
 ### How do I create and train weak defenses?
 
 ```
-    Script: adversarial_transformers/train.py
+    Script: athena/train.py
     Description:
     This script trains a weak defense for each type of transformation and saves each model to the specified models directory to be used to build an ensemble.
     
@@ -273,7 +278,7 @@ CIFAR-100 | RGB 32x32 pixel dataset (100 classes) containing 50,000 training and
     Now that you have trained weak defenses, you are likely wondering, how do I build an ensemble of these weak defenses to defend against adversarial attacks? In our project, we construct and use ensembles by loading all of the trained weak defenses from a specified models directory, perform inference on a given subset of a dataset with each of the weak defenses, and then save all of the models' output probabilities and logits to disk at a specified prediction result directory for further analysis.
 
 ```
-    Script: adversarial_transformers/test_ensemble_model_on_all_types_of_AEs.py
+    Script: athena/test_ensemble_model_on_all_types_of_AEs.py
     Description:
     This script evaluates the ensemble model, the model composed of all of the models trained with train.py, and saves all of the results to a specified test result folder.
     
@@ -311,7 +316,7 @@ Each evaluation, performed for each attack type, is done with an ensemble networ
 ### What other scripts should I be aware of?
 
 ```
-    Script: adversarial_transformers/attacks/attacker.py
+    Script: athena/attacks/attacker.py
     Description:
     This script calls orchestrates and calls all other attack scripts in its directory to produce adversarial examples with a given attack type on a given, trained model.
     
@@ -325,7 +330,7 @@ Each evaluation, performed for each attack type, is done with an ensemble networ
         Returns the following variables: X_adv and Y. "X_adv" is a vector containing all of the generated adversarial examples and Y is a vector of the same length containing the correct class labels for each created adversarial example.
 ```
 ```
-    Script: adversarial_transformers/utils/file.py
+    Script: athena/utils/file.py
     Description:
     This is a helper script that provides methods to read and write ensemble model evaluations from and to disk. The methods contained within this script may be called on their own. Currently, this script's functions are leveraged by the "test_ensemble_model_on_all_types_of_AEs.py" script for recording produced ensemble evaluation results.
     
@@ -336,7 +341,7 @@ Each evaluation, performed for each attack type, is done with an ensemble networ
     Methods
     -------
     dict2csv(dictionary, file_name, list_as_value=False)
-        Saves a given dictionary to a csv file located at the path specified by the "file_name" parameter. If only a file name is specified, the csv will be saved in the adversarial_transformers/utils directory.
+        Saves a given dictionary to a csv file located at the path specified by the "file_name" parameter. If only a file name is specified, the csv will be saved in the athena/utils directory.
     csv2dict(file_name, orient=ORIENT.COL, dtype='float')
         Reads a csv at the path specified by the "file_name" parameter and returns the dictionary stored in the CSV file.
     save_adv_examples(data, **kwargs)
@@ -346,25 +351,28 @@ Each evaluation, performed for each attack type, is done with an ensemble networ
 ## How to Contribute
 
 
-We welcome new features or enhancements of this framework. Bug fixes can be initiated through GitHub pull requests. 
+We welcome new features, extension, or enhancements of this framework. Bug fixes can be initiated through GitHub pull requests. 
+
+We are, in particular, looking for new collaborations, taking this framework further and applying Athena to new application domains such as medical imaging, voice, and text. Please drop us an email if you are interested.
 
 
 ## Citing this work
 
-If you use Athena for academic or industrial research, please feel free to cite the following paper:
+If you use Athena for academic or industrial research, please feel free to cite the following [paper](https://arxiv.org/pdf/2001.00308.pdf):
 
 ```
-@article{ying2020,
+@article{athena2020,
   title={Ensembles of Many Weak Defenses can be Strong: Defending Deep Neural Networks Against adversarial Attacks},
   author={Meng, Ying and Su, Jianhai and O’Kane, Jason and Jamshidi, Pooyan},
+  journal={arXiv preprint arXiv:2001.00308},
   year={2020}
 }
 ```
 
 ## Contacts
 
-* Pooyan Jamshidi (pooyan.jamshidi@gmail.com)
-* Ying Meng (y.meng201011@gmail.com)
+* [Pooyan Jamshidi](https://pooyanjamshidi.github.io/)
+* [Ying Meng](https://github.com/MENG2010)
 
 ## Contributors
 
