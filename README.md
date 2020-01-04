@@ -15,7 +15,7 @@ This repository hosts the Athena framework source code. The main finding of this
 
 ## Framework Architecture
 
-![Athena](reports/figures/architecture/athena.png){:height="50%" width="50%"}
+![Athena](reports/figures/architecture/athena.png)
 
 
 ## Dependencies
