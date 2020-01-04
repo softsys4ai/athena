@@ -94,7 +94,7 @@ ENV/
 
 # Rope project settings
 .ropeproject
-/data/
+/mymodels/
 /bk/
 /old_scripts/
 /my_scripts.py
