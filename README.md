@@ -1,6 +1,6 @@
 # Athena: A Framework for Defending Machine Learning Systems Against Adversarial Attacks
 
-<img src="https://github.com/softsys4ai/Athena/blob/master/Athena_logo.png" width="20%" height="20%">
+<img src="https://github.com/softsys4ai/athena/blob/master/reports/figures/logo/Athena_logo.png" width="20%" height="20%">
 
 ## Table of Contents
 1. [**Dependencies**](#1-dependencies)
@@ -15,7 +15,7 @@ This repository hosts the Athena framework source code. The main finding of this
 
 ## Framework Architecture
 
-![Athena](reports/figures/architecture/athena.png)
+![Athena](reports/figures/architecture/athena.png){:height="50%" width="50%"}
 
 
 ## Dependencies
