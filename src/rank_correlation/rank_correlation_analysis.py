@@ -6,7 +6,7 @@ import pandas as pd
 from matplotlib import pyplot as plt
 import seaborn as sns
 
-from heatmap import corrplot
+from rank_correlation.heatmap import corrplot
 
 np.random.seed(127)
 sns.set()

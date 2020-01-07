@@ -14,7 +14,7 @@ import tensorflow.keras as keras
 from utils.config import *
 import attacks.whitebox as whitebox
 import attacks.one_pixel as one_pixel
-from models import load_model
+from models.models import load_model
 
 logger = logging.getLogger('attacks.attacker...')
 logger.setLevel(logging.INFO)

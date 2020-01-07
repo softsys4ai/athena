@@ -5,9 +5,9 @@ from sklearn.cluster import KMeans
 import numpy as np
 
 from tensorflow.keras.models import load_model
-from transformation import IMG_TRANSFORMATIONS, transform_images
+from models.transformation import IMG_TRANSFORMATIONS, transform_images
 
-from kmeans import k_means
+from clustering.kmeans import k_means
 
 modelsDir="./trans_models"
 AEDir    ="./AEs"

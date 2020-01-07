@@ -4,8 +4,8 @@ import time
 
 import numpy as np
 
-from config import *
-from util import *
+from utils.config import *
+from utils.util import *
 
 def usage():
     print("====================================================================================================================")

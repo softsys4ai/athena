@@ -11,8 +11,8 @@ import utils.file as file
 from utils.plot import *
 from utils.csv_headers import IdealModelEvalHeaders as headers
 from scripts.evaluate_models import eval_ideal_model
-from data import normalize
-from transformation import transform
+from data.data import normalize
+from models.transformation import transform
 from evaluation.compute_accuracy import get_test_accuracies, PERFORM_MODE
 
 PROJECT_DIR = PATH.PROJECT_DIR

@@ -10,7 +10,7 @@ import numpy as np
 from scipy.optimize import differential_evolution
 import tensorflow as tf
 
-from models import *
+from models.models import *
 from attacks import attacker
 from utils.plot import plot_image
 

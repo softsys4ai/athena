@@ -3,8 +3,8 @@ import sys
 
 import numpy as np
 import cv2
-from config import *
-from util import *
+from utils.config import *
+from utils.util import *
 
 # Basic parameters
 experimentRootDir="experiment/2019-07-28_08-51-00"

@@ -4,8 +4,8 @@ Script to train models.
 """
 import models
 from utils.config import *
-from data import load_data, normalize
-from transformation import transform, composite_transforms
+from data.data import load_data, normalize
+from models.transformation import transform, composite_transforms
 
 
 def train_model_batch(dataset):

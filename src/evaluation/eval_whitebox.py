@@ -17,10 +17,10 @@ import tensorflow.keras as keras
 import attacks.attacker
 import attacks.whitebox
 from attacks.attacker import attack_whitebox
-from data import load_data
-from models import load_model
+from data.data import load_data
+from models.models import load_model
 from utils.plot import plot_image
-from transformation import transform
+from models.transformation import transform
 from utils.config import *
 from utils.file import save_adv_examples
 import utils.measure as measure

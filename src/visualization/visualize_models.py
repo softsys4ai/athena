@@ -6,7 +6,7 @@ Script for visualization representations.
 import numpy as np
 import os
 
-from models import load_model
+from models.models import load_model
 from utils.config import PATH
 import visualization.visualizact as vis
 

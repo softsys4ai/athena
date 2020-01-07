@@ -5,9 +5,9 @@ import time
 import numpy as np
 import keras
 
-from config import *
-from util import *
-from train_models import train_models_with_newLabels 
+from utils.config import *
+from utils.util import *
+from models.train_models import train_models_with_newLabels
 
 def usage():
     print("==============================================================================")

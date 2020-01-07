@@ -1,7 +1,6 @@
 """
 Implement methods plotting and drawing figures.
 @author: Ying Meng (y(dot)meng201011(at)gmail(dot)com))
-        Jianhai Su
 """
 from enum import Enum
 import numpy as np

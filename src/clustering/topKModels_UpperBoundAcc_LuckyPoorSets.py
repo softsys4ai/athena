@@ -1,7 +1,7 @@
 import os
 import numpy as np
-from config import ATTACK
-from util import *
+from utils.config import *
+from utils.util import *
 
 
 # Basic parameters

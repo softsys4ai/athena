@@ -8,10 +8,10 @@ import matplotlib.pyplot as plt
 
 from sklearn.cluster import KMeans
 from tensorflow.keras.models import load_model, Model, model_from_json
-from config import *
-from transformation import transform_images
+from utils.config import *
+from models.transformation import transform_images
 
-from data import normalize
+from data.data import normalize
 
 def randomChoiceBasedDefense(predProb, measureTC=False):
     '''

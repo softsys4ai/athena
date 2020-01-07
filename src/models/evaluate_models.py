@@ -10,8 +10,8 @@ from utils.config import *
 import os
 from utils.csv_headers import IdealModelEvalHeaders as headers
 from utils.file import *
-from data import normalize
-from transformation import transform
+from data.data import normalize
+from models.transformation import transform
 from evaluation.compute_accuracy import get_test_accuracies, PERFORM_MODE
 
 PROJECT_DIR = PATH.PROJECT_DIR

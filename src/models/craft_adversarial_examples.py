@@ -6,8 +6,8 @@ This is the script to craft adversarial examples.
 import numpy as np
 
 from attacks.attacker import get_adversarial_examples
-from data import load_data
-from transformation import transform
+from data.data import load_data
+from models.transformation import transform
 from utils.config import ATTACK, DATA, MODE, TRANSFORMATION
 from utils.file import save_adv_examples
 

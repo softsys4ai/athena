@@ -8,8 +8,8 @@ import numpy as np
 from tensorflow.keras.models import load_model
 import cv2
 
-from config import *
-from transformation import transform_images
+from utils.config import *
+from models.transformation import transform_images
 
 DEBUG = True #MODE.DEBUG
 

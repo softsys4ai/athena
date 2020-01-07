@@ -6,10 +6,10 @@
 import copy
 import os
 
-import models
+from models import models
 from utils.config import *
-from data import load_data
-from transformation import transform
+from data.data import load_data
+from models.transformation import transform
 
 
 def train_model(data, transformation_type=TRANSFORMATION.clean):

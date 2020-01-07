@@ -2,9 +2,9 @@ import os
 import sys
 
 import numpy as np
-from util import * 
-from config import *
-from transformation import transform_images
+from utils.util import *
+from utils.config import *
+from models.transformation import transform_images
 
 
 # Basic parameters

@@ -6,7 +6,7 @@ from collections import Counter
 from sklearn.metrics import accuracy_score
 from tensorflow.keras.models import load_model, Model
 
-from transformation import transform
+from models.transformation import transform
 
 def load_models(modelsDir, modelFilenamePrefix, transformationList, convertToLogit=False):
     models=[]

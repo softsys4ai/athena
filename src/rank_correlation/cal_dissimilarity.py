@@ -3,7 +3,7 @@
 import sys
 import os
 import numpy as np
-from numy import linalg as LA
+from numpy import linalg as LA
 
 
 def distortion(bs_fp, ae_fp):
