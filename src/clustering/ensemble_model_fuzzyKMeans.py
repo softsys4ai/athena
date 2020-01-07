@@ -5,7 +5,8 @@ from sklearn.cluster import KMeans
 import numpy as np
 
 from tensorflow.keras.models import load_model
-from transformation import IMG_TRANSFORMATIONS, transform_images
+from transformation import transform_images
+from utils.config import TRANSFORMATION
 
 #from kmeans import k_means
 from fcmeans import FCM
@@ -19,6 +20,9 @@ predVecFP="./vectors.txt"
 numOfEPS = 4
 listEPS = [10,15,20,25]
 
+IMG_TRANSFORMATIONS = TRANSFORMATION.supported_types()
+# remove the original model
+IMG_TRANSFORMATIONS.remove('clean')
 numOfModels = len(IMG_TRANSFORMATIONS)
 numOfAEs    = 10000
 
