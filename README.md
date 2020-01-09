@@ -1,6 +1,6 @@
-# Athena: A Framework for Defending Machine Learning Systems Against Adversarial Attacks
-
 <img src="https://github.com/softsys4ai/athena/blob/master/reports/figures/logo/Athena_logo.png" width="20%" height="20%">
+
+# Athena: A Framework for Defending Machine Learning Systems Against Adversarial Attacks
 
 ## Introduction
 This is the code base for Athena, a framework for defending [machine learning systems](https://pooyanjamshidi.github.io/mls/) against adversarial attacks. We found out that, surprisingly, an Ensemble of Many Diverse Weak Defenses, say deep neural networks trained on disjointly transformed data, can can be very effective for defending ML systems against adversarial attacks. 
