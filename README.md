@@ -1,4 +1,6 @@
-<img src="https://github.com/softsys4ai/athena/blob/master/reports/figures/logo/Athena_logo.png" width="20%" height="20%">
+<p align="center">
+<img src="https://github.com/softsys4ai/athena/blob/master/reports/figures/logo/Athena_logo.png" width="20%" height="20%" title="Athena logo">
+<p>
 
 # Athena: A Framework for Defending Machine Learning Systems Against Adversarial Attacks
 
