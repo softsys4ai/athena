@@ -6,7 +6,7 @@
 import copy
 import os
 
-from models import models
+from tasks import models
 from utils.config import *
 from data.data import load_data
 from models.transformation import transform

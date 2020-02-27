@@ -5,7 +5,7 @@ Script to train models.
 import models
 from utils.config import *
 from data.data import load_data, normalize
-from models.transformation import transform, composite_transforms
+from models.transformation import transform
 
 
 def train_model_batch(dataset):
@@ -39,7 +39,7 @@ def train_model(dataset, transform_type):
 
     # train
     model = models.create_model(dataset, input_shape, nb_classes)
-    models.train(model, X_train, Y_train, model_name, require_preprocess)
+    tasks.train(model, X_train, Y_train, model_name, require_preprocess)
     # save to disk
     models.save_model(model, model_name)
     # evaluate the new model
@@ -69,7 +69,7 @@ def train_composition(dataset, transformation_list):
     require_preprocess = (dataset == DATA.cifar_10)
 
     model = models.create_model(dataset, input_shape, nb_classes)
-    models.train(model, X_train, Y_train, model_name, require_preprocess)
+    tasks.train(model, X_train, Y_train, model_name, require_preprocess)
     # save to disk
     models.save_model(model, model_name)
 

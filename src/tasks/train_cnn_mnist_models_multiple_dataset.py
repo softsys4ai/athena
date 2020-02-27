@@ -1,7 +1,7 @@
 import os
 import sys
 
-import models
+from tasks import models
 from utils.config import *
 
 def train_model(data, model_name):

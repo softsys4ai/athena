@@ -2,7 +2,7 @@ import os
 import sys
 from keras.utils import to_categorical
 
-from models import models
+from tasks import models
 from utils.config import *
 
 def train_model(data, model_name):

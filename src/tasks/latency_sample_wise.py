@@ -10,7 +10,7 @@ matplotlib.use('Agg')
 
 
 from utils.config import *
-from utils.util import *
+from utils.ensemble_utils import *
 from models.transformation import transform_images
 
 DEBUG = True #MODE.DEBUG

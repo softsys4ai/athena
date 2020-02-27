@@ -2,8 +2,6 @@
 Define models and implement related operations.
 @author: Ying Meng (y(dot)meng201011(at)gmail(dot)com)
 """
-from __future__ import absolute_import, division, print_function
-
 import warnings
 
 import tensorflow as tf
@@ -14,7 +12,7 @@ from tensorflow.python.keras.callbacks import LearningRateScheduler
 from tensorflow.python.keras.preprocessing.image import ImageDataGenerator
 
 from utils.config import *
-import data
+from data import data
 from utils import file
 from utils.plot import plotTrainingResult
 
@@ -481,7 +479,7 @@ def load_from_json(model_name,
 for testing
 """
 def main():
-    from data import load_data
+    from data.data import load_data
 
     model = models.load_model('data/models/model-mnist-cnn-clean.h5')
     _, (X, Y) = load_data(DATA.mnist)

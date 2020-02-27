@@ -8,7 +8,7 @@ from scipy.spatial import distance_matrix
 import seaborn as sns; sns.set()
 
 from utils.config import *
-from utils.util import *
+from utils.ensemble_utils import *
 
 def usage():
     print("==========================================================================================================")
