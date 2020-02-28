@@ -24,14 +24,14 @@ Navigate to the directory where the repository was downloaded and run the follow
 ```
 pip install requirements.txt
 ```
-
-### Hardware Requirements
-```
-Processor (recommended): 2 x 3.0 GHz CPU cores
-Memory: >=16 GB RAM
-Disk: >=30 GB available on disk partition
-Storage: >=20 MBps
-```
+% Requirements for hardware depends on data source, it does not make much sense to put hardware requirements here.
+% ### Hardware Requirements
+% ```
+%Processor (recommended): 2 x 3.0 GHz CPU cores
+%Memory: >=16 GB RAM
+%Disk: >=30 GB available on disk partition
+%Storage: >=20 MBps
+%```
 
 ## Getting Started
 
