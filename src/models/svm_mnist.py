@@ -12,6 +12,7 @@ import pickle
 from models.transformation import transform
 from data.data import load_data
 from utils.config import *
+import utils.model_utils as model_utils
 
 default_train_params = {
     'svm_params': {
@@ -98,22 +99,24 @@ def evaluate(model, X, Y):
     assert X is not None
     assert Y is not None
 
-    X_test = __reshape(X.cope())
+    X_test = __reshape(X)
     if len(Y.shape) > 1:
         # convert probabilities to labels
         Y = [np.argmax(y) for y in Y]
 
-    predictions = get_predictions(X_test)
+    predictions = get_predictions(model, X_test)
     return round(metrics.accuracy_score(y_true=Y, y_pred=predictions), 6)
 
+"""
 def save(model, filename):
     assert model is not None
     assert filename is not None
 
     with open(filename, 'wb') as file:
         pickle.dump(model, file)
+"""
 
-
+"""
 def load(filename):
     assert filename is not None
 
@@ -124,31 +127,32 @@ def load(filename):
         model = pickle.load(file)
 
     return model
+"""
 
 if __name__=='__main__':
     transformations = TRANSFORMATION.supported_types()
 
-    dataset = 'mnist'
-    (X_train, Y_train), (X_test, Y_test) = load_data([dataset])
+    data = {
+        'dataset': DATA.mnist,
+        'architecture': 'svm',
+    }
+
+    (X_train, Y_train), (X_test, Y_test) = load_data(data['dataset'])
 
     Y_train = np.argmax(Y_train, axis=1)
     Y_test = np.argmax(Y_test, axis=1)
 
-    data = {
-        'dataset': dataset,
-        'architecture': 'svm',
-    }
 
     for trans in transformations:
         data['trans'] = trans
 
         data['train'] = (transform(X_train, trans), Y_train)
-        data['test'] = (transform(X_test, Y_test))
+        data['test'] = (transform(X_test, trans), Y_test)
 
         model = train(data, training_params=default_train_params)
 
         filename = 'model-{}-{}-{}.pkl'.format(data['dataset'], data['architecture'], data['trans'])
 
         filename = os.path.join(PATH.MODEL, filename)
-        save(model, filename)
+        model_utils.save(model, filename)
 
