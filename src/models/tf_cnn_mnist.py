@@ -1,5 +1,5 @@
 """
-
+CNN model for MNIST/Fashion-MNIST.
 @author: Ying Meng (y(dot)meng201011(at)gmail(dot)com)
 """
 
@@ -79,10 +79,10 @@ def train(dataset, model=None, trans_type=TRANSFORMATION.clean,
     X_test = data_utils.set_channels_last(X_test)
 
     # Apply transformation (associated to the weak defending model)
-    X_train = transform(X_train, trans_type)
-    X_test = transform(X_test, trans_type)
+    X_train = data_utils.rescale(transform(X_train, trans_type))
+    X_test = data_utils.rescale(transform(X_test, trans_type))
 
-    nb_examples, img_rows, img_cols, nb_channels = X_train
+    nb_examples, img_rows, img_cols, nb_channels = X_train.shape
     nb_train_samples = int(nb_examples * (1. - validation_rate))
     train_examples = X_train[:nb_train_samples]
     train_labels = Y_train[:nb_train_samples]
