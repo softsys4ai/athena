@@ -145,14 +145,11 @@ def get_predicted_labels(model, x):
     return labels
 
 def evaluate(model, X, Y):
-
     if len(Y.shape) > 1:
         # convert probabilities to labels
         Y = [np.argmax(y) for y in Y]
 
-    predictions = get_probabilities(model, X)
-    predictions = [np.argmax(p) for p in predictions]
-
+    predictions = get_predicted_labels(model, X)
     return round(metrics.accuracy_score(y_true=Y, y_pred=predictions), 6)
 
 

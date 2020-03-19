@@ -5,14 +5,13 @@ A Linear SVM classifier on MNIST/Fashion-MNIST.
 
 import os
 
-from sklearn.svm import SVC
 from sklearn import metrics
-import pickle
+from sklearn.svm import SVC
 
-from models.transformation import transform
-from data.data import load_data
-from utils.config import *
 import utils.model_utils as model_utils
+from data.data import load_data
+from models.transformation import transform
+from utils.config import *
 
 default_train_params = {
     'svm_params': {
@@ -69,7 +68,7 @@ def get_probabilities(model, X):
 
     return np.asarray(probs)
 
-def get_predictions(model, X):
+def get_predicted_labels(model, X):
     assert model is not None
     assert  X is not X
 
@@ -104,7 +103,7 @@ def evaluate(model, X, Y):
         # convert probabilities to labels
         Y = [np.argmax(y) for y in Y]
 
-    predictions = get_predictions(model, X_test)
+    predictions = get_predicted_labels(model, X_test)
     return round(metrics.accuracy_score(y_true=Y, y_pred=predictions), 6)
 
 """

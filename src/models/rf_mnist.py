@@ -87,6 +87,22 @@ def get_probabilities(model, X):
     return model.predict_proba(X)
 
 
+def get_predicted_labels(model, x):
+    probabilities = get_probabilities(model, x)
+    labels = [np.argmax(p) for p in probabilities]
+
+    return labels
+
+
+def evaluate(model, X, Y):
+    if len(Y.shape) > 1:
+        # convert probabilities to labels
+        Y = [np.argmax(y) for y in Y]
+
+    predictions = get_predicted_labels(model, X)
+    return round(accuracy_score(y_true=Y, y_pred=predictions), 6)
+
+
 def __reshape(data):
     # assert len(data) == 4
     nb_samples, img_rows, img_cols, nb_channels = data.shape
