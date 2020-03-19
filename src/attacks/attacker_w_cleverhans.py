@@ -12,9 +12,9 @@ import tensorflow as tf
 import tensorflow.keras as keras
 
 from utils.config import *
-import attacks.whitebox as whitebox
+import attacks.craft_w_cleverhans as whitebox
 import attacks.one_pixel as one_pixel
-from models.models import load_model
+from tasks.models import load_model
 
 logger = logging.getLogger('attacks.attacker...')
 logger.setLevel(logging.INFO)
