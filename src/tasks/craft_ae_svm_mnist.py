@@ -13,29 +13,68 @@ from data.data import load_data
 from utils.file import *
 from utils.file import save_adv_examples
 
-EXP_ROOT = os.path.join(PATH.PROJECT_DIR, 'exp_results')
-MODLE_DIR = os.path.join(EXP_ROOT, 'svm')
-RESULTS_DIR = os.path.join(EXP_ROOT, 'results')
-AE_DIR = os.path.join(EXP_ROOT, 'ae_svm')
+MODLE_DIR = os.path.join(PATH.MODEL, 'svm_mnist')
+AE_DIR = os.path.join(PATH.ADVERSARIAL_FILE, 'svm_mnist')
 
-def generate_adversarial_exmaple(model_file, X, Y, nb_classes, attack=None):
+def generate_adversarial_exmaple(model_file, X, Y, nb_classes, **attack_settings):
     assert model_file is not None
-    assert attack is not None
+
+    attack = attack_settings['attack']
+    attack_settings.__delitem__('attack')
 
     print('Loading model [{}]'.format(model_file))
     model = model_utils.load(model_file)
 
     print('Wrapping the model...')
-    mdoel = model_utils.wrap(model, target_type='sklearnclassifier', nb_classes=nb_classes)
+    wrap_settings = {
+        'nb_classes': nb_classes,
+    }
+    model = model_utils.wrap(model, target_type='sklearnclassifier', **wrap_settings)
 
-    X_adv = craft_w_art.get_adversarial_examples(X, Y, model, nb_classes, attack)
+    X_adv = craft_w_art.craft(X, Y, model, attack=attack,
+                              **attack_settings)
     X_adv = np.clip(X_adv, 0., 1.)
 
-    print('Test accuracy on clean: {}%'.format(100 * svm.evaluate(model, X, Y)))
-    print('Test accuracy on AE: {}%'.format(100 * svm.evaluate(model, X_adv, Y)))
+    print('Test accuracy on clean: {}'.format(svm.evaluate(model, X, Y)))
+    print('Test accuracy on AE: {}'.format(svm.evaluate(model, X_adv, Y)))
+
     # save adversarial examples
     save_adv_examples(X_adv, prefix='AE-test', dataset=DATA.mnist, transformation=TRANSFORMATION.clean,
-                      attack_method=attack, attack_params='')
+                      attack_method=attack, attack_params=attack_settings)
+    return X_adv
+
+
+def get_attack_conf(attack):
+    # configs for paper
+    attack_settings = {
+        ATTACK.FGSM: {
+            'attack': ATTACK.FGSM,
+            'eps': [0.05, 0.15, 0.25],
+        },
+        ATTACK.BIM_L2: {
+            'attack': ATTACK.BIM_L2,
+            'eps': [0.75, 2.0, 9.5],
+        },
+        ATTACK.BIM_Li: {
+            'attack': ATTACK.BIM_Li,
+            'eps': [0.05, 0.1, 0.25],
+        },
+        ATTACK.JSMA: {
+            'attack': ATTACK.JSMA,
+            'theta': [2.0, 5.0, 35.0],
+        },
+        ATTACK.CW_L2: {
+            'attack': ATTACK.CW_L2,
+            'lr': [0.015, 0.015, 0.01],
+            'bsearch_steps': [10, 12, 20],
+        },
+        ATTACK.PGD: {
+            'attack': ATTACK.PGD,
+            'eps': [0.05, 0.075, 0.25],
+        },
+    }
+
+    return attack_settings[attack]
 
 
 if __name__ == '__main__':
@@ -45,6 +84,7 @@ if __name__ == '__main__':
     nb_features = img_rows * img_cols * nb_channels
     nb_classes = Y_train.shape[1]
 
+    # for test
     # nb_samples = 200
     # nb_tests = 200
     # X_train = X_train[:nb_samples]
@@ -59,11 +99,15 @@ if __name__ == '__main__':
     Y_test = np.argmax(Y_test, axis=1)
 
     model_file = 'test-mnist-svm-clean.pkl'
-    model_file = os.path.join(PATH.MODEL, model_file)
+    model_file = os.path.join(MODLE_DIR, model_file)
 
     data = {
         'dataset': DATA.mnist,
         'architecture': 'svm',
+    }
+
+    attack_settings = {
+
     }
 
     data['trans'] = TRANSFORMATION.clean
@@ -74,7 +118,6 @@ if __name__ == '__main__':
     # model = svm.train(data, svm.default_train_params)
     # duration = time.monotonic() - start
     # print('Training cost:', duration)
-    #
     # svm.save(model, model_file)
 
     start = time.monotonic()
