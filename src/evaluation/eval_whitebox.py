@@ -4,7 +4,6 @@ Implement the evaluation to white-box and gray-box threat models.
 """
 
 from enum import Enum
-import numpy as np
 import os
 os.environ['KMP_DUPLICATE_LIB_OK'] = 'True'
 
@@ -14,11 +13,9 @@ import time
 import tensorflow as tf
 import tensorflow.keras as keras
 
-import attacks.attacker
-import attacks.whitebox
-from attacks.attacker import attack_whitebox
+from attacks.attacker_w_cleverhans import attack_whitebox
 from data.data import load_data
-from models.models import load_model
+from tasks.creat_models import load_model
 from utils.plot import plot_image
 from models.transformation import transform
 from utils.config import *

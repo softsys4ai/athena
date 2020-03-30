@@ -166,8 +166,6 @@ if __name__ == '__main__':
 
     X_train = data_utils.set_channels_last(X_train)
     X_test = data_utils.set_channels_last(X_test)
-    y_train = np.argmax(y_train, axis=1)
-    y_test = np.argmax(y_test, axis=1)
 
     for trans in transformations:
         data['trans'] = trans

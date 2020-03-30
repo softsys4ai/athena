@@ -1,5 +1,5 @@
 """
-An neural network classifier on CIFAR-100.
+A neural network classifier on CIFAR-100.
 Adapted from https://github.com/kakaobrain/fast-autoaugment/blob/master/FastAutoAugment/train.py
 @author: Ying Meng (y(dot)meng201011(at)gmail(dot)com)
 """
@@ -29,9 +29,8 @@ logger = get_logger('Athena')
 logger.setLevel(logging.INFO)
 
 def run_epoch(model, loader, loss_fn, optimizer, desc_default='', epoch=0, writer=None, verbose=1, scheduler=None):
-    tqdm_disable = bool(os.environ.get('TASK_NAME', ''))    # KakaoBrain Environment
     if verbose:
-        loader = tqdm(loader, disable=tqdm_disable)
+        loader = tqdm(loader, disable=False)
         loader.set_description('[{} {}/{}]'.format(desc_default, epoch, C.get()['epoch']))
 
     metrics = Accumulator()
@@ -50,8 +49,6 @@ def run_epoch(model, loader, loss_fn, optimizer, desc_default='', epoch=0, write
 
         if optimizer:
             loss.backward()
-            if getattr(optimizer, "synchronize", None):
-                optimizer.synchronize()     # for horovod
             if C.get()['optimizer'].get('clip', 5) > 0:
                 nn.utils.clip_grad_norm_(model.parameters(), C.get()['optimizer'].get('clip', 5))
             optimizer.step()
@@ -74,12 +71,6 @@ def run_epoch(model, loader, loss_fn, optimizer, desc_default='', epoch=0, write
 
         del preds, loss, top1, top5, data, label
 
-    if tqdm_disable:
-        if optimizer:
-            logger.info('[{} {}/{}] {} lr={}'.format(desc_default, epoch, C.get()['epoch'], metrics / cnt, optimizer.param_groups[0]['lr']))
-        else:
-            logger.info('[{} {}/{}] {}'.format(desc_default, epoch, C.get()['epoch'], metrics / cnt))
-
     metrics /= cnt
     if optimizer:
         metrics.metrics['lr'] = optimizer.param_groups[0]['lr']
@@ -90,7 +81,7 @@ def run_epoch(model, loader, loss_fn, optimizer, desc_default='', epoch=0, write
 
 
 def train_and_eval(tag, dataroot, trans_type=TRANSFORMATION.clean, test_ratio=0.0, cv_fold=0, reporter=None,
-                   metric='last', save_path=None, only_eval=False, horovod=False):
+                   metric='last', save_path=None, only_eval=False):
 
     print('----------------------------')
     print('Augments for model training')
@@ -98,14 +89,7 @@ def train_and_eval(tag, dataroot, trans_type=TRANSFORMATION.clean, test_ratio=0.
     print('>>> dataroot:', dataroot)
     print('>>> save_path:', save_path)
     print('>>> eval:', only_eval)
-    print('>>> horovod:', horovod)
     print('----------------------------')
-
-    if horovod:
-        import horovod.torch as hvd
-        hvd.init()
-        device = torch.device('cuda', hvd.local_rank())
-        torch.cuda.set_device(device)
 
     if not reporter:
         reporter = lambda **kwargs: 0
@@ -115,12 +99,12 @@ def train_and_eval(tag, dataroot, trans_type=TRANSFORMATION.clean, test_ratio=0.
     start = time.monotonic()
     trainsampler, trainloader, validloader, testloader_ = get_dataloaders(C.get()['dataset'], C.get()['batch'], dataroot,
                                                                           trans_type=trans_type, split=test_ratio,
-                                                                          split_idx=cv_fold, horovod=horovod)
+                                                                          split_idx=cv_fold)
     trans_cost = time.monotonic() - start
     print('Cost for transformation:', round(trans_cost / 60., 6))
 
     # create a model & an optimizer
-    model = get_model(C.get()['model'], num_class(C.get()['dataset']), data_parallel=(not horovod))
+    model = get_model(C.get()['model'], num_class(C.get()['dataset']), data_parallel=True)
 
     criterion = nn.CrossEntropyLoss()
     if C.get()['optimizer']['type'] == 'sgd':
@@ -132,17 +116,10 @@ def train_and_eval(tag, dataroot, trans_type=TRANSFORMATION.clean, test_ratio=0.
             nesterov=C.get()['optimizer']['nesterov']
         )
     else:
-        raise ValueError('invalid optimizer type=%s' % C.get()['optimizer']['type'])
+        raise ValueError('Optimizer type [{}] is not yet supported, SGD is the only optimizer supported.'.format(C.get()['optimizer']['type']))
 
     is_master = True
-    if horovod:
-        optimizer = hvd.DistributedOptimizer(optimizer, named_parameters=model.named_parameters())
-        optimizer._requires_update = set()  # issue : https://github.com/horovod/horovod/issues/1099
-        hvd.broadcast_parameters(model.state_dict(), root_rank=0)
-        hvd.broadcast_optimizer_state(optimizer, root_rank=0)
-        if hvd.rank() != 0:
-            is_master = False
-    logger.debug('is_master=%s' % is_master)
+    logger.debug('is_master={}'.format(is_master))
 
     lr_scheduler_type = C.get()['lr_schedule'].get('type', 'cosine')
     if lr_scheduler_type == 'cosine':
@@ -210,9 +187,6 @@ def train_and_eval(tag, dataroot, trans_type=TRANSFORMATION.clean, test_ratio=0.
     # train loop
     best_top1 = 0
     for epoch in range(epoch_start, max_epoch + 1):
-        if horovod:
-            trainsampler.set_epoch(epoch)
-
         model.train()
         rs = dict()
         rs['train'] = run_epoch(model, trainloader, criterion, optimizer, desc_default='train',
@@ -275,7 +249,7 @@ def train_and_eval(tag, dataroot, trans_type=TRANSFORMATION.clean, test_ratio=0.
 
     return result
 
-def get_translist():
+def get_translist_for_usenix():
     # the following list is for Athena (USENIX Security 2020)
     trans_list = []
     trans_list.append(TRANSFORMATION.clean)
@@ -305,17 +279,20 @@ def get_translist():
     return trans_list
 
 if __name__ == '__main__':
+    # command:
+    # python train.py -c confs/<config_file> --aug <augmentation> --dataroot=<folder stores dataset> --dataset <dataset> --save <model_file>
+    # if evaluate an existing model, using --save and --only-eval
+    # e.g.,
+    # python train.py -c confs/wresnet28x10_cifar10_b128.yaml --aug fa_reduced_cifar10 --dataroot=data --dataset cifar100 --save cifar100_wres28x10.pth --only-eval
     parser = ConfigArgumentParser(conflict_handler='resolve')
     parser.add_argument('--tag', type=str, default='')
     parser.add_argument('--dataroot', type=str, default='/data/private/pretrainedmodels', help='torchvision data folder')
     parser.add_argument('--save', type=str, default='test.pth')
     parser.add_argument('--cv-ratio', type=float, default=0.0)
     parser.add_argument('--cv', type=int, default=0)
-    parser.add_argument('--horovod', action='store_true')
     parser.add_argument('--only-eval', action='store_true')
     args = parser.parse_args()
 
-    assert not (args.horovod and args.only_eval), 'can not use horovod when evaluation mode is enabled.'
     assert (args.only_eval and args.save) or not args.only_eval, 'checkpoint path not provided in evaluation mode.'
 
     if not args.only_eval:
@@ -324,7 +301,7 @@ if __name__ == '__main__':
         else:
             logger.warning('Provide --save argument to save the checkpoint. Without it, training result will not be saved!')
 
-    translist = get_translist()
+    translist = get_translist_for_usenix()
 
     import time
     print('*** args.save:', args.save)
@@ -333,8 +310,7 @@ if __name__ == '__main__':
         save_path = trans_type + '_' + args.save
         print('*** save_path:', save_path)
         result = train_and_eval(args.tag, args.dataroot, trans_type=trans_type,  test_ratio=args.cv_ratio,
-                                cv_fold=args.cv, save_path=save_path, only_eval=args.only_eval,
-                                horovod=args.horovod, metric='test')
+                                cv_fold=args.cv, save_path=save_path, only_eval=args.only_eval, metric='test')
         elapsed = time.time() - t
 
         logger.info('done.')

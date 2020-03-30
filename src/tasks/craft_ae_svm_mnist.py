@@ -13,10 +13,11 @@ from data.data import load_data
 from utils.file import *
 from utils.file import save_adv_examples
 
-MODLE_DIR = os.path.join(PATH.MODEL, 'svm_mnist')
+MODEL_DIR = os.path.join(PATH.MODEL, 'svm_mnist')
 AE_DIR = os.path.join(PATH.ADVERSARIAL_FILE, 'svm_mnist')
 
 def generate_adversarial_exmaple(model_file, X, Y, nb_classes, **attack_settings):
+    print('@@@', attack_settings)
     assert model_file is not None
 
     attack = attack_settings['attack']
@@ -44,33 +45,33 @@ def generate_adversarial_exmaple(model_file, X, Y, nb_classes, **attack_settings
     return X_adv
 
 
-def get_attack_conf(attack):
+def get_attack_conf(attack, i=2):
     # configs for paper
     attack_settings = {
         ATTACK.FGSM: {
             'attack': ATTACK.FGSM,
-            'eps': [0.05, 0.15, 0.25],
+            'eps': 0.05 if i==0 else 0.15 if i==1 else 0.25,
         },
         ATTACK.BIM_L2: {
             'attack': ATTACK.BIM_L2,
-            'eps': [0.75, 2.0, 9.5],
+            'eps': 0.75 if i==0 else 2.0 if i==1 else 9.5,
         },
         ATTACK.BIM_Li: {
             'attack': ATTACK.BIM_Li,
-            'eps': [0.05, 0.1, 0.25],
+            'eps': 0.05 if i==0 else 0.1 if i==1 else 0.25,
         },
         ATTACK.JSMA: {
             'attack': ATTACK.JSMA,
-            'theta': [2.0, 5.0, 35.0],
+            'theta': 2.0 if i==0 else 5.0 if i==1 else 35.0,
         },
         ATTACK.CW_L2: {
             'attack': ATTACK.CW_L2,
-            'lr': [0.015, 0.015, 0.01],
-            'bsearch_steps': [10, 12, 20],
+            'lr': 0.015 if i==0 else 0.015 if i==1 else 0.01,
+            'bsearch_steps': 10 if i==0 else 12 if i==1 else 20,
         },
         ATTACK.PGD: {
             'attack': ATTACK.PGD,
-            'eps': [0.05, 0.075, 0.25],
+            'eps': 0.05 if i==0 else 0.075 if i==1 else 0.25,
         },
     }
 
@@ -99,15 +100,11 @@ if __name__ == '__main__':
     Y_test = np.argmax(Y_test, axis=1)
 
     model_file = 'test-mnist-svm-clean.pkl'
-    model_file = os.path.join(MODLE_DIR, model_file)
+    model_file = os.path.join(MODEL_DIR, model_file)
 
     data = {
         'dataset': DATA.mnist,
         'architecture': 'svm',
-    }
-
-    attack_settings = {
-
     }
 
     data['trans'] = TRANSFORMATION.clean
@@ -122,6 +119,6 @@ if __name__ == '__main__':
 
     start = time.monotonic()
     generate_adversarial_exmaple(model_file, X_test, Y_test,
-                                 nb_classes, attack=ATTACK.CW_L2)
+                                 nb_classes, **get_attack_conf(ATTACK.CW_L2, 2))
     duration = time.monotonic() - start
     print('Generation cost:', duration)

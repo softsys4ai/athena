@@ -2,7 +2,7 @@ import os
 import sys
 
 import numpy as np
-from utils.util import *
+from utils.ensemble_utils import *
 from utils.config import *
 from models.transformation import transform_images
 

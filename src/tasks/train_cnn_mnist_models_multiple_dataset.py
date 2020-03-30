@@ -1,18 +1,18 @@
 import os
 import sys
 
-from tasks import models
+from tasks import creat_models
 from utils.config import *
 
 def train_model(data, model_name):
     X, Y = data
     transformation_type=TRANSFORMATION.clean
 
-    model = models.create_model(DATA.CUR_DATASET_NAME)
+    model = creat_models.create_model(DATA.CUR_DATASET_NAME)
     print('Training model [{}]...'.format(model_name))
-    model = models.train(model, X, Y, model_name)
+    model = creat_models.train(model, X, Y, model_name)
     print('Saving model...')
-    models.save_model(model, model_name)
+    creat_models.save_model(model, model_name)
     print('Done.')
 
     return model

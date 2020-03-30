@@ -1,7 +1,7 @@
 import os
 import numpy as np
 from utils.config import *
-from utils.util import *
+from utils.ensemble_utils import *
 
 
 # Basic parameters

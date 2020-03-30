@@ -5,11 +5,12 @@ import numpy as np
 from collections import Counter
 import operator
 from sklearn.metrics import accuracy_score
-from tensorflow.keras.models import load_model, Model
+# from tensorflow.keras.models import load_model, Model
 
 from models.transformation import transform
 import utils.data_utils as data_utils
 
+'''
 def load_models(modelsDir, modelFilenamePrefix, transformationList, convertToLogit=False):
     models=[]
     print("Number of transformations: {}".format(len(transformationList)))
@@ -32,6 +33,7 @@ def load_models(modelsDir, modelFilenamePrefix, transformationList, convertToLog
             models.append(model)
     print("Number of loaded models: {}".format(len(models)))
     return models
+'''
 
 def prediction(data, models, nClasses, transformationList, batch_size=32, channel_last=True):
     '''
@@ -149,6 +151,7 @@ def ensemble_top2labels_majority_voting(rawPred, topK=1):
 
     return np.asarray(predLabels)
 
+
 def ensemble_defenses_util(rawPred, ensembleID, topK=1):
     '''
         input:
@@ -168,7 +171,8 @@ def ensemble_defenses_util(rawPred, ensembleID, topK=1):
         return ensemble_top2labels_majority_voting(rawPred, topK)
 
 def ensemble_defenses(
-        modelsDir,
+        # modelsDir,
+        models,
         modelFilenamePrefix,
         transformationList,
         datasetFilePath,
@@ -188,7 +192,7 @@ def ensemble_defenses(
         convertToLogit = True
     else:
         convertToLogit = False
-    models = load_models(modelsDir, modelFilenamePrefix, transformationList, convertToLogit=convertToLogit)
+    # models = load_models(modelsDir, modelFilenamePrefix, transformationList, convertToLogit=convertToLogit)
 
     data = np.load(datasetFilePath)
     data = data_utils.rescale(data) # ensure its values inside [0, 1]

@@ -6,7 +6,7 @@
 import copy
 import os
 
-from tasks import models
+from tasks import creat_models
 from utils.config import *
 from data.data import load_data
 from models.transformation import transform
@@ -19,11 +19,11 @@ def train_model(data, transformation_type=TRANSFORMATION.clean):
     X = transform(X, transformation_type)
 
     model_name = 'model-{}-cnn-{}'.format(DATA.CUR_DATASET_NAME, transformation_type)
-    model = models.create_model(DATA.CUR_DATASET_NAME)
+    model = creat_models.create_model(DATA.CUR_DATASET_NAME)
     print('Training model [{}]...'.format(model_name))
-    model = models.train(model, X, Y, model_name)
+    model = creat_models.train(model, X, Y, model_name)
     print('Saving model...')
-    models.save_model(model, model_name)
+    creat_models.save_model(model, model_name)
     print('Done.')
 
     return model
@@ -35,7 +35,7 @@ def test_model(model, test_data, transformation_type=TRANSFORMATION.clean):
     X = transform(X, transformation_type)
 
     print('Testing model [{}]...'.format(transformation_type))
-    models.evaluate_model(model, X, Y)
+    creat_models.evaluate_model(model, X, Y)
 
     del X, Y
 

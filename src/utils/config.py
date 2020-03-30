@@ -322,6 +322,8 @@ class ATTACK(object):
     # ---------------------------
     FGSM = 'fgsm'
     BIM = 'bim'
+    BIM_L2 = 'bim_l2'
+    BIM_Li = 'bim_li'
     DEEPFOOL = 'deepfool'
     CW_L0 = 'cw_l0'
     CW_L2 = 'cw_l2'
@@ -333,7 +335,7 @@ class ATTACK(object):
 
     @classmethod
     def get_supported_attacks(cls):
-        return [cls.FGSM, cls.BIM, cls.DEEPFOOL, cls.JSMA,
+        return [cls.FGSM, cls.BIM_L2, cls.BIM_Li, cls.DEEPFOOL, cls.JSMA,
                 cls.CW_L0, cls.CW_L2, cls.CW_Linf,
                 cls.ONE_PIXEL, cls.PGD, cls.MIM]
 
@@ -560,6 +562,10 @@ class MODEL(object):
     def set_epochs(cls, epochs):
         cls.EPOCHS = epochs
 
+    @classmethod
+    def set_transformation_type(cls, trans_type):
+        cls.TRANS_TYPE = trans_type
+
 
 class MODE(object):
     DEBUG = False
@@ -574,9 +580,8 @@ class MODE(object):
 
 
 class PATH(object):
-    # file.parent = utils folder
-    # file.parent.parent = project base (utils' parent)
-    PROJECT_DIR = Path(__file__).parent.parent.absolute()
+    from definitions import get_project_root
+    PROJECT_DIR = get_project_root()
 
     print('PROJECT DICTIONARY: {}'.format(PROJECT_DIR))
     MODEL = '{}/data/models'.format(PROJECT_DIR)

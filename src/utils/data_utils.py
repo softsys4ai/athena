@@ -5,6 +5,7 @@
 
 import numpy as np
 
+
 def channels_last(data):
     """
     Check if the image is in the shape of (?, img_rows, img_cols, nb_channels).
@@ -13,7 +14,12 @@ def channels_last(data):
     """
     # the images can be color images or gray-scales.
     assert data is not None
-    return (data.shape[-1] == 3 or data.shape[-1] == 1)
+
+    if len(data.shape) > 4 or len(data.shape) < 3:
+        raise ValueError('Incorrect dimensions of data (expected 3 or 4): {}'.format(data.shape))
+    else:
+        return (data.shape[-1] == 3 or data.shape[-1] == 1)
+
 
 def channels_first(data):
     """
@@ -33,10 +39,8 @@ def channels_first(data):
         # 3 dimensional data
         return (data.shape[0] == 3 or data.shape[0] == 1)
 
-def set_channels_first(data):
-    if len(data.shape) > 4 or len(data.shape) < 3:
-        raise ValueError('Incorrect dimensions of data (expected 3 or 4): {}'.format(data.shape))
 
+def set_channels_first(data):
     if channels_last(data):
         if len(data.shape) == 4:
             data = np.transpose(data, (0, 3, 1, 2))
@@ -45,10 +49,8 @@ def set_channels_first(data):
 
     return data
 
-def set_channels_last(data):
-    if len(data.shape) > 4 or len(data.shape) < 3:
-        raise ValueError('Incorrect dimensions of data (expected 3 or 4): {}'.format(data.shape))
 
+def set_channels_last(data):
     if channels_first(data):
         if len(data.shape) == 4:
             data = np.transpose(data, (0, 2, 3, 1))
@@ -56,6 +58,7 @@ def set_channels_last(data):
             data = np.transpose(data, (1, 2, 0))
 
     return data
+
 
 def rescale(data, range=(0., 1.)):
     """
@@ -70,6 +73,7 @@ def rescale(data, range=(0., 1.)):
     data = data * (u_bound - l_bound) + l_bound
 
     return data
+
 
 def probs2labels(y):
     if len(y.shape) > 1:

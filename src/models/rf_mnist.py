@@ -32,7 +32,8 @@ def train(train_set, test_set=None, save_path='mnist-rf-clean.rf', **training_pa
     if len(X_train.shape) > 2:
         X_train = __reshape(X_train)
 
-    Y_train = data_utils.probs2labels(Y_train)
+    if len(Y_train.shape) == 2:
+        Y_train = data_utils.probs2labels(Y_train)
 
     nb_examples = X_train.shape[0]
     nb_training = int(nb_examples * (1. - validation_rate))
@@ -120,18 +121,20 @@ if __name__ == '__main__':
         'criterion': 'gini',
     }
 
-    # transformations = TRANSFORMATION.supported_types()
-    transformations = [TRANSFORMATION.clean]
+    transformations = TRANSFORMATION.supported_types()
+    # transformations = [TRANSFORMATION.clean]
 
     (X_train, Y_train), (X_test, Y_test) = load_data(DATA.mnist)
     print(X_train.shape, Y_train.shape)
     print(X_test.shape, Y_test.shape)
 
-    MODEL_DIR = 'exp_results/models/rf'
+    MODEL_DIR = os.path.join(PATH.MODEL, 'rf_mnist')
     save_path = 'mnist-rf-'
 
     if not os.path.exists(MODEL_DIR):
-        os.mkdir(MODEL_DIR)
+        import pathlib
+        print(MODEL_DIR, 'does not exist. Create it.')
+        pathlib.Path(MODEL_DIR).mkdir(parents=True, exist_ok=True)
 
     for trans in transformations:
         save_path = 'mnist-rf-' + trans + '.rf'

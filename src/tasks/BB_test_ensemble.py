@@ -1,13 +1,12 @@
 import os
 import sys
-import time
 import gc
 import numpy as np
 from sklearn.metrics import accuracy_score
 from tensorflow.keras.models import load_model
 
 from utils.config import TRANSFORMATION
-from utils.ensemble import load_models, prediction,  ensemble_defenses_util 
+from models.ensemble import load_models, prediction,  ensemble_defenses_util
 
 
 def testOneData(

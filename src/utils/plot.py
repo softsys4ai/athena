@@ -463,7 +463,7 @@ def plot_scatter_with_certainty(data, filling_borders, setting=plot_settings(),
     plt.close()
 
 
-def plot_training_history(history, model_name):
+def plot_training_history(history, save_path=None):
     fig = plt.figure(figsize=(1, 2))
     plt.subplots_adjust(left=0.05, right=0.95,
                         top=0.90, bottom=0.05,
@@ -494,7 +494,8 @@ def plot_training_history(history, model_name):
                    loc='upper left')
 
     # save the figure to a pdf
-    fig.savefig(os.path.join(PATH.FIGURES, 'hist_{}.pdf'.format(model_name)), bbox_inches='tight')
+    if save_path is not None:
+        fig.savefig(save_path, bbox_inches='tight')
 
 
 def plotTrainingResult(history, model_name):

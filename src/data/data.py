@@ -45,10 +45,12 @@ _IMAGENET_PCA = {
         [-0.5836, -0.6948,  0.4203],
     ]
 }
+
+# For CIFAR-10 and CIFAR-100
 _CIFAR_MEAN, _CIFAR_STD = (0.4914, 0.4822, 0.4465), (0.2023, 0.1994, 0.2010)
 
 
-def load_data(dataset, trans_type=TRANSFORMATION.clean, trans_set='both'):
+def load_data(dataset, trans_type=TRANSFORMATION.clean, channel_first=False, trans_set='both'):
     assert dataset in DATA.get_supported_datasets()
     assert trans_set is None or trans_set in ['none', 'train', 'test', 'both']
 
@@ -129,13 +131,14 @@ def load_data(dataset, trans_type=TRANSFORMATION.clean, trans_set='both'):
         if trans_set in ['train', 'both']:
             X_train = transform(X_train, trans_type)
             X_train = data_utils.rescale(X_train, range=(0., 1.))
-            X_train = data_utils.set_channels_first(X_train)
 
         if trans_set in ['test', 'both']:
             X_test = transform(X_test, trans_type)
             X_test = data_utils.rescale(X_test, range=(0., 1.))
-            X_test = data_utils.set_channels_first(X_test)
 
+    if channel_first:
+        X_train = data_utils.set_channels_first(X_train)
+        X_test = data_utils.set_channels_first(X_test)
     """
     summarize data set
     """
@@ -146,7 +149,11 @@ def load_data(dataset, trans_type=TRANSFORMATION.clean, trans_set='both'):
 
 
 def get_augmentation(dataset):
-    if dataset in [DATA.cifar_10, DATA.cifar_100]:
+    if dataset in [DATA.mnist, DATA.fation_mnist]:
+        transform_train = None
+        transform_test = None
+
+    elif dataset in [DATA.cifar_10, DATA.cifar_100]:
         transform_train = tv_transforms.Compose([
             tv_transforms.RandomCrop(32, padding=4),
             tv_transforms.RandomHorizontalFlip(),
@@ -158,13 +165,14 @@ def get_augmentation(dataset):
             tv_transforms.ToTensor(),
             tv_transforms.Normalize(_CIFAR_MEAN, _CIFAR_STD),
         ])
+
     else:
         raise NotImplementedError('Not yet implemented for dataset={}.'.format(dataset))
 
     return transform_train, transform_test
 
 
-def get_aeloaders(dataset, batch, dataroot, ae_file, trans_type=TRANSFORMATION.clean):
+def get_augmented_aeloaders(dataset, batch, dataroot, ae_file, trans_type=TRANSFORMATION.clean):
     train_sampler, trainloader, validloader, _ = get_dataloaders(dataset,
                                                                  batch,
                                                                  dataroot,
@@ -186,43 +194,42 @@ def get_aeloaders(dataset, batch, dataroot, ae_file, trans_type=TRANSFORMATION.c
     return train_sampler, trainloader, validloader, testloader
 
 
-def get_dataloaders(dataset, batch, dataroot, trans_type=TRANSFORMATION.clean, trans_set='both',
-                    split=0.15, split_idx=0, horovod=False, target_lb=-1):
+def get_dataloaders(dataset, batch, trans_type=TRANSFORMATION.clean, trans_set='both', **kwargs):
     train_aug, test_aug = get_augmentation(dataset)
 
-    total_aug = augs = None
+    split = kwargs.get('split', 0.15)
+    split_idx = kwargs.get('split_idx', 0)
+    target_lb = kwargs.get('target_lb', -1)
+    aug = kwargs.get('aug', 'default')
+    cutout = kwargs.get('cutout', 0)
 
-    if isinstance(C.get()['aug'], list):
-        logger.debug('Processing data with custom augmentation.')
-        train_aug.transforms.insert(0, Augmentation(C.get()['aug']))
+    if isinstance(aug, list):
+        logger.debug('Processing data with custom augmentation [{}].'.format(aug))
+        train_aug.transforms.insert(0, Augmentation(aug))
     else:
-        logger.debug('Processing data with pre-defined augmentation.')
-        if C.get()['aug'] == 'fa_reduced_cifar10':
+        logger.debug('Processing data with pre-defined augmentation [{}].'.format(aug))
+        if aug == 'fa_reduced_cifar10':
             train_aug.transforms.insert(0, Augmentation(fa_reduced_cifar10()))
-        elif C.get()['aug'] == 'arsaug':
+        elif aug == 'arsaug':
             train_aug.transforms.insert(0, Augmentation(arsaug_policy()))
-        elif C.get()['aug'] == 'autoaug_cifar10':
+        elif aug == 'autoaug_cifar10':
             train_aug.transforms.insert(0, Augmentation(autoaug_paper_cifar10()))
-        elif C.get()['aug'] == 'autoaug_extend':
+        elif aug == 'autoaug_extend':
             train_aug.transforms.insert(0, Augmentation(autoaug_policy()))
-        elif C.get()['aug'] in ['default', 'inception', 'inception320'] :
+        elif aug in ['default', 'inception', 'inception320']:
             pass
         else:
-            raise ValueError('Augmentation [{}] is not supported.'.format(C.get()['aug']))
+            raise ValueError('Augmentation [{}] is not supported.'.format(aug))
 
-    if C.get()['cutout'] > 0:
-        train_aug.transforms.append(CutoutDefault(C.get()['cutout']))
+    if cutout > 0:
+        train_aug.transforms.append(CutoutDefault(cutout))
 
-    if dataset in [DATA.cifar_10, DATA.cifar_100]:
-        (x_train, y_train), (x_test, y_test) = load_data(dataset=dataset, trans_type=trans_type, trans_set=trans_set)
+    (x_train, y_train), (x_test, y_test) = load_data(dataset=dataset, trans_type=trans_type, trans_set=trans_set)
+    if dataset in DATA.get_supported_datasets():
         total_trainset = MyDataset(x_train, y_train, aug=train_aug)
         testset = MyDataset(x_test, y_test, aug=test_aug)
     else:
-        raise ValueError("Dataset [{}] is not supported.".format(dataset))
-
-    if total_aug is not None and augs is not None:
-        total_trainset.set_preaug(augs, total_aug)
-        print('set_preaug-')
+        raise ValueError("Dataset [{}] is not supported yet.".format(dataset))
 
     train_sampler = None
     if split > 0.0:
@@ -240,16 +247,8 @@ def get_dataloaders(dataset, batch, dataroot, trans_type=TRANSFORMATION.clean, t
 
         train_sampler = SubsetRandomSampler(train_idx)
         valid_sampler = SubsetSampler(valid_idx)
-
-        if horovod:
-            import horovod.torch as hvd
-            train_sampler = torch.utils.data.distributed.DistributedSampler(train_sampler, num_replicas=hvd.size(), rank=hvd.rank())
     else:
         valid_sampler = SubsetSampler([])
-
-        if horovod:
-            import horovod.torch as hvd
-            train_sampler = torch.utils.data.distributed.DistributedSampler(valid_sampler, num_replicas=hvd.size(), rank=hvd.rank())
 
     trainloader = torch.utils.data.DataLoader(
         total_trainset, batch_size=batch, shuffle=True if train_sampler is None else False, num_workers=32,
@@ -342,18 +341,21 @@ class SubsetSampler(Sampler):
 
 
 class MyDataset(Dataset):
-    def __init__(self, data, targets, aug=None, target_aug=None):
+    def __init__(self, data, targets, aug=None, target_aug=None, as_image=False):
         self.data = torch.from_numpy(data).float()
         self.targets = torch.LongTensor(targets)
         self.aug = aug
         self.target_aug = target_aug
+        self.as_image = as_image
 
     def __getitem__(self, index):
         img, target = self.data[index], self.targets[index]
 
-        # doing this so that it is consistent with all other datasets
-        # to return a PIL Image
-        img = torchvision.transforms.ToPILImage()(img).convert('RGB')
+        if self.as_image:
+            # Expect a PIL image as an item
+            # doing this so that it is consistent with all other datasets
+            # to return a PIL Image
+            img = torchvision.transforms.ToPILImage()(img).convert('RGB')
 
         if self.aug is not None:
             img = self.aug(img)
