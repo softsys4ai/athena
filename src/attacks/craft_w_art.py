@@ -9,17 +9,14 @@ from art.attacks.evasion.fast_gradient import FastGradientMethod
 from art.attacks.evasion.iterative_method import BasicIterativeMethod
 from art.attacks.evasion.projected_gradient_descent import ProjectedGradientDescent
 from art.attacks.evasion.saliency_map import SaliencyMapMethod
-from art.classifiers import SklearnClassifier
 
 from utils.config import *
 
 
-def get_adversarial_examples(X, Y, art_classifier, nb_classes, attack=None,
-                             **attack_params):
+def craft(X, Y, art_classifier, attack=None,
+          **attack_params):
     assert art_classifier is not None
     assert attack is not None
-
-    # art_classifier = SklearnClassifier(model=model, clip_values=(0, nb_classes))
 
     attacker = None
     if attack == ATTACK.PGD:
@@ -67,8 +64,10 @@ def get_adversarial_examples(X, Y, art_classifier, nb_classes, attack=None,
 
     elif attack == ATTACK.CW_L2:
         lr = attack_params.get('lr', 0.1)
+        bsearch_steps = attack_params.get('bsearch_steps', 10)
 
-        attacker = CarliniL2Method(classifier=art_classifier, learning_rate=lr)
+        attacker = CarliniL2Method(classifier=art_classifier, learning_rate=lr,
+                                   binary_search_steps=bsearch_steps)
 
     elif attack == ATTACK.CW_Linf:
         lr = attack_params.get('lr', 0.01)

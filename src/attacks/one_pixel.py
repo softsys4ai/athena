@@ -4,15 +4,9 @@ adapted from https://github.com/Hyperparticle/one-pixel-attack-keras/blob/master
 
 @author: Ying Meng (y(dot)meng201011(at)gmail(dot)com)
 """
-import copy
-import logging
-import numpy as np
 from scipy.optimize import differential_evolution
-import tensorflow as tf
 
-from models.models import *
-from attacks import attacker
-from utils.plot import plot_image
+from tasks.creat_models import *
 
 np_dtype = np.dtype('float32')
 
