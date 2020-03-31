@@ -3,7 +3,7 @@ scipy
 scikit-learn
 cleverhans==3.0.1
 tensorboard==1.13.1
-tensorflow==1.13.1
+tensorflow==1.15.2
 tensorflow-gpu==1.13.1
 numpy
 scikit-image==0.15.0
