@@ -1,1 +1,18 @@
-theme: jekyll-theme-architect
+# theme: jekyll-theme-architect
+# Site settings
+title: Athena
+description: Athena is a framework for defending machine learning systems against adversarial attacks.
+url: "https://softsys4ai.github.com/athena/"
+githubdir: "softsys4ai/athena"
+
+# Authoers Info
+github_username: softsys4ai
+authorurl: "https://softsys4ai.github.com/athena/"
+
+
+# Build settings
+markdown: kramdown
+
+# Other options
+
+include: ['sites/_images', 'sites/_css']
