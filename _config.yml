@@ -24,7 +24,7 @@ markdown: kramdown
 permalink: blog/:year/:month/:title
 excerpt_separator: "<!--more-->"
 
-include: ['_images', '_css']
+include: ['_images', '_css', '_sass', '_includes',]
 exclude: ['data', 'docs', 'notebooks', 'references', 'reports', 'scripts', 'src', 'tests', 'Makefile', 'requirements.txt', 'setup.py']
 # SEO stuff
 # google_author: ""

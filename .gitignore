@@ -120,3 +120,4 @@ ENV/
 /mnist_tutorial_keras_tf.py
 /mnist_tutorial_tf.py
 /model_eval_mnist.cvs
+#/_site/
