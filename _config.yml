@@ -3,8 +3,8 @@ title: Athena
 subtitle: A framework for defending machine learning adersarial attacks
 description: |
     Athena is a framework for defending machine learning adersarial attacks. 
-baseurl: "" # the subpath of your site, e.g. /blog/
-url: "https://softsys4ai.github.io/athena/" # the base hostname & protocol for your site
+baseurl: "/athena" # the subpath of your site, e.g. /blog/
+url: "https://softsys4ai.github.io" # the base hostname & protocol for your site
 githubdir: "softsys4ai/athena"
 
 # Author/user information
