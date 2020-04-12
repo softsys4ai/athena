@@ -1,6 +1,6 @@
 # Site settings
 title: Athena
-subtitle: A framework for defending machine learning adersarial attacks
+subtitle: A Framework for Defending Machine Learning Systems against Adversarial Attacks
 description: |
     Athena is a framework for defending machine learning adersarial attacks. 
 baseurl: "/athena" # the subpath of your site, e.g. /blog/
@@ -16,17 +16,13 @@ address: |
     550 Assembly Street
     Columbia, SC 29205
 
-
 # Build settings
 markdown: kramdown
 
 # Other options
-permalink: blog/:year/:month/:title
+permalink: /:year-:month-:day-:title/
+#permalink: blog/:year/:month/:title
 excerpt_separator: "<!--more-->"
 
-include: ['_images', '_css', '_sass', '_includes',]
+include: ['_images', '_css'] #, '_sass', '_includes',]
 exclude: ['data', 'docs', 'notebooks', 'references', 'reports', 'scripts', 'src', 'tests', 'Makefile', 'requirements.txt', 'setup.py']
-# SEO stuff
-# google_author: ""
-# google_site_verification: ""
-# bing_webmastertools_id: ""
