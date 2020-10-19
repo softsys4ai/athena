@@ -139,17 +139,17 @@ Athena is a framework for defending machine learning adersarial attacks.
             ATHENA is a <em>flexible</em> and <em>extensible</em> framework for building <em>generic</em> yet
             <em>effective</em> defense against adversarial attacks. ATHENA is based on ensemble of many <em>diverse
         weak defenses</em> (WDs). Each WD is a machine learning classifier (e.g., DNN, SVM) that first applies a
-            transformation on the original input and then produces an output for the transformed input. Given an
+            transformation on the original input and then produces an output for the transformed input. The WDs are
+            trained independently during the training phase. Then at the test phase, given an
             input, an ensemble first collects the predicted outputs from all WDs and then determines the final output
-            for the input by some <em>ensemble strategy</em> such as majority voting or averaging the outputs.
-            By ensembling diverse transformations, ATHENA provides a tradeoff space, where one can achieve a
+            for the input by some <em>ensemble strategy</em> such as majority voting or averaging the outputs (Figure
+            1). By ensembling diverse transformations, ATHENA provides a tradeoff space, where one can achieve a
             <em>higher robust</em> by adding more weak defenses to the ensemble or achieve <em>lower overhead and
         cost</em> by removing some weak defenses.
         </p>
 
         <p>
-            The ATHENA framework consists of 2 phases: (i) a training phase, where WDs, each is associated with a
-            transformation, are trained independently; and (ii) a test phase.
+
         </p>
 
         <!--<p> Machine learning models have achieved human-level performance in many tasks, however, they are
