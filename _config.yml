@@ -2,12 +2,14 @@
 title: Athena
 subtitle: A Framework for Defending Machine Learning Systems against Adversarial Attacks
 description: |
-    Athena is a framework for defending machine learning adersarial attacks. 
+       ATHENA is a framework for building adversarial defense. 
 baseurl: "/athena" # the subpath of your site, e.g. /blog/
 url: "https://softsys4ai.github.io" # the base hostname & protocol for your site
 githubdir: "softsys4ai/athena"
+theme: "just-the-docs"
 
 # Author/user information
+authors: Ying Meng, Jianhai Su, Jason M O'Kane, Pooyan Jamshidi
 email: 
 twitter_username: 
 github_username:  softsys4ai
