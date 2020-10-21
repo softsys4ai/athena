@@ -1,6 +1,7 @@
 old/
 _site
 .DS_Store
+.idea
 .jekyll
 .jekyll-metadata
 .bundle
