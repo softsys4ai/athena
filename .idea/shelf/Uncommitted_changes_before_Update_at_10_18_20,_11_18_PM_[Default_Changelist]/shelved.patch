@@ -1,0 +1,463 @@
+Index: src/attacks/craft_w_cleverhans.py
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.BaseRevisionTextPatchEP
+<+>\"\"\"\nImplement whitebox adversarial example generating approaches here,\nmainly use cleverhans attack toolkits.\n@author: Ying Meng (y(dot)meng201011(at)gmail(dot)com)\n\"\"\"\n\nfrom __future__ import absolute_import\nfrom __future__ import division\nfrom __future__ import print_function\nfrom __future__ import unicode_literals\n\nimport os\nos.environ['KMP_DUPLICATE_LIB_OK'] = 'True'\n\nfrom models import *\nfrom utils.config import *\n\nfrom cleverhans.attacks import FastGradientMethod\nfrom cleverhans.attacks import SaliencyMapMethod\nfrom cleverhans.attacks import DeepFool\nfrom cleverhans.attacks import BasicIterativeMethod\nfrom cleverhans.attacks import ProjectedGradientDescent\nfrom cleverhans.attacks import MomentumIterativeMethod\nfrom cleverhans.evaluation import batch_eval\nfrom cleverhans.utils_keras import KerasModelWrapper\n\n#from attacks.carlini_wagner_l0 import CarliniWagnerL0\nfrom attacks.carlini_wagner_l2 import CarliniWagnerL2\n#from attacks.carlini_wagner_li import CarliniWagnerLinf\n\n# FLAGS = flags.FLAGS\n\nvalidation_rate = 0.2\n\n\ndef generate(sess, model, X, Y, attack_method, dataset, attack_params):\n    \"\"\"\n    detect adversarial examples\n    :param model_name: the name of the target model. Models are named in the form of\n                        model-<dataset>-<architecture>-<transform_type>.h5\n    :param attack_method:  attack for generating adversarial examples\n    :param X: examples to be attacked\n    :param Y: correct label of the examples\n    :return: adversarial examples\n    \"\"\"\n    batch_size = 128\n\n    img_rows, img_cols, nb_channels = X.shape[1:4]\n    nb_classes = Y.shape[1]\n    # label smoothing\n    label_smoothing_rate = 0.1\n    Y -= label_smoothing_rate * (Y - 1. / nb_classes)\n\n    # to be able to call the model in the custom loss, we need to call it once before.\n    # see https://github.com/tensorflow/tensorflow/issues/23769\n    model(model.input)\n    # wrap a keras model, making it fit the cleverhans framework\n    wrap_model = KerasModelWrapper(model)\n\n    # initialize the attack object\n    attacker = None\n    if attack_method == ATTACK.FGSM:\n        \"\"\"\n        The Fast Gradient Sign Method,\n        by Ian J. Goodfellow, Jonathon Shlens, Christian Szegedy 2014\n        link: https://arxiv.org/abs/1412.6572\n        \"\"\"\n        attacker = FastGradientMethod(wrap_model, sess=sess)\n    elif attack_method == ATTACK.JSMA:\n        \"\"\"\n        The Jacobian-based Saliency Map Method\n        by Nicolas Papernot, Patrick McDaniel, Somesh Jha, Matt Fredrikson, Z. Berkay Celik, Ananthram Swami 2016\n        link: https://arxiv.org/abs/1511.07528\n        \"\"\"\n        batch_size = 64\n        attacker = SaliencyMapMethod(wrap_model, sess=sess)\n    elif attack_method == ATTACK.CW_L2:\n        \"\"\"\n        Untageted attack\n        \"\"\"\n        attacker = CarliniWagnerL2(wrap_model, sess=sess)\n\n    elif attack_method == ATTACK.CW_Linf:\n        \"\"\"\n        Untageted attack\n        \"\"\"\n        # TODO: bug fix --- cannot compute gradients correctly\n        # attacker = CarliniWagnerLinf(wrap_model, sess=sess)\n\n    elif attack_method == ATTACK.CW_L0:\n        \"\"\"\n        Untargeted attack\n        \"\"\"\n        # TODO: bug fix --- cannot compute gradients correctly\n        # attacker = CarliniWagnerL0(wrap_model, sess=sess)\n\n    elif attack_method == ATTACK.DEEPFOOL:\n        \"\"\"\n        The DeepFool Method, is an untargeted & iterative attack\n        which is based on an iterative linearization of the classifier.\n        by Seyed-Mohsen Moosavi-Dezfooli, Alhussein Fawzi, Pascal Frossard, 2016\n        link: https://arxiv.org/abs/1511.04599\n        \"\"\"\n        batch_size = 64\n        ord = attack_params['ord']\n        attack_params.pop('ord')\n\n        if ord == 2:\n            # cleverhans supports only l2 norm so far.\n            attacker = DeepFool(wrap_model, sess=sess)\n        elif ord == np.inf:\n            # TODO\n            pass\n        else:\n            raise ValueError('DeepFool supports only l2 and l-inf norms.')\n\n    elif attack_method == ATTACK.BIM:\n        \"\"\"\n        The Basic Iterative Method (also, iterative FGSM)\n        by Alexey Kurakin, Ian Goodfellow, Samy Bengio, 2016\n        link: https://arxiv.org/abs/1607.02533\n        \"\"\"\n        attacker = BasicIterativeMethod(wrap_model, back='tf', sess=sess)\n    elif attack_method == ATTACK.PGD:\n        \"\"\"\n        The Projected Gradient Descent approach.\n        \"\"\"\n        attacker = ProjectedGradientDescent(wrap_model)\n    elif attack_method == ATTACK.MIM:\n        \"\"\"\n        The Momentum Iterative Method\n        by Yinpeng Dong, Fangzhou Liao, Tianyu Pang, Hang Su, Jun Zhu, Xiaolin Hu, Jianguo Li, 2018\n        link: https://arxiv.org/abs/1710.06081\n        \"\"\"\n        attacker = MomentumIterativeMethod(wrap_model, sess=sess)\n    else:\n        raise ValueError('{} attack is not supported.'.format(attack_method.upper()))\n\n    # define custom loss function for adversary\n    compile_params = get_compile_params(dataset,\n                                        get_adversarial_metric(model, attacker, attack_params))\n\n    print('#### Recompile the model')\n    model.compile(optimizer=compile_params['optimizer'],\n                  loss=keras.losses.categorical_crossentropy,\n                  metrics=['accuracy', compile_params['metrics']])\n\n    # define the graph\n    print('define the graph')\n    adv_x = attacker.generate(model.input, **attack_params)\n    # consider the attack to be constant\n    adv_x = tf.stop_gradient(adv_x)\n\n    # generating adversarial examples\n    print('generating adversarial example...')\n    adv_examples, = batch_eval(sess, [model.input, wrap_model(adv_x)], [adv_x],\n                               [X, Y], batch_size=batch_size)\n\n    if MODE.DEBUG:\n        score = model.evaluate(adv_examples, Y, verbose=2)\n        print('*** Evaluation on adversarial examples: {}'.format(score))\n\n    return adv_examples, Y\n\n\n\"\"\"\nPrepare compile parameters \n\"\"\"\ndef get_compile_params(dataset=DATA.mnist, metrics=None):\n    compile_params = {}\n\n    if DATA.mnist in dataset:\n        compile_params = {\n            'optimizer': keras.optimizers.Adam(lr=0.001),\n            'metrics': metrics\n        }\n    elif dataset == DATA.cifar_10:\n        compile_params = {\n            'optimizer': keras.optimizers.RMSprop(lr=0.001, decay=1e-6),\n            'metrics': metrics\n        }\n\n    return compile_params\n\n\"\"\"\nDefine custom loss functions\n\"\"\"\ndef get_adversarial_metric(model, attacker, attack_params):\n    print('INFO: create metrics for adversary generation.')\n\n    def adversarial_accuracy(y, _):\n        # get the adversarial examples\n        x_adv = attacker.generate(model.input, **attack_params)\n\n        # consider the attack to be constant\n        x_adv = tf.stop_gradient(x_adv)\n\n        # get the prediction on the adversarial examples\n        preds_adv = model(x_adv)\n        return keras.metrics.categorical_accuracy(y, preds_adv)\n\n    # return the loss function\n    return adversarial_accuracy\n\n\ndef get_adversarial_loss(model, attacker, attack_params):\n    def adversarial_loss(y, preds):\n        # calculate the cross-entropy on the legitimate examples\n        corss_entropy = keras.losses.categorical_crossentropy(y, preds)\n\n        # get the adversarial examples\n        x_adv = attacker.generate(model.input, **attack_params)\n\n        # consider the attack to be constant\n        x_adv = tf.stop_gradient(x_adv)\n\n        # calculate the cross-entropy on the adversarial examples\n        preds_adv = model(x_adv)\n        corss_entropy_adv = keras.losses.categorical_crossentropy(y, preds_adv)\n\n        # return the average cross-entropy\n        return 0.5 * corss_entropy + 0.5 * corss_entropy_adv\n\n    # return the custom loss function\n    return adversarial_loss\n
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+--- src/attacks/craft_w_cleverhans.py	(revision 3213bff9cc508b17c591f53e4017ca0311ac64c6)
++++ src/attacks/craft_w_cleverhans.py	(date 1603035080466)
+@@ -15,6 +15,7 @@
+ from models import *
+ from utils.config import *
+ 
++import tensorflow as tf
+ from cleverhans.attacks import FastGradientMethod
+ from cleverhans.attacks import SaliencyMapMethod
+ from cleverhans.attacks import DeepFool
+@@ -24,9 +25,8 @@
+ from cleverhans.evaluation import batch_eval
+ from cleverhans.utils_keras import KerasModelWrapper
+ 
+-#from attacks.carlini_wagner_l0 import CarliniWagnerL0
+ from attacks.carlini_wagner_l2 import CarliniWagnerL2
+-#from attacks.carlini_wagner_li import CarliniWagnerLinf
++
+ 
+ # FLAGS = flags.FLAGS
+ 
+Index: _site/index.html
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.BaseRevisionTextPatchEP
+<+><!DOCTYPE html>\n<html>\n\n  <head>\n  <meta charset=\"utf-8\">\n  <meta http-equiv=\"X-UA-Compatible\" content=\"IE=edge\">\n  <meta name=\"viewport\" content=\"width=device-width, initial-scale=1\">\n\n  <title>Athena: A framework for defending machine learning adersarial attacks</title>\n  <meta name=\"description\" content=\"Athena is a framework for defending machine learning adersarial attacks. \n\">\n\n  <link rel=\"stylesheet\" href=\"/athena/_css/main.css\">\n  <link rel=\"canonical\" href=\"http://localhost:4000/athena/\">\n  <link rel=\"alternate\" type=\"application/rss+xml\" title=\"Athena\" href=\"http://localhost:4000/athena/feed.xml\" />\n<link rel='stylesheet' id='open-sans-css'  href='//fonts.googleapis.com/css?family=Open+Sans%3A300italic%2C400italic%2C600italic%2C300%2C400%2C600&#038;subset=latin%2Clatin-ext&#038;ver=4.2.4' type='text/css' media='all' />\n<link href='https://fonts.googleapis.com/css?family=Titillium+Web:600italic,600,400,400italic' rel='stylesheet' type='text/css'>\n\n\n\n\n\n<link rel=\"stylesheet\" href=\"https://use.fontawesome.com/releases/v5.2.0/css/all.css\" integrity=\"sha384-hWVjflwFxL6sNzntih27bfxkr27PmbbK/iSvJ+a4+0owXq79v+lsFkW54bOGbiDQ\" crossorigin=\"anonymous\">\n<meta property=\"og:image\" content=\"http://course-website.svmiller.com/_images/stand-and-deliver-fb.jpg\"/>\n</head>\n\n\n  <body>\n\n    <header class=\"site-header\">\n\n  <div class=\"wrapper\">\n\n    <a class=\"site-title\" href=\"/athena/\">Athena</a>\n\n\n    <nav class=\"site-nav\">\n\n      <a href=\"#\" class=\"menu-icon menu.open\">\n        <svg viewBox=\"0 0 18 15\">\n          <path fill=\"#424242\" d=\"M18,1.484c0,0.82-0.665,1.484-1.484,1.484H1.484C0.665,2.969,0,2.304,0,1.484l0,0C0,0.665,0.665,0,1.484,0 h15.031C17.335,0,18,0.665,18,1.484L18,1.484z\"/>\n          <path fill=\"#424242\" d=\"M18,7.516C18,8.335,17.335,9,16.516,9H1.484C0.665,9,0,8.335,0,7.516l0,0c0-0.82,0.665-1.484,1.484-1.484 h15.031C17.335,6.031,18,6.696,18,7.516L18,7.516z\"/>\n          <path fill=\"#424242\" d=\"M18,13.516C18,14.335,17.335,15,16.516,15H1.484C0.665,15,0,14.335,0,13.516l0,0 c0-0.82,0.665-1.484,1.484-1.484h15.031C17.335,12.031,18,12.696,18,13.516L18,13.516z\"/>\n        </svg>\n      </a>  \n\n    <div class=\"trigger\"><h1>Main Navigation</h1>\n\n <ul class=\"menu\">\n\n<!--          <li><a class=\"page-link\" href=\"/athena/\"><i class=\"fa fa-home fa-lg\"></i>Home</a></li> -->\n<!-- <li><a class=\"page-link\" href=\"\"><i class=\"fa fa-list-ul fa-lg\"></i> Syllabus</a></li>\n<li><a class=\"page-link\" href=\"/course-materials/\"><i class=\"fas fa-book\"></i> Course Materials</a></li>\n<li><a class=\"page-link\" href=\"/lectures/\"><i class=\"fas fa-book-reader\"></i> Lectures</a></li>\n<li><a class=\"page-link\" href=\"https://github.com/softsys4ai/athena\"><i class=\"fab fa-github\"></i></a></li>\n<li><a class=\"page-link\" href=\"https://softsys4ai.github.io/athena/\"><i class=\"fa fa-user fa-lg\"></i></a></li> \n-->\n    </ul>\n\n\n<!-- <ul class=\"menu\">\n        <li> <a class=\"page-link\" href=\"/about\">About</a></li>\n        <li> <a class=\"page-link\"  href=\"/blog\">Blog</a>\n        <li> <a class=\"page-link\" href=\"/blog\">CV</a>\n        <li> <a class=\"page-link\" href=\"/blog\">For Students</a></li>\n        <li> <a class=\"page-link\"  href=\"/blog\">Research</a></a>\n        <li> <a class=\"page-link\" href=\"/blog\">Teaching</a>\n<ul class=\"sub-menu\">\n\t<li><a href=\"http://svmiller.com/teaching/posc-1020-introduction-to-international-relations/\">POSC 1020 – Introduction to International Relations</a></li>\n\t<li><a href=\"http://svmiller.com/teaching/posc-3410-quantitative-methods-in-political-science/\">POSC 3410 – Quantitative Methods in Political Science</a></li>\n\t<li><a href=\"http://svmiller.com/teaching/posc-3610-international-politics-in-crisis/\">POSC 3610 – International Politics in Crisis</a></li>\n\t<li><a href=\"http://svmiller.com/teaching/posc-3630-united-states-foreign-policy/\">POSC 3630 – United States Foreign Policy</a></li>\n</ul></li>\n        <li> <a class=\"page-link\" href=\"/blog\">Miscellany</a>\n<ul class=\"sub-menu\">\n\t<li><a href=\"http://svmiller.com/teaching/posc-1020-introduction-to-international-relations/\">Clean USAID Greenbook Data</a></li>\n\t<li><a href=\"http://svmiller.com/teaching/posc-3410-quantitative-methods-in-political-science/\">Journal of Peace Research *.bst File</a></li>\n\t<li><a href=\"http://svmiller.com/teaching/posc-3610-international-politics-in-crisis/\">My Custom Beamer Style</a></li>\n</ul> \n\n</li>\n</ul> -->\n\n     </div>  \n    </nav>\n\n  </div>\n\n</header>\n\n\n    <div class=\"page-content\">\n      <div class=\"wrapper\">\n        <!--\n<div class=\"home\">\n\n<h1>A framework for defending machine learning adersarial attacks</h1>\n<dl id=\"\" class=\"wp-caption aligncenter\" style=\"max-width: px\">\n\n<dt><a href=\"\"><img class=\"\" src=\"\" alt=\"sample adversarial examples\" /></a></dt>\n\n<dd>sample adversarial examples</dd>\n</dl>\n\nAthena is a framework for defending machine learning adersarial attacks. \n\n<dl id=\"\" class=\"wp-caption aligncenter\" style=\"max-width: 900px\">\n\n<dt><a href=\"\"><img class=\"\" src=\"./_images/athena_fwk.png\" alt=\"\" /></a></dt>\n\n<dd></dd>\n</dl>\n\nAthena is a framework for defending machine learning adersarial attacks. \n\n</div>\n-->\n\n<!DOCTYPE html>\n<html dir=\"ltr\" lang=\"en\">\n<head>\n    <meta charset=\"UTF-8\"/>\n    <meta name=\"viewport\" content=\"width=device-width, initial-scale=1\">\n    <title>Athena</title>\n</head>\n<body>\n    <h1>Athena: A framework for defending machine learning adersarial attacks</h1>\n    <h3>by Ying Meng*, Jianhai Su, Jason O'Kane, Pooyan Jamshidi*</h3>\n    <div id=\"main\">\n        <h2>Introduction</h2>\n        <dl id=\"\" class=\"wp-caption aligncenter\" style=\"max-width: 680px\">\n\n<dt><a href=\"\"><img class=\"\" src=\"./_images/athena_fwk.png\" alt=\"\" /></a></dt>\n\n<dd></dd>\n</dl>\n\n        <p> Machine learning models have achieved human-level performance in many tasks, however, they are vulnerable to tiny imperceptible perturbations to its input. Such perturbed inputs are called <em>adversarial</em> examples. We propose Athena -- a framework for defending machine learning systems against adversarial attacks -- which ensembles various diverse weak defenses such as neural networks that were trained on disjointly transformed data. At test time, for a given input <strong><em>x</em></strong>, Athena first collects outputs from all weak defenses then uses some ensemble strategy (e.g., majority voting) to compute the final output. Athena is a defense framework that is (i) <em>extensible</em> so that one can add new weak defenses into or remove weak defenses from the framework anytime, (ii) <em>flexible</em> so that one can update the ensemble by replacing any weak defenses or ensemble strategy, and (iii) <em>general</em> so that one can use different type of machine learning models to train weak defenses.\n        </p>\n\n        <h2>Publication</h2>\n        <ol>\n            <li>\n                Ying Meng, Jianhai Su, Jason O'Kane, Pooyan Jamshidi. <a href=\"https://arxiv.org/abs/2001.00308\">Ensembles of Many Diverse Weak Defenses can be Strong: Defending Deep Neural Networks against Adversarial Attacks</a>, arxiv 2001.00308, 2020.\n            </li>\n        </ol>\n\n        <h2>Code</h2>\n        <a href=\"https://github.com/softsys4ai/athena\">athena</a>\n        <p></p>\n\n        <h2>Talks</h2>\n        <ol>\n            <li>\n                Pooyan Jamshidi. <a href=\"https://www.slideshare.net/pooyanjamshidi/ensembles-of-many-diverse-weak-defenses-can-be-strong-defending-deep-neural-networks-against-adversarial-attacks\">Ensembles of Many Diverse Weak Defenses can be Strong: Defending Deep Neural Networks against Adversarial Attacks</a>. Augusta University, Augusta, Georgia, February 2020.\n            </li>\n        </ol>\n\n        <h2>Future Works</h2>\n        <p>Some future works based on Athena:</p>\n        <ul>\n            <li>Adversarial detector</li>\n            <li>Automatically optimize weak defenses</li>\n            <li>Representation learning in adversarial ML</li>\n            <li>Defending against both sensitive and invariance adversarial perturbation</li>\n        </ul>\n\n        <h2>Acknowledgements</h2>\n        <p>This project has been partially supported by:</p>\n        <ul>\n            <li>Google via GCP cloud research credits</li>\n            <li>NASA (EPSCoR 521340-SC001)</li>\n        </ul>\n    </div>\n</body>\n</html>\n      </div>\n    </div>\n\n    <footer class=\"site-footer\">\n\n  <div class=\"wrapper\">\n\n<!--     <h2 class=\"footer-heading\">Athena</h2> -->\n\n    <div class=\"footer-col-wrapper\">\n      <div class=\"footer-col  footer-col-1\">\n        <ul class=\"contact-list\">\n          <li><strong>Athena</strong></li>\n\t\t\t<li></li>\n          <li><a href=\"mailto:\"></a></li>\n        </ul>\n      </div>\n\n      <div class=\"footer-col  footer-col-2\">\n \n\n         <p class=\"text\">\n550 Assembly Street<br />\nColumbia, SC 29205<br />\n\n      </div>\n\n      <div class=\"footer-col  footer-col-3\">\n       <ul class=\"social-media-list\">\n     \n\n          \n  <li>\n    <a href=\"https://github.com/softsys4ai/athena\">\n      <i class=\"fab fa-github\" style=\"color:gray\"></i> softsys4ai/athena\n    </a>\n  </li>\n\n\n          \n\n          \n\n          \n\n          \n  <li>\n    <a href=\"https://softsys4ai.github.io/athena/\">\n      <i class=\"fas fa-globe\" style=\"color:gray\"></i> softsys4ai.github.io/athena/\n    </a>\n  </li>\n\n\n\n\n       \n        </ul>\n      </div>\n    </div>\n\n  </div>\n\n</footer>\n\n  </body>\n\n</html>\n<!-- d.s.m.s.050600.062508.030515.080516.030818 | \"Baby, I'm Yours\" -->
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+--- _site/index.html	(revision 3213bff9cc508b17c591f53e4017ca0311ac64c6)
++++ _site/index.html	(date 1603076752410)
+@@ -6,7 +6,7 @@
+   <meta http-equiv="X-UA-Compatible" content="IE=edge">
+   <meta name="viewport" content="width=device-width, initial-scale=1">
+ 
+-  <title>Athena: A framework for defending machine learning adersarial attacks</title>
++  <title>Athena: A Framework for Defending Machine Learning Systems against Adversarial Attacks</title>
+   <meta name="description" content="Athena is a framework for defending machine learning adersarial attacks. 
+ ">
+ 
+@@ -94,7 +94,7 @@
+         <!--
+ <div class="home">
+ 
+-<h1>A framework for defending machine learning adersarial attacks</h1>
++<h1>A Framework for Defending Machine Learning Systems against Adversarial Attacks</h1>
+ <dl id="" class="wp-caption aligncenter" style="max-width: px">
+ 
+ <dt><a href=""><img class="" src="" alt="sample adversarial examples" /></a></dt>
+@@ -124,7 +124,7 @@
+     <title>Athena</title>
+ </head>
+ <body>
+-    <h1>Athena: A framework for defending machine learning adersarial attacks</h1>
++    <h1>Athena: A Framework based on Diverse Weak Defenses for Building Adversarial Defense</h1>
+     <h3>by Ying Meng*, Jianhai Su, Jason O'Kane, Pooyan Jamshidi*</h3>
+     <div id="main">
+         <h2>Introduction</h2>
+@@ -151,6 +151,7 @@
+ 
+         <h2>Talks</h2>
+         <ol>
++            <li>Ying Meng and Jianhai Su. <a href="https://cse.sc.edu/event/ensembles-many-weak-defenses-are-strong-defending-deep-neural-networks-against-adversarial">Ensembles of Many Diverse Weak Defenses can be Strong: Defending Deep Neural Networks against Adversarial Attacks</a>. University of South Carolina, Columbia, South Carolina, December 2019. </li>
+             <li>
+                 Pooyan Jamshidi. <a href="https://www.slideshare.net/pooyanjamshidi/ensembles-of-many-diverse-weak-defenses-can-be-strong-defending-deep-neural-networks-against-adversarial-attacks">Ensembles of Many Diverse Weak Defenses can be Strong: Defending Deep Neural Networks against Adversarial Attacks</a>. Augusta University, Augusta, Georgia, February 2020.
+             </li>
+@@ -165,7 +166,7 @@
+             <li>Defending against both sensitive and invariance adversarial perturbation</li>
+         </ul>
+ 
+-        <h2>Acknowledgements</h2>
++        <h2>Acknowledgement</h2>
+         <p>This project has been partially supported by:</p>
+         <ul>
+             <li>Google via GCP cloud research credits</li>
+Index: src/attacks/one_pixel.py
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.BaseRevisionTextPatchEP
+<+>\"\"\"\nImplement one-pixel attack,\nadapted from https://github.com/Hyperparticle/one-pixel-attack-keras/blob/master/1_one-pixel-attack-cifar10.ipynb\n\n@author: Ying Meng (y(dot)meng201011(at)gmail(dot)com)\n\"\"\"\nfrom scipy.optimize import differential_evolution\n\nfrom tasks.creat_models import *\n\nnp_dtype = np.dtype('float32')\n\nclass OnePixel(object):\n    def __init__(self, model, X, Y, kwargs):\n\n        self.model = model\n        self.X = X\n        self.Y = Y\n\n        self.targeted = kwargs.get('targeted', False)\n        self.pixel_counts = kwargs.get('pixel_counts', 1)\n        self.max_iter = kwargs.get('max_iter', 30)\n        self.pop_size = kwargs.get('pop_size', 30)\n        self.clip_min = kwargs.get('clip_min', 0.)\n        self.clip_max = kwargs.get('clip_max', 1.)\n\n        # Rescale value of pixels to [0, 255]\n        self.X *= (255.0 / self.X.max())\n\n        self.nb_samples, self.img_rows, self.img_cols, self.nb_channels = self.X.shape\n        self.True_Labels = np.array(\n            [np.where (y == 1)[0][0] for y in self.Y]\n        )\n\n        if MODE.DEBUG:\n            self.summary()\n\n\n    def summary(self):\n        print('--------------------------------')\n        print('        Summary')\n        print('--------------------------------')\n        print('target model name:', self.model.name)\n        print('targeted attack:', self.targeted)\n        print('pixel counts:', self.pixel_counts)\n        print('max iteration:', self.max_iter)\n        print('pop size:', self.pop_size)\n\n\n    def perturb_image(self, xs, img):\n        if xs.ndim < 2:\n            xs = np.array([xs])\n\n        tile = [len(xs)] + [1] * (xs.ndim + 1)\n        imgs = np.tile(img, tile)\n\n        xs = xs.astype(int)\n\n        for x, img in zip(xs, imgs):\n            pixels = np.split(x, len(x) // len(img.shape))\n            # pixels = np.split(x, len(x) // 5)\n\n            for pixel in pixels:\n                # At each x_adv's (x_pos, y_pos), update its rgb value\n                x_pos, y_pos, *rgb = pixel\n                img[x_pos, y_pos] = rgb\n\n        return imgs\n\n    def predict_class(self, xs, img, target_class, minimize=True):\n        imgs_perturbed = self.perturb_image(xs, img)\n        x_perturbed = imgs_perturbed / 255.\n        pred_probs = self.model.predict(x_perturbed)[:, target_class]\n\n        return pred_probs if minimize else 1 - pred_probs\n\n    def attack_success(self, x, img, target_label, targeted_attack=False):\n        img_perturbed = self.perturb_image(x, img)\n        x_perturbed = img_perturbed / 255.\n        pred_probs = self.model.predict(x_perturbed)[0]\n        pred_label = np.argmax(pred_probs)\n\n        if targeted_attack:\n            if MODE.DEBUG:\n                print('for targeted attack, we expect pred_label == target_label ({})'.format(pred_label == target_label))\n            return (pred_label == target_label)\n        else: # untargeted attack\n            if MODE.DEBUG:\n                print('for untargeted attack, we expect pred_label({}) != target_label({}) ({})'.format(pred_label,\n                                                                                             target_label,\n                                                                                             pred_label != target_label))\n            return (pred_label != target_label)\n\n    def attack(self, img, true_label, target_label=None):\n\n        if not self.targeted and target_label is None:\n            target_label = np.argmax(self.model.predict(img)[0])\n\n        bounds = [(0, self.img_rows), (0, self.img_cols)]\n        for i in range(self.nb_channels):\n            bounds.append((0, 256))\n        bounds *= self.pixel_counts\n\n        if MODE.DEBUG:\n            print('bounds: len/shape -- {}/{}\\n{}'.format(len(bounds), np.asarray(bounds).shape, bounds))\n\n        popmul = max(1, self.pop_size // len(bounds))\n\n        prediction_func = lambda xs: self.predict_class(xs, img, target_label, (not self.targeted))\n        callback_func = lambda x, convergence: self.attack_success(x, img, target_label, self.targeted)\n\n        if MODE.DEBUG:\n            print('Differential Evolution')\n        perturbations = differential_evolution(\n            prediction_func, bounds, maxiter=self.max_iter, popsize=popmul,\n            recombination=1, atol=-1, callback=callback_func, polish=False\n        )\n\n        if MODE.DEBUG:\n            print('perturbations:', perturbations)\n        x_adv = self.perturb_image(perturbations.x, img)\n\n        # img = img.reshape(self.img_rows, self.img_cols, self.nb_channels)\n        # x_adv = x_adv.reshape(self.img_rows, self.img_cols, self.nb_channels)\n        # re-scale as demanded\n        x_adv /= 255.\n        if self.clip_min is not None and self.clip_max is not None:\n            x_adv = np.clip(x_adv, self.clip_min, self.clip_max)\n\n        prior_probs = self.model.predict(img)[0]\n        prior_label = np.argmax(prior_probs)\n        pred_probs = self.model.predict(x_adv)[0]\n        pred_label = np.argmax(pred_probs)\n        success = (pred_label != true_label)\n        confidence_diff = prior_probs[true_label] - pred_probs[true_label]\n\n        # return [img[0], x_adv[0], perturbations.x, prior_probs, prior_label,\n        #         pred_probs, pred_label, confidence_diff, success]\n        return [img[0], x_adv[0], perturbations, prior_label, pred_label, success]\n\n    def attack_all(self):\n        X_adv = []\n\n        log_batch = 10\n        log_iter = self.nb_samples / log_batch\n\n        for i, img in enumerate(self.X):\n        # for i in range(self.nb_samples):\n        #     x = self.X[i:i+1]\n            img = np.expand_dims(img, axis=0)\n            y_true = self.True_Labels[i]\n\n            if i % log_iter == 0:\n                print('Perturbing {}-th input...'.format(i))\n\n            if not self.targeted:\n                # untargeted attack\n                target_labels = [None]\n            else:\n                # targeted attack\n                raise NotImplementedError('targeted attack is not supported yet')\n\n            for target_label in target_labels:\n                # print('y_true/target: {}/{}'.format(y_true, target_label))\n                # x_orig, x_adv, perturbation, _, prior_label, _, pred_label, _, _ = self.attack(img, true_label=y_true, target_label=target_label)\n                x_orig, x_adv, perturbations, prior_label, pred_label, _ = self.attack(img, true_label=y_true, target_label=target_label)\n\n                print('{}-th >>> true/legitimate/adv: {}/{}/{}'.format(i, y_true, prior_label, pred_label))\n\n                X_adv.append(x_adv)\n\n        return X_adv, self.Y\n\ndef generate(model, X, Y, attack_params):\n    # model = load_model(model_name)\n    attacker = OnePixel(model, X, Y, attack_params)\n    X_adv = attacker.attack_all()\n\n    return X_adv\n\n\n
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+--- src/attacks/one_pixel.py	(revision 3213bff9cc508b17c591f53e4017ca0311ac64c6)
++++ src/attacks/one_pixel.py	(date 1603036287582)
+@@ -15,6 +15,8 @@
+ 
+         self.model = model
+         self.X = X
++        self.orig_min = self.X.min()
++        self.orig_max = self.X.max()
+         self.Y = Y
+ 
+         self.targeted = kwargs.get('targeted', False)
+@@ -25,7 +27,11 @@
+         self.clip_max = kwargs.get('clip_max', 1.)
+ 
+         # Rescale value of pixels to [0, 255]
+-        self.X *= (255.0 / self.X.max())
++        # self.X = (self.X - self.orig_min) * (255.0 / (self.orig_max - self.orig_min))
++        self.X = self._rescale_X(self.X,
++                                 old_bounds=(self.orig_min, self.orig_max),
++                                 new_bounds=(0, 255.)
++                                 )
+ 
+         self.nb_samples, self.img_rows, self.img_cols, self.nb_channels = self.X.shape
+         self.True_Labels = np.array(
+@@ -123,7 +129,12 @@
+         # img = img.reshape(self.img_rows, self.img_cols, self.nb_channels)
+         # x_adv = x_adv.reshape(self.img_rows, self.img_cols, self.nb_channels)
+         # re-scale as demanded
+-        x_adv /= 255.
++        # x_adv /= 255.
++        x_adv = self._rescale_X(x_adv,
++                                old_bounds=(0, 255.),
++                                new_bounds=(self.orig_min, self.orig_max)
++                                )
++
+         if self.clip_min is not None and self.clip_max is not None:
+             x_adv = np.clip(x_adv, self.clip_min, self.clip_max)
+ 
+@@ -171,6 +182,13 @@
+ 
+         return X_adv, self.Y
+ 
++    def _rescale_X(self, X, old_bounds, new_bounds):
++        old_lb, old_ub = old_bounds
++        new_lb, new_ub = new_bounds
++
++        return (X - old_lb) * ((new_ub - new_lb) / (old_ub - old_lb))
++
++
+ def generate(model, X, Y, attack_params):
+     # model = load_model(model_name)
+     attacker = OnePixel(model, X, Y, attack_params)
+Index: index.html
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.BaseRevisionTextPatchEP
+<+>---\nlayout: default\n---\n\n<!--\n<div class=\"home\">\n\n<h1>{{ site.subtitle }}</h1>\n{% include image.html url=\"\" caption=\"sample adversarial examples\" align=\"center\" %}\n{{ site.description }}\n{% include image.html url=\"./_images/athena_fwk.png\" caption=\"\" width=900 align=\"center\" %}\n{{ site.description }}\n</div>\n-->\n\n<!DOCTYPE html>\n<html dir=\"ltr\" lang=\"en\">\n<head>\n    <meta charset=\"UTF-8\"/>\n    <meta name=\"viewport\" content=\"width=device-width, initial-scale=1\">\n    <title>{{ site.title }}</title>\n</head>\n<body>\n    <h1>{{ site.title }}: {{ site.subtitle }}</h1>\n    <h3>by Ying Meng*, Jianhai Su, Jason O'Kane, Pooyan Jamshidi*</h3>\n    <div id=\"main\">\n        <h2>Introduction</h2>\n        {% include image.html url=\"./_images/athena_fwk.png\" caption=\"\" width=680 align=\"center\" %}\n        <p> Machine learning models have achieved human-level performance in many tasks, however, they are vulnerable to tiny imperceptible perturbations to its input. Such perturbed inputs are called <em>adversarial</em> examples. We propose Athena -- a framework for defending machine learning systems against adversarial attacks -- which ensembles various diverse weak defenses such as neural networks that were trained on disjointly transformed data. At test time, for a given input <strong><em>x</em></strong>, Athena first collects outputs from all weak defenses then uses some ensemble strategy (e.g., majority voting) to compute the final output. Athena is a defense framework that is (i) <em>extensible</em> so that one can add new weak defenses into or remove weak defenses from the framework anytime, (ii) <em>flexible</em> so that one can update the ensemble by replacing any weak defenses or ensemble strategy, and (iii) <em>general</em> so that one can use different type of machine learning models to train weak defenses.\n        </p>\n\n        <h2>Publication</h2>\n        <ol>\n            <li>\n                Ying Meng, Jianhai Su, Jason O'Kane, Pooyan Jamshidi. <a href=\"https://arxiv.org/abs/2001.00308\">Ensembles of Many Diverse Weak Defenses can be Strong: Defending Deep Neural Networks against Adversarial Attacks</a>, arxiv 2001.00308, 2020.\n            </li>\n        </ol>\n\n        <h2>Code</h2>\n        <a href=\"https://github.com/softsys4ai/athena\">athena</a>\n        <p></p>\n\n        <h2>Talks</h2>\n        <ol>\n            <li>\n                Pooyan Jamshidi. <a href=\"https://www.slideshare.net/pooyanjamshidi/ensembles-of-many-diverse-weak-defenses-can-be-strong-defending-deep-neural-networks-against-adversarial-attacks\">Ensembles of Many Diverse Weak Defenses can be Strong: Defending Deep Neural Networks against Adversarial Attacks</a>. Augusta University, Augusta, Georgia, February 2020.\n            </li>\n        </ol>\n\n        <h2>Future Works</h2>\n        <p>Some future works based on Athena:</p>\n        <ul>\n            <li>Adversarial detector</li>\n            <li>Automatically optimize weak defenses</li>\n            <li>Representation learning in adversarial ML</li>\n            <li>Defending against both sensitive and invariance adversarial perturbation</li>\n        </ul>\n\n        <h2>Acknowledgement</h2>\n        <p>This project has been partially supported by:</p>\n        <ul>\n            <li>Google via GCP cloud research credits</li>\n            <li>NASA (EPSCoR 521340-SC001)</li>\n        </ul>\n    </div>\n</body>\n</html>
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+--- index.html	(revision 3213bff9cc508b17c591f53e4017ca0311ac64c6)
++++ index.html	(date 1586716522806)
+@@ -42,6 +42,7 @@
+ 
+         <h2>Talks</h2>
+         <ol>
++            <li>Ying Meng and Jianhai Su. <a href="https://cse.sc.edu/event/ensembles-many-weak-defenses-are-strong-defending-deep-neural-networks-against-adversarial">Ensembles of Many Diverse Weak Defenses can be Strong: Defending Deep Neural Networks against Adversarial Attacks</a>. University of South Carolina, Columbia, South Carolina, December 2019. </li>
+             <li>
+                 Pooyan Jamshidi. <a href="https://www.slideshare.net/pooyanjamshidi/ensembles-of-many-diverse-weak-defenses-can-be-strong-defending-deep-neural-networks-against-adversarial-attacks">Ensembles of Many Diverse Weak Defenses can be Strong: Defending Deep Neural Networks against Adversarial Attacks</a>. Augusta University, Augusta, Georgia, February 2020.
+             </li>
+Index: _site/README.md
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.BaseRevisionTextPatchEP
+<+><p align=\"center\">\n<img src=\"https://github.com/softsys4ai/athena/blob/master/reports/figures/logo/Athena_logo.png\" width=\"20%\" height=\"20%\" title=\"Athena logo\">\n<p>\n\n# Athena: A Framework for Defending Machine Learning Systems Against Adversarial Attacks\n\n## Introduction\nThis is the code base for Athena, a framework for defending [machine learning systems](https://pooyanjamshidi.github.io/mls/) against adversarial attacks. We found out that, surprisingly, an Ensemble of Many Diverse Weak Defenses, say deep neural networks trained on disjointly transformed data, can can be very effective for defending ML systems against adversarial attacks. \n\nThis codebase provides a framework for training weak defenses with transformations, building ensemble of weak defenses, provides implemented attack methods to test the effectiveness of Athena, and provides all other subsequent source code and tooling to replicate the results of the experiments in this [publication](https://arxiv.org/pdf/2001.00308.pdf).\n\n## Framework Architecture\n\n![Athena](reports/figures/architecture/athena.png)\n\n\n## Manual Installation\n\nClone the repository:\n```\ngit clone git@github.com:softsys4ai/athena.git\n```\nNavigate to the directory where the repository was downloaded and run the following commend to install software dependencies:\n```\npip install requirements.txt\n```\n% Requirements for hardware depends on data source, it does not make much sense to put hardware requirements here.\n% ### Hardware Requirements\n% ```\n%Processor (recommended): 2 x 3.0 GHz CPU cores\n%Memory: >=16 GB RAM\n%Disk: >=30 GB available on disk partition\n%Storage: >=20 MBps\n%```\n\n## Getting Started\n\n### How do I install the project?\n1. Navigate to the [\"Manual Installation\"](#manual-installation) instructions sub-section to install all software requirements.\n2. Use the following tutorials to get up and running\n\n\n### How do I configure/change project parameters?\n\n```\n    Script: athena/utils/config.py\n    Description:\n    This class contains a plethora of variables and class definitions for use across the project.\n    \n    Command Line Arguments\n    ----------------------\n    none.\n    \n    Methods\n    -------\n    class DATA(object)\n        Class to contain information about selected datasets.\n\n    class TRANSFORMATION(object)\n        Contains a dictionary of supported transformations and strings used to reference them.\n\n    class ATTACK(object)\n        Contains a dictionary of supported attacks and strings used to reference them and attack specific parameter values; \n\n    class MODEL(object)\n        Contains a model's architecture, training/testing dataset, and training hyperparameters.\n    \n    class MODE(object)\n        Contains a \"DEBUG\" boolean value (default is false) to set the project to toggle the project in and out of debug mode.\n\n    class PATH(object)\n        Contains variables containing the absolute path of the project as well as the relative paths of important project resources, logging, and save locations.\n```\n\n\n### How do I load a dataset?\n#### Available datasets\n**Dataset Name** | **Description**\n--- | ---\nMNIST | Grayscale 28x28 pixel handwritten digit dataset (10 classes) containing 60,000 training and 10,000 validation examples.\nFashion-MNIST | Grayscale 28x28 pixel clothing dataset (10 classes) containing 60,000 training and 10,000 validation examples. \nCIFAR-10 | RGB 32x32 pixel dataset (10 classes) containing 50,000 training and 10,000 validation examples.\nCIFAR-100 | RGB 32x32 pixel dataset (100 classes) containing 50,000 training and 10,000 validation examples.\n\n```\n    Script: athena/data.py\n    Description:\n    Generally, the use of this dataset loading class should be left for usage in our scripts. However, if you desire to load a dataset for your own experimentation, you may use this class to do so.\n    \n    Command Line Arguments\n    ----------------------\n    none.\n    \n    Methods\n    -------\n    load_data(dataset)\n        Returns four variables: (X_train, Y_train), (X_test, Y_test). \"X_train\" and \"Y_train\" contain neural network inputs and outputs, respectively, for training a neural network. \"X_test\" and \"Y_test\" contain neural network inputs and outputs, respectively, for validating the accuracy of the neural network.\n    normalize(X)\n        Returns one variable: X. Normalizes the four dimensional (num. data samples, width, height, depth) input dataset X in order to use it for training. Normalization scales down dataset values, while preserving relative differences, for use as input to a neural network.\n```\n\n\n### How do I use attack methods and craft adversarial examples?\n\n```\n    Script: athena/scripts/craft_adversarial_examples.py\n    Description:\n    To craft adversarial examples provide this script with the name of a dataset and the name of the attack method you would like to use to generate examples.\n    \n    Command Line Arguments\n    ----------------------\n    none.\n    \n    Methods\n    -------\n    craft(dataset, method)\n        Saves adversarial examples to the ADVERSARIAL_FILE path specified in the config.py file.\n```\n\n### How do I create and train a vanilla model on a vanilla dataset?\n\n```\n    Script: athena/models.py\n    Description:\n    To create and train a weak defense you may use this script. To properly train a weak defense, create a model and then train the model on your dataset with an applied transformation.\n    \n    Command Line Arguments\n    ----------------------\n    none.\n    \n    Methods\n    -------\n    create_model(dataset, input_shape, nb_classes)\n        Returns a convolutional neural network model built with a representational capacity best suited for the specific dataset that you are using.\n\n    train_model(model, dataset, model_name, need_augment=False, **kwargs)\n        Returns a trained version of the model provided. Training hyperparameters can be found both in this method and the config.py file if you would like to change any of them for your use case.\n\n    train(model, X, Y, model_name, need_augment=False, **kwargs)\n        Returns a trained model. This method is used by the train_model() method but can be called as a standalone method if you choose to train a model on a custom dataset.\n\n    evaluate_model(model, X, Y)\n        Returns the following variables: acc, ave_conf_correct, ave_conf_miss. This method consumes a model and the test dataset in order to evaluate the accuracy of the model. Accuracy is defined as the percentage of correct classifications by the provided model.\n\n    save_model(model, model_name, director=PATH.MODEL)\n        Serializes and saves the model to disk at the path created by concatenating the paths provided in the director and model_name parameters. \n\n    load_model(model_name, director=PATH.MODEL)\n        Returns a tensorflow model. Loads and compiles a saved model from disk at the path created by concatenating the paths provided in the director and model_name parameters.\n```\n\n### How do I create and train weak defenses?\n\n```\n    Script: athena/train.py\n    Description:\n    This script trains a weak defense for each type of transformation and saves each model to the specified models directory to be used to build an ensemble.\n    \n    Command Line Arguments\n    ----------------------\n    samplesDir : str\n        File path of input images to train the weak defense\n    rootDir : str\n        File path of the directory of the project\n    modelsDir : str\n        File path of directory to store trained weak defenses\n    numOfSamples : int\n        Upper bound of the number of the dataset input indices to be used for training/validation.\n    kFold : int\n        Number of folds, used to determine the validation training set size.\n    datasetName : str\n        Name of the dataset to be used for training (mnist, fmnist, cifar10, cifar100)\n    numOfClasses\n        Number of output classes of the provided dataset\n\n    Methods\n    -------\n    usage()\n        Call this method to print instructions for how to use this script to your standard output stream.\n```\n\n### How do I construct and evaluate an ensemble of weak defenses?\n\nNow that you have trained weak defenses, you are likely wondering, how do I build an ensemble of these weak defenses to defend against adversarial attacks? In our project, we construct and use ensembles by loading all of the trained weak defenses from a specified models directory, perform inference on a given subset of a dataset with each of the weak defenses, and then save all of the models' output probabilities and logits to disk at a specified prediction result directory for further analysis.\n\n```\n    Script: athena/test_ensemble_model_on_all_types_of_AEs.py\n    Description:\n    This script evaluates the ensemble model, the model composed of all of the models trained with train.py, and saves all of the results to a specified test result folder.\n    \n    Command Line Arguments\n    ----------------------\n    samplesDir : str\n        Path to directory containing the correct output labels for the network.\n    experimentRootDir : str\n        Path to directory of the root of the project.\n    modelsDir : str\n        Path to directory where all of the trained models are saved.\n    numOfSamples : int\n        Upper bound of the number of samples to use for evaluation of the ensemble.\n    testResultFoldName : str\n        Path to directory where test results are to be stored.\n    datasetName : str\n        Name of the dataset to be used for training (mnist, fmnist, cifar10, cifar100)\n    numOfClasses : int\n        Number of output classes for the provided dataset.\n    \n    Methods\n    -------\n    none.\n```\n\n\n### What other scripts should I be aware of?\n\n```\n    Script: athena/attacks/attacker.py\n    Description:\n    This script calls orchestrates and calls all other attack scripts in its directory to produce adversarial examples with a given attack type on a given, trained model.\n    \n    Command Line Arguments\n    ----------------------\n    none.\n\n    Methods\n    -------\n    get_adversarial_examples(model_name, attack_method, X, Y, **kwargs)\n        Returns the following variables: X_adv and Y. \"X_adv\" is a vector containing all of the generated adversarial examples and Y is a vector of the same length containing the correct class labels for each created adversarial example.\n```\n```\n    Script: athena/utils/file.py\n    Description:\n    This is a helper script that provides methods to read and write ensemble model evaluations from and to disk. The methods contained within this script may be called on their own. Currently, this script's functions are leveraged by the \"test_ensemble_model_on_all_types_of_AEs.py\" script for recording produced ensemble evaluation results.\n    \n    Command Line Arguments\n    ----------------------\n    none.\n\n    Methods\n    -------\n    dict2csv(dictionary, file_name, list_as_value=False)\n        Saves a given dictionary to a csv file located at the path specified by the \"file_name\" parameter. If only a file name is specified, the csv will be saved in the athena/utils directory.\n    csv2dict(file_name, orient=ORIENT.COL, dtype='float')\n        Reads a csv at the path specified by the \"file_name\" parameter and returns the dictionary stored in the CSV file.\n    save_adv_examples(data, **kwargs)\n        Saves adversarial examples provided in the \"data\" parameter to the path specified by the \"ADVERSARIAL_FILE\" variable in the \"config.py\" script.\n```\n\n## How to Contribute\n\n\nWe welcome new features, extension, or enhancements of this framework. Bug fixes can be initiated through GitHub pull requests. \n\nWe are, in particular, looking for new collaborations, taking this framework further and applying Athena to new application domains such as medical imaging, voice, and text. Please drop us an email if you are interested.\n\n\n## Citing this work\n\nIf you use Athena for academic or industrial research, please feel free to cite the following [paper](https://arxiv.org/pdf/2001.00308.pdf):\n\n```\n@article{athena2020,\n  title={Ensembles of Many Weak Defenses can be Strong: Defending Deep Neural Networks Against adversarial Attacks},\n  author={Meng, Ying and Su, Jianhai and O’Kane, Jason and Jamshidi, Pooyan},\n  journal={arXiv preprint arXiv:2001.00308},\n  year={2020}\n}\n```\n\n## Contacts\n\n* [Pooyan Jamshidi](https://pooyanjamshidi.github.io/)\n* [Ying Meng](https://github.com/MENG2010)\n\n## Contributors\n\n* [Ying Meng](https://github.com/MENG2010)\n* [Jianhai Su](https://github.com/oceank)\n* [Blake Edwards](https://github.com/blakeedwards823)\n* [Stephen Baione](https://github.com/StephenBaione)\n* [Pooyan Jamshidi](https://github.com/pooyanjamshidi)\n\n\n## Acknowledgements\nThis project has been partially supported by:\n* Google via GCP cloud research credits\n* NASA (EPSCoR 521340-SC001) \n
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+--- _site/README.md	(revision 3213bff9cc508b17c591f53e4017ca0311ac64c6)
++++ _site/README.md	(date 1586716262000)
+@@ -3,9 +3,11 @@
+ <p>
+ 
+ # Athena: A Framework for Defending Machine Learning Systems Against Adversarial Attacks
++## Project Webpage
++[Athena](https://softsys4ai.github.io/athena/)
+ 
+ ## Introduction
+-This is the code base for Athena, a framework for defending [machine learning systems](https://pooyanjamshidi.github.io/mls/) against adversarial attacks. We found out that, surprisingly, an Ensemble of Many Diverse Weak Defenses, say deep neural networks trained on disjointly transformed data, can can be very effective for defending ML systems against adversarial attacks. 
++This is the code base for [Athena](https://softsys4ai.github.io/athena/), a framework for defending [machine learning systems](https://pooyanjamshidi.github.io/mls/) against adversarial attacks. We found out that, surprisingly, an Ensemble of Many Diverse Weak Defenses, say deep neural networks trained on disjointly transformed data, can can be very effective for defending ML systems against adversarial attacks. 
+ 
+ This codebase provides a framework for training weak defenses with transformations, building ensemble of weak defenses, provides implemented attack methods to test the effectiveness of Athena, and provides all other subsequent source code and tooling to replicate the results of the experiments in this [publication](https://arxiv.org/pdf/2001.00308.pdf).
+ 
+Index: src/attacks/utils.py
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+--- src/attacks/utils.py	(date 1603034425162)
++++ src/attacks/utils.py	(date 1603034425162)
+@@ -0,0 +1,20 @@
++"""
++Utilities of attack.
++@author: Ying Meng (y(dot)meng201011(at)gmail(dot)com)
++"""
++
++from enum import Enum
++
++
++class WHITEBOX_ATTACK(Enum):
++    FGSM = 'fgsm'
++    CW = 'cw'
++    PGD = 'pgd'
++    JSMA = 'jsma'
++    BIM = 'bim'
++    MIM = 'mim'
++    OP = 'one-pixel'
++    DF = 'deepfool'
++    SPATIAL_TRANS = 'spatial-transformation'
++    HOP_SKIP_JUMP = 'hop-skip-jump'
++    ZOO = 'zoo'
+Index: src/attacks/attack.py
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+--- src/attacks/attack.py	(date 1603040328527)
++++ src/attacks/attack.py	(date 1603040328527)
+@@ -0,0 +1,248 @@
++"""
++Implement attacks on top of Trust-AI ART (1.2.0).
++@author: Ying Meng (y(dot)meng201011(at)gmail(dot)com)
++"""
++
++import numpy as np
++import torch
++
++from art.attacks.evasion.fast_gradient import FastGradientMethod
++from art.attacks.evasion.carlini import CarliniL2Method, CarliniLInfMethod
++from art.attacks.evasion.projected_gradient_descent import ProjectedGradientDescent
++from art.attacks.evasion.deepfool import DeepFool
++from art.attacks.evasion.saliency_map import SaliencyMapMethod
++from art.attacks.evasion.iterative_method import BasicIterativeMethod
++from art.attacks.evasion.spatial_transformation import SpatialTransformation
++from art.attacks.evasion.hop_skip_jump import HopSkipJump
++from art.attacks.evasion.zoo import ZooAttack
++
++from attacks.utils import WHITEBOX_ATTACK as ATTACK
++from attacks.one_pixel import OnePixel
++
++
++def generate(model, data_loader, attack_args, device=None):
++    """
++    The entrance of adversarial examples generation.
++    :param model: the targeted model.
++    :param data_loader: a tuple of benign samples and corresponding labels.
++    :param attack_args: dictionary. adversarial arguments.
++    :param device: cpu or cuda.
++    :return:
++    """
++    if device is None:
++        device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
++
++    images, labels = data_loader
++    attack = attack_args.get('attack').lower()
++
++    if attack == ATTACK.FGSM.value:
++        return _fgsm(model, images, labels, attack_args)
++    elif attack == ATTACK.CW.value:
++        return _cw(model, images, labels, attack_args)
++    elif attack == ATTACK.PGD.value:
++        return _pgd(model, images, labels, attack_args)
++    elif attack == ATTACK.BIM.value:
++        return _bim(model, images, labels, attack_args)
++    elif attack == ATTACK.JSMA.value:
++        return _jsma(model, images, labels, attack_args)
++    elif attack == ATTACK.DF.value:
++        return _df(model, images, labels, attack_args)
++    elif attack == ATTACK.MIM.value:
++        return _mim(model, images, labels, attack_args)
++    elif attack == ATTACK.OP.value:
++        return _op(model, images, labels, attack_args)
++    elif attack == ATTACK.HOP_SKIP_JUMP.value:
++        raise _hop_skip_jump(model, images, labels, attack_args)
++    elif attack == ATTACK.SPATIAL_TRANS.value:
++        return _spatial(model, images, labels, attack_args)
++    elif attack == ATTACK.ZOO.value:
++        return _zoo(model, images, labels, attack_args)
++    else:
++        raise ValueError('{} is not supported.'.format(attack))
++
++
++def _fgsm(model, data, labels, attack_args):
++    """
++    The Fast Gradient Sign Method,
++    by Ian J. Goodfellow, Jonathon Shlens, Christian Szegedy 2014
++    link: https://arxiv.org/abs/1412.6572
++    :param model: an instance of art.classifiers.classifier.Classifier.
++                The targeted model.
++    :param data: The benign samples.
++    :param labels: The corresponding true labels. It can be None.
++    :param attack_args: dictionary. The adversarial arguments.
++    :return:
++    """
++    print('>>> Generating FGSM examples.')
++    eps = attack_args.get('eps', 0.3)
++
++    targeted = attack_args.get('targeted', False)
++    num_random_init = attack_args.get('num_random_init', 0)
++    minimal = attack_args.get('minimal', False)
++
++    if labels is None:
++        # use the predicted labels if the true labels are not provided.
++        labels = model.predict(data)
++
++    attacker = FastGradientMethod(model, eps=eps, eps_step=eps, targeted=targeted,
++                                  num_random_init=num_random_init, minimal=minimal)
++    return attacker.generate(data, labels)
++
++
++def _cw(model, data, labels, attack_args):
++
++    norm = attack_args.get('norm').lower()
++
++    lr = attack_args.get('lr')
++    max_iter = attack_args.get('max_iter', 10)
++
++    # use default values for the following arguments
++    confidence = attack_args.get('confidence', 0.0)
++    targeted = attack_args.get('targeted', False)
++    init_const = attack_args.get('init_const', 0.01)
++    max_halving = attack_args.get('max_halving', 5)
++    max_doubling = attack_args.get('max_doubling', 5)
++
++    if norm == 'l2':
++        print('>>> Generating CW_l2 examples.')
++        binary_search_steps = attack_args.get('binary_search_steps', 10)
++
++        attacker = CarliniL2Method(classifier=model, confidence=confidence, targeted=targeted, learning_rate=lr,
++                                   binary_search_steps=binary_search_steps, max_iter=max_iter,
++                                   initial_const=init_const, max_halving=max_halving,
++                                   max_doubling=max_doubling)
++
++    elif norm == 'linf':
++        print('>>> Generating CW_linf examples.')
++        eps = attack_args.get('eps', 0.3)
++        attacker = CarliniLInfMethod(classifier=model, confidence=confidence, targeted=targeted, learning_rate=lr,
++                                     max_iter=max_iter, max_halving=max_halving, max_doubling=max_doubling, eps=eps)
++    else:
++        raise ValueError('Support `l2` and `linf` norms. But found {}'.format(norm))
++
++    return attacker.generate(data, labels)
++
++
++def _pgd(model, data, labels, attack_args):
++    """
++    The Projected Gradient Descent approach.
++    :param model: the targeted model.
++    :param data:
++    :param labels:
++    :param attack_args:
++    :return:
++    """
++    eps = attack_args.get('eps', 0.3)
++    eps_step = attack_args.get('eps_step', eps/10.)
++    max_iter = attack_args.get('max_iter', 100)
++
++    # default
++    norm = _get_norm_value(attack_args.get('norm', 'linf'))
++    targeted = attack_args.get('targeted', False)
++    num_random_init = attack_args.get('num_random_init', 0)
++
++    attacker = ProjectedGradientDescent(classifier=model, norm=norm, eps=eps, eps_step=eps_step,
++                                        max_iter=max_iter, targeted=targeted,
++                                        num_random_init=num_random_init)
++    return attacker.generate(data, labels)
++
++
++def _bim(model, data, labels, attack_args):
++    eps = attack_args.get('eps', 0.3)
++    eps_step = attack_args.get('eps_step', eps/10.)
++    max_iter = attack_args.get('max_iter', 100)
++
++    targeted = attack_args.get('targeted', False)
++    attacker = BasicIterativeMethod(classifier=model, eps=eps, eps_step=eps_step,
++                                    max_iter=max_iter, targeted=targeted)
++    return attacker.generate(data, labels)
++
++
++def _jsma(model, data, labels, attack_args):
++    theta = attack_args.get('theta', 0.15)
++    gamma = attack_args.get('gamma', 0.5)
++
++    attacker = SaliencyMapMethod(classifier=model, theta=theta, gamma=gamma)
++    return attacker.generate(data, labels)
++
++
++def _df(model, data, labels, attack_args):
++    max_iter = attack_args.get('max_iter', 100)
++    eps = attack_args.get('eps', 0.01)
++    nb_grads = attack_args.get('nb_grads', 10)
++
++    attacker = DeepFool(classifier=model, max_iter=max_iter, epsilon=eps, nb_grads=nb_grads)
++    return attacker.generate(data, labels)
++
++
++def _mim(model, data, labels, attack_args):
++    raise NotImplementedError
++
++
++def _op(model, data, labels, attack_args):
++    attacker = OnePixel(model=model,
++                        X=data,
++                        Y=labels,
++                        kwargs=attack_args)
++    return attacker.attack_all()
++
++
++def _spatial(model, data, labels, attack_args):
++    max_translation = attack_args.get('max_translation', 0.2)
++    num_translations = attack_args.get('num_translations', 1)
++    max_rotation = attack_args.get('max_rotation', 10)
++    num_rotations = attack_args.get('num_rotations', 1)
++
++    attacker = SpatialTransformation(classifier=model,
++                                     max_translation=max_translation, num_translations=num_translations,
++                                     max_rotation=max_rotation, num_rotations=num_rotations)
++    return attacker.generate(data, labels)
++
++
++def _hop_skip_jump(model, data, labels, attack_args):
++    norm = _get_norm_value(attack_args.get('norm', 'l2'))
++    max_iter = attack_args.get('max_iter', 50)
++    max_eval = attack_args.get('max_eval', 10000)
++    init_eval = attack_args.get('init_eval', 100)
++    init_size = attack_args.get('init_size', 100)
++
++    targeted = attack_args.get('targeted', False)
++    attacker = HopSkipJump(classifier=model, targeted=targeted, norm=norm,
++                           max_iter=max_iter, max_eval=max_eval,
++                           init_eval=init_eval, init_size=init_size)
++
++    return attacker.generate(data, labels)
++
++
++def _zoo(model, data, labels, attack_args):
++    lr = attack_args.get('learning_rate', 0.01)
++    max_iter = attack_args.get('max_iter', 10)
++    binary_search_steps = attack_args.get('binary_search_steps', 1)
++
++    confidence = attack_args.get('confidence', 0.0)
++    targeted = attack_args.get('targeted', False)
++    init_const = attack_args.get('init_const', 1e-3)
++    abort_early = attack_args.get('abort_early', True)
++    use_resize = attack_args.get('use_resize', True)
++    use_importance = attack_args.get('use_importance', True)
++    nb_parallel = attack_args.get('nb_parallel', 128)
++    variable_h = attack_args.get('variable_h', 1e-4)
++
++    attacker = ZooAttack(classifier=model, confidence=confidence, targeted=targeted,
++                         learning_rate=lr, max_iter=max_iter, binary_search_steps=binary_search_steps,
++                         initial_const=init_const, abort_early=abort_early, use_resize=use_resize,
++                         use_importance=use_importance, nb_parallel=nb_parallel, variable_h=variable_h)
++
++    return attacker.generate(data, labels)
++
++
++def _get_norm_value(norm):
++    norm = norm.lower()
++    if norm == 'linf':
++        value = np.inf
++    elif norm == 'l2':
++        value = 2
++    else:
++        raise ValueError('Support `l2` and `linf` norms. But found {}.'.format(norm))
++
++    return value
