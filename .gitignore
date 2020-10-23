@@ -1,13 +1,6 @@
-old/
-_site
 .DS_Store
-.jekyll
-.jekyll-metadata
-.bundle
-.sass-cache
-Gemfile
-Gemfile.lock
 node_modules
 package.json
 src/attacks/__pycache__/
 mymodels/
+.idea
