@@ -33,13 +33,9 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="4f7fc9d3-cb6c-4084-ac93-7bcc7ba7d872" name="Default Changelist" comment="">
-      <change afterPath="$PROJECT_DIR$/docs/img/posts/athena_code.png" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/docs/img/posts/athena_preprint.png" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/docs/img/posts/class_project.png" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/docs/img/posts/tutorial_craftAE_zk.png" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/docs/_layouts/home.html" beforeDir="false" afterPath="$PROJECT_DIR$/docs/_layouts/home.html" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/docs/_layouts/post.html" beforeDir="false" afterPath="$PROJECT_DIR$/docs/_layouts/post.html" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/docs/.gitignore" beforeDir="false" afterPath="$PROJECT_DIR$/docs/.gitignore" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/docs/_layouts/default.html" beforeDir="false" afterPath="$PROJECT_DIR$/docs/_layouts/default.html" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/docs/_posts/2020-10-20-athena.md" beforeDir="false" afterPath="$PROJECT_DIR$/docs/_posts/2020-10-20-athena.md" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
@@ -235,7 +231,21 @@
       <option name="project" value="LOCAL" />
       <updated>1603214635115</updated>
     </task>
-    <option name="localTasksCounter" value="21" />
+    <task id="LOCAL-00021" summary="update the homepage">
+      <created>1603560738315</created>
+      <option name="number" value="00021" />
+      <option name="presentableId" value="LOCAL-00021" />
+      <option name="project" value="LOCAL" />
+      <updated>1603560738315</updated>
+    </task>
+    <task id="LOCAL-00022" summary="support mathjax">
+      <created>1603564540876</created>
+      <option name="number" value="00022" />
+      <option name="presentableId" value="LOCAL-00022" />
+      <option name="project" value="LOCAL" />
+      <updated>1603564540876</updated>
+    </task>
+    <option name="localTasksCounter" value="23" />
     <servers />
   </component>
   <component name="Vcs.Log.Tabs.Properties">
@@ -261,12 +271,15 @@
     <MESSAGE value="typo" />
     <MESSAGE value="update project page" />
     <MESSAGE value="evaluation section is on the way" />
-    <option name="LAST_COMMIT_MESSAGE" value="evaluation section is on the way" />
+    <MESSAGE value="update the homepage" />
+    <MESSAGE value="support mathjax" />
+    <option name="LAST_COMMIT_MESSAGE" value="support mathjax" />
   </component>
   <component name="WindowStateProjectService">
-    <state x="799" y="173" width="798" height="854" key="CommitChangelistDialog2" timestamp="1603214635066">
+    <state x="799" y="173" width="744" height="854" key="CommitChangelistDialog2" timestamp="1603564540830">
       <screen x="0" y="27" width="1920" height="1020" />
     </state>
+    <state x="799" y="173" width="744" height="854" key="CommitChangelistDialog2/0.27.1920.1020/1920.0.1920.1080@0.27.1920.1020" timestamp="1603564540830" />
     <state x="799" y="173" width="798" height="854" key="CommitChangelistDialog2/1920.0.1920.1200/0.27.1920.1020@0.27.1920.1020" timestamp="1603214635066" />
     <state x="229" y="57" width="1536" height="990" key="MergeDialog" timestamp="1603077572197">
       <screen x="0" y="27" width="1920" height="1020" />
@@ -277,9 +290,10 @@
     </state>
     <state x="714" y="235" key="SettingsEditor/0.27.1920.1020/1920.0.1920.1080@0.27.1920.1020" timestamp="1603262967211" />
     <state x="714" y="235" key="SettingsEditor/1920.0.1920.1200/0.27.1920.1020@0.27.1920.1020" timestamp="1603079739789" />
-    <state x="798" y="336" width="800" height="528" key="Vcs.Push.Dialog.v2" timestamp="1603214637142">
+    <state x="798" y="336" width="800" height="553" key="Vcs.Push.Dialog.v2" timestamp="1603564542388">
       <screen x="0" y="27" width="1920" height="1020" />
     </state>
+    <state x="798" y="336" width="800" height="553" key="Vcs.Push.Dialog.v2/0.27.1920.1020/1920.0.1920.1080@0.27.1920.1020" timestamp="1603564542388" />
     <state x="798" y="336" width="800" height="528" key="Vcs.Push.Dialog.v2/1920.0.1920.1200/0.27.1920.1020@0.27.1920.1020" timestamp="1603214637142" />
     <state x="1019" y="518" key="com.intellij.openapi.vcs.update.UpdateOrStatusOptionsDialogupdate-v2" timestamp="1603077519496">
       <screen x="0" y="27" width="1920" height="1020" />
