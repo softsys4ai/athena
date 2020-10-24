@@ -22,8 +22,11 @@ layout: default
   <div class="container">
     <div class="row">
       <div class="col-lg-8 col-md-10 mx-auto">
-
-        {{ content }}
+        {% if page.mathjax  %}
+          <script type="text/javascript" async src='https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.2/MathJax.js?config=TeX-MML-AM_CHTML'>
+            {{ content }}
+          </script>
+        {% endif %}        
 
         <!--
         <hr>

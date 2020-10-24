@@ -22,8 +22,17 @@ layout: default
 
   <div class="container">
     <div class="row">
-      <div class="col-lg-8 col-md-10 mx-auto" style="text-align: justify; font-size: large;">
+      <div class="col-lg-12 col-md-22 mx-auto" style="text-align: justify; font-size: medium;">
+        <!--
+        {% if page.mathjax  %}
+          <script type="text/javascript" async src='https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.2/MathJax.js?config=TeX-MML-AM_CHTML'>
+            {{ site.posts.last.content }}
+          </script>
+        {% endif %} 
+        -->
+
         {{ site.posts.last.content }}
+          
       </div>
     </div>
   </div>
