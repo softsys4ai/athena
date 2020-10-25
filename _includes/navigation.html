@@ -1,0 +1,15 @@
+{% assign default_paths = site.pages | map: "path" %}
+{% assign page_paths = site.header_pages | default: default_paths %}
+
+{% for path in page_paths %}
+    
+    {% assign item = site.pages | where: "path", path | first %}
+    
+    {% if item.title and page.title == item.title %}
+        <a class="nav-active" href="{{ item.url | relative_url }}">{{ item.title }}</a>
+    {% elsif item.title %}
+        <a class="nav-link" href="{{ item.url | relative_url }}">{{ item.title }}</a>
+    {% endif %}
+
+    
+{% endfor %}

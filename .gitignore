@@ -1,14 +1,9 @@
-old/
 _site
-.DS_Store
-.idea
-.jekyll
-.jekyll-metadata
-.bundle
 .sass-cache
-Gemfile
+.DS_Store
+.jekyll-metadata
+
+# Ignore the config file that's used for gh-pages.
+_config.gh-pages.yml
+
 Gemfile.lock
-node_modules
-package.json
-src/attacks/__pycache__/
-mymodels/

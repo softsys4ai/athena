@@ -1,0 +1,57 @@
+.site-header {
+  padding-top: $space-1;
+  padding-bottom: $space-2;
+}
+
+.site-header a {
+  color: $header-color;
+  font-size: $h3;
+  font-weight: $header-font-weight;
+  background-image: none;
+}
+
+.site-header .site-title {
+  font-size: $h2;
+}
+
+.site-nav {
+  padding-top: $nav-padding;
+}
+
+.site-header nav a {
+  color: $nav-color;
+}
+
+.site-header nav a:hover,
+.site-header nav a:focus,
+.site-header nav a:active,
+.site-header nav a.nav-active:hover,
+.site-header nav a.nav-active:focus,
+.site-header nav a.nav-active:active {
+  color: $nav-link-color;
+  opacity: 1;
+  border-bottom: $nav-link-border-bottom;
+}
+
+.site-header nav a.nav-active {
+  border-bottom: $nav-active-border-bottom;
+}
+
+.site-nav a + a {
+  margin-left: $nav-link-padding-x;
+}
+
+.site-header a:hover,
+.posts .post a:hover .post-meta,
+.posts .post a:hover .post-title,
+.posts .post a:hover .post-summary {
+  opacity: 0.88;
+}
+
+.site-header {
+  text-align: center;
+}
+
+.site-header .site-nav {
+  text-align: center;
+}
