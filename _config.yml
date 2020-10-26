@@ -1,8 +1,8 @@
 # Site settings
 title:   ATHENA
 subtitle: A Framework based on Diverse Weak Defenses for Building Adversarial Defense
-email:   ymeng@email.sc.edu
-author: Ying Meng*, Jianhai Su, Jason M O'Kane, and Pooyan Jamshidi*
+email: ymeng@email.sc.edu
+# author: Ying Meng*, Jianhai Su, Jason M O'Kane, and Pooyan Jamshidi*
 description: "A Framework based on Diverse Weak Defenses for Building Adversarial Defense."
 baseurl: "/athena" # the subpath of your site, e.g. /blog/
 url: "https://softsys4ai.github.io" # the base hostname & protocol for your site
@@ -27,7 +27,7 @@ show_related_posts:   false
 show_post_footers:    false
 show_social_icons:    false
 ajaxify_contact_form: false
-enable_mathjax: false
+enable_mathjax: true
 extended_fonts: false
 enable_anchorjs: false
 # Preview image for social media aka og:image and twitter:image
@@ -53,7 +53,7 @@ github_username:
 reddit_username:
 bitbucket_username:
 stackoverflow_id:
-twitter_username:
+twitter_username: pooyanjamshidi
 skype_username:
 steam_nickname:
 google_plus_id:
@@ -70,7 +70,7 @@ vk_id:
 show_sharing_icons: false
 # Change to 'true' to enable individual icons
 share_facebook: false
-share_twitter: false
+share_twitter: true
 share_googleplus: false
 share_linkedin: false
 share_digg: false
@@ -117,7 +117,7 @@ markdown:     kramdown
 redcarpet:
   extensions: ['smart', 'tables', 'with_toc_data']
 permalink:    pretty
-paginate:     4
+paginate:     3
 sass:
   style: compressed
 plugins:
