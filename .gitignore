@@ -3,7 +3,7 @@ _site
 .DS_Store
 .jekyll-metadata
 mymodels/
-
+.idea
 # Ignore the config file that's used for gh-pages.
 _config.gh-pages.yml
 

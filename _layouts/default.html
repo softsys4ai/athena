@@ -1,18 +1,24 @@
 <!DOCTYPE html>
 <html lang="{{ page.lang | default: site.lang | default: 'en' }}">
 
-{% include head.html %}
-<body class="site{% if site.animated %} animated fade-in-down{% endif %}">
-  <div class="site-wrap">
-    {% include header.html %}
+  <!-- MathJax -->
+  <script type="text/javascript" src="http://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+  <script type="text/x-mathjax-config">
+      MathJax.Hub.Config({tex2jax: {inlineMath: [['$', '$'], ['\\(', '\\)']]}});
+  </script>
 
-    <div class="post p2 p-responsive wrap" role="main">
-      <div class="measure" style="font-family: sans-serif, Helvetica, arial; font-size: medium; text-align: justify;">
-        {{ content }}
+  {% include head.html %}
+  <body class="site{% if site.animated %} animated fade-in-down{% endif %}">
+    <div class="site-wrap">
+      {% include header.html %}
+
+      <div class="post p2 p-responsive wrap" role="main">
+        <div class="measure" style="font-family: sans-serif, Helvetica, arial; font-size: medium; text-align: justify;">
+          {{ content }}
+        </div>
       </div>
     </div>
-  </div>
 
-  {% include footer.html %}
-</body>
+    {% include footer.html %}
+  </body>
 </html>
