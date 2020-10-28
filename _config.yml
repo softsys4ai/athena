@@ -16,7 +16,7 @@ date_format: "%b %-d, %Y"
 google_verification:
 # Use either direct GA implementation or set up GTM account
 # - using both will skew your data (leave blank to not use at all)
-google_analytics:
+google_analytics: G-0QT50RYQ21
 google_tag_manager:
 # Bing services
 bing_verification:
@@ -49,7 +49,7 @@ facebook_appid:
 facebook_comments_number: 10
 
 # Social icons
-github_username:
+github_username: pooyanjamshidi
 reddit_username:
 bitbucket_username:
 stackoverflow_id:
