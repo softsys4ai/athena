@@ -1,6 +1,13 @@
-# ATHENA: A Framework based on Diverse Weak Defenses for Building Adversarial Defense
-## Project Webpage
-[ATHENA](https://softsys4ai.github.io/athena/)
+# [ATHENA: A Framework based on Diverse Weak Defenses for Building Adversarial Defense](https://softsys4ai.github.io/athena/)
+[Ying Meng](https://meng2010.github.io/), [Jianhai Su](https://oceank.github.io/), [Jason M O'Kane](https://www.cse.sc.edu/~jokane/), and [Pooyan Jamshidi](https://pooyanjamshidi.github.io/)
+
+
+<table><tr>
+<td><center><a href="https://arxiv.org/abs/2001.00308"><img height="100" width="78" src="www/athena_preprint.png" style="border:1px solid" style="border:1px solid black"><br>arXiv Preprint</a></center></td>
+<td><center><a href="https://github.com/softsys4ai/athena"><img height="100" width="78" src="www/athena_code.png" style="border:1px solid" style="border:1px solid black"><br>Code</a></center></td>
+<td><center><a href="https://github.com/csce585-mlsystems/project-athena" class="d-inline-block p-3 align-top"><img height="100" width="78" src="www/website-thumb.png" style="border:1px solid black"><br>CSCE 585<br>Project</a></center></td>
+</tr></table>
+
 
 ## Introduction
 This is the code base for [ATHENA](https://softsys4ai.github.io/athena/), a framework for defending [machine learning systems](https://pooyanjamshidi.github.io/mls/) against adversarial attacks. We found out that, surprisingly, an Ensemble of Many Diverse Weak Defenses, say deep neural networks trained on disjointly transformed data, can can be very effective for defending ML systems against adversarial attacks. 
