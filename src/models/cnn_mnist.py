@@ -40,7 +40,7 @@ train_conf = {
 }
 
 
-def __get_cnn(input_shape=(28, 28, 1), nb_classes=10, activation='relu', pdrop=0.4):
+def _get_cnn(input_shape=(28, 28, 1), nb_classes=10, activation='relu', pdrop=0.4):
     MODEL.set_architecture('cnn')
 
     # define model architecture

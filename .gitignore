@@ -4,3 +4,5 @@ package.json
 src/attacks/__pycache__/
 mymodels/
 .idea
+.sass-cache
+_site
