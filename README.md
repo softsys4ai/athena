@@ -123,9 +123,9 @@ As the adversary have access to more WDs, it can launch more successful attacks 
 ## How to Cite
 
 ### Citation
-```ruby
-Ying Meng, Jianhai Su, Jason M O'Kane, and Pooyan Jamshidi. ATHENA: A Framework based on Diverse Weak Defenses for Building Adversarial Defense. arXiv preprint arXiv: 2001.00308, 2020.
-```
+
+Ying Meng, Jianhai Su, Jason M O'Kane, and Pooyan Jamshidi. *ATHENA: A Framework based on Diverse Weak Defenses for Building Adversarial Defense*. arXiv preprint arXiv: 2001.00308, 2020.
+
 
 ### Bibtex
 ```ruby
