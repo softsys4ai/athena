@@ -13,7 +13,7 @@ The threat of the adversarial examples has inspired a sizable body of research o
 <table>
     <tr>
         <td><center><a href="https://arxiv.org/abs/2001.00308"><img height="100" width="78" src="www/athena_preprint.png" style="border:1px solid" style="border:1px solid black"><br>arXiv Preprint</a></center></td>
-        <td><center><a href="https://github.com/softsys4ai/athena"><img height="100" width="78" src="www/athena_code.png" style="border:1px solid" style="border:1px solid black"><br>ATHENA<br>GitHub repo</a></center></td>
+        <td><center><a href="https://github.com/softsys4ai/athena"><img height="100" width="78" src="www/athena_website.png" style="border:1px solid" style="border:1px solid black"><br>Website</a></center></td>
         <td><center><a href="https://github.com/csce585-mlsystems/project-athena" class="d-inline-block p-3 align-top"><img height="100" width="78" src="www/class_project.png" style="border:1px solid black"><br>CSCE 585<br>Project</a></center></td>
         <td><center><a href="https://github.com/csce585-mlsystems/project-athena/blob/master/notebooks/Task1_GenerateAEs_ZeroKnowledgeModel.ipynb" class="d-inline-block p-3 align-top"><img height="100" width="78" src="www/tutorial_craftAE_zk.png" style="border:1px solid black"><br>Hello World<br>Tutorial</a></center></td>
     </tr>
