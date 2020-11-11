@@ -23,7 +23,7 @@ from models.networks import get_model, num_class
 from utils.config import *
 from utils.logger import get_logger
 from utils.lr_scheduler import adjust_learning_rate_resnet
-from utils.metrics import accuracy, Accumulator
+from utils.estimator import accuracy, Accumulator
 
 logger = get_logger('Athena')
 logger.setLevel(logging.INFO)
@@ -138,7 +138,7 @@ def train_and_eval(tag, dataroot, trans_type=TRANSFORMATION.clean, test_ratio=0.
         )
 
     if not tag or not is_master:
-        from utils.metrics import SummaryWriterDummy as SummaryWriter
+        from utils.estimator import SummaryWriterDummy as SummaryWriter
         logger.warning('tag not provided, no tensorboard log.')
     else:
         from tensorboardX import SummaryWriter
