@@ -4,12 +4,8 @@ Implement file operations such as read/write files here.
 """
 
 import csv
-from collections import namedtuple
 from enum import Enum
 import json
-
-from utils.config import *
-from utils.plot import plot_comparisons
 
 
 # ------------------------------
@@ -136,39 +132,3 @@ def load_from_csv(file_name, orient=CSV_ORIENT.COL, dtype='float'):
         # TODO: implement
         rows = {}
         return rows
-
-
-# ------------------------------
-# To remove
-# ------------------------------
-def save_adv_examples(data, **kwargs):
-    """
-    Serialize generated adversarial examples to an npy file.
-    :param data: the adversarial examples to store.
-    :param kwargs: information needed to construct the file name
-    :return: na
-    """
-    prefix = kwargs.get('prefix', 'test')
-    dataset = kwargs.get('dataset', 'cifar10')
-    architect = kwargs.get('architect', 'cnn')
-    transformation = kwargs.get('transformation', 'clean')
-    attack_method = kwargs.get('attack_method', 'fgsm')
-    attack_params = kwargs.get('attack_params', None)
-    bs_samples = kwargs.get('bs_samples', None)
-
-    prefix = '{}_AE'.format(prefix)
-    attack_info = '{}_{}'.format(attack_method, attack_params)
-    model_info = '{}-{}-{}'.format(dataset, architect, transformation)
-    file_name = '{}-{}-{}.npy'.format(prefix, model_info, attack_info)
-    np.save('{}/{}'.format(PATH.ADVERSARIAL_FILE, file_name), data)
-
-    if MODE.DEBUG:
-        if bs_samples is not None:
-            title = '{}-{}'.format(model_info, attack_info)
-            plot_comparisons(bs_samples[:10], data[:10], title)
-        else:
-            print('Print AEs only')
-            title = '{}-{}'.format(model_info, attack_info)
-            plot_comparisons(data[:10], data[10:20], title)
-
-    print('Adversarial examples saved to {}/{}.'.format(PATH.ADVERSARIAL_FILE, file_name))

@@ -1,5 +1,6 @@
 {
   "num_attacks": 2,
+  "adversaries": [0, 1],
   "configs0": {
     "attack": "fgsm",
     "description": "FGSM_eps0.2",

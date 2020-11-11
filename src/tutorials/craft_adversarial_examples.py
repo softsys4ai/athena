@@ -34,14 +34,20 @@ def generate_ae(model, data, labels, attack_configs,
     :return:
     """
     img_rows, img_cols = data.shape[1], data.shape[2]
-    num_attacks = attack_configs.get("num_attacks")
+
+    adversaries = attack_configs.get("adversaries")
+    if adversaries is None:
+        # use all adversaries if not specified
+        num_attacks = attack_configs.get("adversaries")
+        adversaries = [i for i in range(num_attacks)]
+
     data_loader = (data, labels)
 
     if len(labels.shape) > 1:
         labels = np.asarray([np.argmax(p) for p in labels])
 
     # generate attacks one by one
-    for id in range(num_attacks):
+    for id in adversaries:
         key = "configs{}".format(id)
         attack_args = attack_configs.get(key)
 
@@ -58,7 +64,7 @@ def generate_ae(model, data, labels, attack_configs,
         print(">>> error rate:", err)
 
         # plotting some examples
-        num_plotting = min(data.shape[0], 0)
+        num_plotting = min(data.shape[0], 1)
         for i in range(num_plotting):
             img = data_adv[i].reshape((img_rows, img_cols))
             plt.imshow(img, cmap='gray')
@@ -84,6 +90,8 @@ def generate_ae(model, data, labels, attack_configs,
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description="")
 
+    parser.add_argument('-r', '--experiment-root', required=False,
+                        default='../../../')
     parser.add_argument('-p', '--pool-configs', required=False,
                         default='../configs/experiment/mnist/vanilla-athena.json')
     parser.add_argument('-m', '--model-configs', required=False,
@@ -98,11 +106,12 @@ if __name__ == '__main__':
     parser.add_argument('-o', '--output-root', required=False,
                         default='../../results',
                         help='Folder for outputs.')
-    parser.add_argument('--debug', required=False, default=True)
+    parser.add_argument('--debug', required=False, default=False)
 
     args = parser.parse_args()
 
     print("------AUGMENT SUMMARY-------")
+    print("EXPERIMENT ROOT:", args.experiment_root)
     print("POOL CONFIGS:", args.pool_configs)
     print("MODEL CONFIGS:", args.model_configs)
     print("DATA CONFIGS:", args.data_configs)
@@ -116,9 +125,11 @@ if __name__ == '__main__':
     # ----------------------------
     pool_configs = load_from_json(args.pool_configs)
     model_configs = load_from_json(args.model_configs)
+    model_configs["lenet"]["dir"] = args.experiment_root + model_configs.get("lenet").get("dir")
+    model_configs["svm"]["dir"] = args.experiment_root + model_configs.get("svm").get("dir")
     data_configs = load_from_json(args.data_configs)
+    data_configs["dir"] = args.experiment_root + data_configs.get("dir")
     attack_configs = load_from_json(args.attack_configs)
-
 
     # ---------------------------
     # load the targeted model
@@ -132,8 +143,10 @@ if __name__ == '__main__':
     # In the context of the white-box threat model,
     # we use the ensemble as adversary's target model.
     # load weak defenses (in this example, load a tiny pool of 3 weak defenses)
+    pool_configs["active_wds"] = pool_configs.get("demo_pool")
+    print(">>> POOL:", pool_configs.get("active_wds"))
     pool, _ = load_pool(trans_configs=pool_configs,
-                        model_configs=model_configs,
+                        model_configs=model_configs.get("lenet"),
                         active_list=True,
                         wrap=True)
     # create an AVEP ensemble as the target model

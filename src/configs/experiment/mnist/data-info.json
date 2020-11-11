@@ -1,5 +1,5 @@
 {
-    "dir": "../../data/",
+    "dir": "data/mnist/zeroknowledge/",
     "bs_file": "test_BS-mnist-clean.npy",
     "label_file": "test_Label-mnist-clean.npy",
     "ae_files": [

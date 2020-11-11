@@ -1,17 +1,17 @@
 {
     "lenet": {
-        "dir": "../../models/cnn/",
+        "dir": "models/mnist/cnn/",
         "um_file": "model-mnist-cnn-clean.h5",
         "wd_prefix": "model-mnist-cnn-",
         "wd_postfix": ".h5",
-        "architecture": "cnn"
+        "architecture": "lenet"
     },
     "svm": {
-        "dir": "../../models/svm/",
+        "dir": "models/mnist/svm/",
         "um_file": "model-mnist-svm-clean.pkl",
         "wd_prefix": "model-mnist-svm-",
         "wd_postfix": ".pkl",
         "architecture": "svm"
     },
-    "pgd_trained": "../../models/baseline/advTrained-mnist-adtC.h5"
+    "pgd_trained": "models/baseline/advTrained-mnist-adtC.h5"
 }
