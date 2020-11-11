@@ -1,292 +1,138 @@
-# [ATHENA: A Framework based on Diverse Weak Defenses for Building Adversarial Defense](https://softsys4ai.github.io/athena/)
-[Ying Meng](https://meng2010.github.io/), [Jianhai Su](https://oceank.github.io/), [Jason M O'Kane](https://www.cse.sc.edu/~jokane/), and [Pooyan Jamshidi](https://pooyanjamshidi.github.io/)
+# Adversarial Defense as a Framework
+
+[Machine learning systems](https://pooyanjamshidi.github.io/mls/) have achieved impressive success in a wide range of domains like computer vision and natural langurage processing. However, their vulnerability to adversarial examples can lead to a series of consequences, especially in security-critical tasks. For example, an object detector on a self-driving vehicle may incorrectly recognize [an stop sign as a speed limit](https://spectrum.ieee.org/cars-that-think/transportation/sensors/slight-street-sign-modifications-can-fool-machine-learning-algorithms). 
+
+The threat of the adversarial examples has inspired a sizable body of research on various defense techniques. With the assumption on the specific known attack(s), most of the existing defenses, although effective against particular attacks, can be circumvented under slightly different conditions, either a stronger adaptive adversary or in some cases even weak (but different) adversaries. In order to stop the `arms race` between the attacks and defenses, we wonder
+
+> How can we, instead, design a defense, not as a technique, but as a framework that one can construct a specific defense considering the niche tradeoff space of robustness one may want to achieve as well as the cost one is willing to pay to achieve that level of robustness?
+
+[**ATHENA: A Framework based on Diverse Weak Defenses for Building Adversarial Defense**](https://softsys4ai.github.io/athena/) \
+[Ying Meng](https://meng2010.github.io/), [Jianhai Su](https://oceank.github.io/), [Jason M O'Kane](https://www.cse.sc.edu/~jokane/), [Pooyan Jamshidi](https://pooyanjamshidi.github.io/)
 
 
-<table><tr>
-<td><center><a href="https://arxiv.org/abs/2001.00308"><img height="100" width="78" src="www/athena_preprint.png" style="border:1px solid" style="border:1px solid black"><br>arXiv Preprint</a></center></td>
-<td><center><a href="https://github.com/softsys4ai/athena"><img height="100" width="78" src="www/athena_code.png" style="border:1px solid" style="border:1px solid black"><br>Code</a></center></td>
-<td><center><a href="https://github.com/csce585-mlsystems/project-athena" class="d-inline-block p-3 align-top"><img height="100" width="78" src="www/website-thumb.png" style="border:1px solid black"><br>CSCE 585<br>Project</a></center></td>
-</tr></table>
+<table>
+    <tr>
+        <td><center><a href="https://arxiv.org/abs/2001.00308"><img height="100" width="78" src="www/athena_preprint.png" style="border:1px solid" style="border:1px solid black"><br>arXiv Preprint</a></center></td>
+        <td><center><a href="https://github.com/softsys4ai/athena"><img height="100" width="78" src="www/athena_website.png" style="border:1px solid" style="border:1px solid black"><br>Website</a></center></td>
+        <td><center><a href="https://github.com/csce585-mlsystems/project-athena" class="d-inline-block p-3 align-top"><img height="100" width="78" src="www/class_project.png" style="border:1px solid black"><br>CSCE 585<br>Project</a></center></td>
+        <td><center><a href="https://github.com/csce585-mlsystems/project-athena/blob/master/notebooks/Task1_GenerateAEs_ZeroKnowledgeModel.ipynb" class="d-inline-block p-3 align-top"><img height="100" width="78" src="www/tutorial_craftAE_zk.png" style="border:1px solid black"><br>Hello World<br>Tutorial</a></center></td>
+    </tr>
+</table>
+
+## ATHENA: a Framework for Building Adversarial Defense
+**ATHENA** (Goddess of defense in Greek mythology) is an `extensible framework` for building `generic` (and thus, broadly applicable) yet `effective defense against adversarial attacks`.
+
+The design philosophy behind ATHENA is based on ensemble of many `diverse weak defenses` (WDs), where each WD, the building blocks of the framework, is a machine learning classifier (e.g., DNN, SVM) that first applies a transformation on the original input and then produces an output for the transformed input. Given an input, an ensemble first collects predicted outputs from all of the WDs and then determines the final output, using some ensemble strategy such as majority voting or averaging the predicted outputs from the WDs.  
+
+<p align="center">
+  <img width="500px" height="auto" src="www/athena_wk_train.png">
+  <img width="500px" height="auto" src="www/athena_wk_test.png">
+</p>
 
 
-## Introduction
-This is the code base for [ATHENA](https://softsys4ai.github.io/athena/), a framework for defending [machine learning systems](https://pooyanjamshidi.github.io/mls/) against adversarial attacks. We found out that, surprisingly, an Ensemble of Many Diverse Weak Defenses, say deep neural networks trained on disjointly transformed data, can can be very effective for defending ML systems against adversarial attacks. 
+--------
+## Insights: Weak Defenses Complements Each Other!
 
-This codebase provides a framework for training weak defenses with transformations, building ensemble of weak defenses, provides implemented attack methods to test the effectiveness of Athena, and provides all other subsequent source code and tooling to replicate the results of the experiments in this [publication](https://arxiv.org/pdf/2001.00308.pdf).
+In computer vision, a transformation is an image processing function. By distorbing its input, a transformation changes the adversarial optimized perturbations and thus making the perturbations less effective. However, the effectiveness of a single type of transformation varies on attacks and datasets. By mitigating the perturbations in different ways such as adjusting angles or position of the input, adding or removing noises, a collection of diverse transformations provides robustness against various attacks. Thus, the `Diverse ensemble` achieves the lowest error rate in most cases, especially for tasks on CIFAR-100. 
 
-## Framework Architecture
-
-![ATHENA](reports/figures/architecture/athena.png)
-
-
-## Manual Installation
-
-Clone the repository:
-```
-git clone git@github.com:softsys4ai/athena.git
-```
-Navigate to the directory where the repository was downloaded and run the following commend to install software dependencies:
-```
-pip install requirements.txt
-```
-% Requirements for hardware depends on data source, it does not make much sense to put hardware requirements here.
-% ### Hardware Requirements
-% ```
-%Processor (recommended): 2 x 3.0 GHz CPU cores
-%Memory: >=16 GB RAM
-%Disk: >=30 GB available on disk partition
-%Storage: >=20 MBps
-%```
-
-## Getting Started
-
-### How do I install the project?
-1. Navigate to the ["Manual Installation"](#manual-installation) instructions sub-section to install all software requirements.
-2. Use the following tutorials to get up and running
+<p align="center">
+  <img width="500px" height="auto" src="www/trans_as_wd.png">
+</p>
 
 
-### How do I configure/change project parameters?
+Ensembling diverse transformations can result in a robust defense against a variety of attacks and provide a `tradeoff space`, where one can build a `more robust` ensemble by adding more transformations or building an ensemble with `lower overhead and cost` by utilizing fewer transformations.
 
-```
-    Script: athena/utils/config.py
-    Description:
-    This class contains a plethora of variables and class definitions for use across the project.
-    
-    Command Line Arguments
-    ----------------------
-    none.
-    
-    Methods
-    -------
-    class DATA(object)
-        Class to contain information about selected datasets.
+<p align="center">
+  <img width="800px" height="auto" src="www/athena_motivation.png">
+</p>
 
-    class TRANSFORMATION(object)
-        Contains a dictionary of supported transformations and strings used to reference them.
+--------
 
-    class ATTACK(object)
-        Contains a dictionary of supported attacks and strings used to reference them and attack specific parameter values; 
+## Zero Knowledge Threat Model
+##### Adversary knows everything about the model, but it does not know there is a defense in place!
 
-    class MODEL(object)
-        Contains a model's architecture, training/testing dataset, and training hyperparameters.
-    
-    class MODE(object)
-        Contains a "DEBUG" boolean value (default is false) to set the project to toggle the project in and out of debug mode.
+The effectiveness of individual WDs (each associated to a transformation) varies across attack methods and magnitudes of an attack. While a large population of transformations from a variety of categories successfully disentangle adversarial perturbations generated by various attacks. The variation of individual WDs' error rates spans wider as the perturbation magnitude become stronger for a selected attack. By utilizing many diverse transformations, with ATHENA, we build effective ensembles that outperform the two state-of-the-art defenses --- PGD adversarial training (PGD-ADT) and randomly smoothing (RS), in all cases.
 
-    class PATH(object)
-        Contains variables containing the absolute path of the project as well as the relative paths of important project resources, logging, and save locations.
-```
+<p align="center">
+  <img width="800px" height="auto" src="www/eval_cifar100_zk.png">
+</p>
+
+## Black-box Threat Model
+##### Adversary does not have access to the model but it can query the model.
+
+### Transfer-based approach
+
+Although the transferability rate increases as the budget increases, the drop in the transferability rate from the undefended model (UM) to ATHENA indicates that ATHENA is less sensitive to the perturbation. Ensembling from many diverse transformations provides tangible benefits in blocking the adversarial transferability between weak defenses, and thus enhances model's robustness against the transfer-based black-box attack. 
+
+<!-- ![evaluations against transfer-based black-box attack](images/eval_bb_trans.png){:width="680px" height=auto} 
+ -->
+<p align="center">
+  <img width="800px" height="auto" src="www/eval_bb_trans.png">
+</p>
 
 
-### How do I load a dataset?
-#### Available datasets
-**Dataset Name** | **Description**
---- | ---
-MNIST | Grayscale 28x28 pixel handwritten digit dataset (10 classes) containing 60,000 training and 10,000 validation examples.
-Fashion-MNIST | Grayscale 28x28 pixel clothing dataset (10 classes) containing 60,000 training and 10,000 validation examples. 
-CIFAR-10 | RGB 32x32 pixel dataset (10 classes) containing 50,000 training and 10,000 validation examples.
-CIFAR-100 | RGB 32x32 pixel dataset (100 classes) containing 50,000 training and 10,000 validation examples.
+### Gradient-direction-estimation-based approach
 
-```
-    Script: athena/data.py
-    Description:
-    Generally, the use of this dataset loading class should be left for usage in our scripts. However, if you desire to load a dataset for your own experimentation, you may use this class to do so.
-    
-    Command Line Arguments
-    ----------------------
-    none.
-    
-    Methods
-    -------
-    load_data(dataset)
-        Returns four variables: (X_train, Y_train), (X_test, Y_test). "X_train" and "Y_train" contain neural network inputs and outputs, respectively, for training a neural network. "X_test" and "Y_test" contain neural network inputs and outputs, respectively, for validating the accuracy of the neural network.
-    normalize(X)
-        Returns one variable: X. Normalizes the four dimensional (num. data samples, width, height, depth) input dataset X in order to use it for training. Normalization scales down dataset values, while preserving relative differences, for use as input to a neural network.
-```
+Hop-Skip-Jump attack (HSJA) generates adversarial examples by querying the output labels from the target model for the perturbed images. Compared to that generated based on the UM, the adversarial examples generated based on ATHENA are much further away from the corresponding benign samples. As the query budget increases, the distances of the UM-targeted AEs drop much more significantly than that of the ATHENA-targeted AEs. Therefore, ATHENA increases the chance of such AEs being detected by even a simple detection mechanism.
+
+<!-- ![evaluations against hsja attack](images/eval_bb_hsja.png){:width="480px" height=auto} ![hsja samples](images/samples_cifar100_bb_linf.png){:width="320px" height="auto"}
+ -->
+<p align="center">
+  <img width="800px" height="auto" src="www/eval_bb_hsja.png">
+  <img width="800px" height="auto" src="www/samples_cifar100_bb_linf.png">
+</p>
 
 
-### How do I use attack methods and craft adversarial examples?
+## White-box Threat Model
+##### Adversary knows everything about the model and defense in place!
 
-```
-    Script: athena/scripts/craft_adversarial_examples.py
-    Description:
-    To craft adversarial examples provide this script with the name of a dataset and the name of the attack method you would like to use to generate examples.
-    
-    Command Line Arguments
-    ----------------------
-    none.
-    
-    Methods
-    -------
-    craft(dataset, method)
-        Saves adversarial examples to the ADVERSARIAL_FILE path specified in the config.py file.
-```
+### Greedy approach
 
-### How do I create and train a vanilla model on a vanilla dataset?
+As expected, stronger AEs are generated by the greedy white-box attack with a looser constraint on the dissimilarity threshold. However, such success comes at a price: with the largest threshold, the greedy attack has to spend 310X more time to generate adversarial example for a single input. This provides a tradeoff space, where realizations of ATHENA that employ larger ensembles incur more cost to the adversaries and they will eventually give up! Moreover, the generated AEs are heavily distored and very likely to be detected either by a human or an automated detection mechanism.
 
-```
-    Script: athena/models.py
-    Description:
-    To create and train a weak defense you may use this script. To properly train a weak defense, create a model and then train the model on your dataset with an applied transformation.
-    
-    Command Line Arguments
-    ----------------------
-    none.
-    
-    Methods
-    -------
-    create_model(dataset, input_shape, nb_classes)
-        Returns a convolutional neural network model built with a representational capacity best suited for the specific dataset that you are using.
-
-    train_model(model, dataset, model_name, need_augment=False, **kwargs)
-        Returns a trained version of the model provided. Training hyperparameters can be found both in this method and the config.py file if you would like to change any of them for your use case.
-
-    train(model, X, Y, model_name, need_augment=False, **kwargs)
-        Returns a trained model. This method is used by the train_model() method but can be called as a standalone method if you choose to train a model on a custom dataset.
-
-    evaluate_model(model, X, Y)
-        Returns the following variables: acc, ave_conf_correct, ave_conf_miss. This method consumes a model and the test dataset in order to evaluate the accuracy of the model. Accuracy is defined as the percentage of correct classifications by the provided model.
-
-    save_model(model, model_name, director=PATH.MODEL)
-        Serializes and saves the model to disk at the path created by concatenating the paths provided in the director and model_name parameters. 
-
-    load_model(model_name, director=PATH.MODEL)
-        Returns a tensorflow model. Loads and compiles a saved model from disk at the path created by concatenating the paths provided in the director and model_name parameters.
-```
-
-### How do I create and train weak defenses?
-
-```
-    Script: athena/train.py
-    Description:
-    This script trains a weak defense for each type of transformation and saves each model to the specified models directory to be used to build an ensemble.
-    
-    Command Line Arguments
-    ----------------------
-    samplesDir : str
-        File path of input images to train the weak defense
-    rootDir : str
-        File path of the directory of the project
-    modelsDir : str
-        File path of directory to store trained weak defenses
-    numOfSamples : int
-        Upper bound of the number of the dataset input indices to be used for training/validation.
-    kFold : int
-        Number of folds, used to determine the validation training set size.
-    datasetName : str
-        Name of the dataset to be used for training (mnist, fmnist, cifar10, cifar100)
-    numOfClasses
-        Number of output classes of the provided dataset
-
-    Methods
-    -------
-    usage()
-        Call this method to print instructions for how to use this script to your standard output stream.
-```
-
-### How do I construct and evaluate an ensemble of weak defenses?
-
-Now that you have trained weak defenses, you are likely wondering, how do I build an ensemble of these weak defenses to defend against adversarial attacks? In our project, we construct and use ensembles by loading all of the trained weak defenses from a specified models directory, perform inference on a given subset of a dataset with each of the weak defenses, and then save all of the models' output probabilities and logits to disk at a specified prediction result directory for further analysis.
-
-```
-    Script: athena/test_ensemble_model_on_all_types_of_AEs.py
-    Description:
-    This script evaluates the ensemble model, the model composed of all of the models trained with train.py, and saves all of the results to a specified test result folder.
-    
-    Command Line Arguments
-    ----------------------
-    samplesDir : str
-        Path to directory containing the correct output labels for the network.
-    experimentRootDir : str
-        Path to directory of the root of the project.
-    modelsDir : str
-        Path to directory where all of the trained models are saved.
-    numOfSamples : int
-        Upper bound of the number of samples to use for evaluation of the ensemble.
-    testResultFoldName : str
-        Path to directory where test results are to be stored.
-    datasetName : str
-        Name of the dataset to be used for training (mnist, fmnist, cifar10, cifar100)
-    numOfClasses : int
-        Number of output classes for the provided dataset.
-    
-    Methods
-    -------
-    none.
-```
+<p align="center">
+    <img width="350px" height="auto" src="www/eval_wb_greedy.png">
+    <img width="350px" height="auto" src="www/samples_cifar100_wb.png">
+</p>
+<p align="center">
+    <img width="350px" height="auto" src="www/eval_wb_cost.png">
+    <img width="350px" height="auto" src="www/eval_wb_detector.png">
+</p>
 
 
-### What other scripts should I be aware of?
+### Optimization-based approach
 
-```
-    Script: athena/attacks/attacker.py
-    Description:
-    This script calls orchestrates and calls all other attack scripts in its directory to produce adversarial examples with a given attack type on a given, trained model.
-    
-    Command Line Arguments
-    ----------------------
-    none.
+As the adversary have access to more WDs, it can launch more successful attacks without even increasing the perturbations. However, the computational cost of AE generation increases as well. The attacker has the choice to sample more random transformations and a choice to a distribution of a large population and diverse transformations in order to generate stronger AEs. However, this will incur a larger computational cost as well.
 
-    Methods
-    -------
-    get_adversarial_examples(model_name, attack_method, X, Y, **kwargs)
-        Returns the following variables: X_adv and Y. "X_adv" is a vector containing all of the generated adversarial examples and Y is a vector of the same length containing the correct class labels for each created adversarial example.
-```
-```
-    Script: athena/utils/file.py
-    Description:
-    This is a helper script that provides methods to read and write ensemble model evaluations from and to disk. The methods contained within this script may be called on their own. Currently, this script's functions are leveraged by the "test_ensemble_model_on_all_types_of_AEs.py" script for recording produced ensemble evaluation results.
-    
-    Command Line Arguments
-    ----------------------
-    none.
+<!-- ![evaluations against optimization-based white-box attack](images/eval_wb_optimization.png){:width="460px" height=auto} -->
 
-    Methods
-    -------
-    dict2csv(dictionary, file_name, list_as_value=False)
-        Saves a given dictionary to a csv file located at the path specified by the "file_name" parameter. If only a file name is specified, the csv will be saved in the athena/utils directory.
-    csv2dict(file_name, orient=ORIENT.COL, dtype='float')
-        Reads a csv at the path specified by the "file_name" parameter and returns the dictionary stored in the CSV file.
-    save_adv_examples(data, **kwargs)
-        Saves adversarial examples provided in the "data" parameter to the path specified by the "ADVERSARIAL_FILE" variable in the "config.py" script.
-```
+<p align="center">
+  <img width="350px" height="auto" src="www/eval_wb_optimization_error.png">
+  <img width="360px" height="auto" src="www/eval_wb_optimization_time.png">
+</p>
 
-## How to Contribute
+--------
+## Acknowledgement
+- <img alt="google cloud" src="www/google_cloud.png" width="25px" height="auto"> Google via GCP cloud research credits
+- <img alt="NASA" src="www/nasa-logo-web-rgb.png" width="25px" height="auto"> NASA (EPSCoR 521340-SC001)
+- <img alt="UofSC" src="www/usc_logo.png" width="25px" height="auto"> Research Computing Center at the University of South Carolina
+- <img alt="ChameleonCloud" src="www/chameleoncloud_logo.png" width="25px" height="auto"> Chameleon Cloud via GPU compute nodes
 
 
-We welcome new features, extension, or enhancements of this framework. Bug fixes can be initiated through GitHub pull requests. 
+--------
+## How to Cite
 
-We are, in particular, looking for new collaborations, taking this framework further and applying Athena to new application domains such as medical imaging, voice, and text. Please drop us an email if you are interested.
+### Citation
+
+Ying Meng, Jianhai Su, Jason M O'Kane, and Pooyan Jamshidi. *ATHENA: A Framework based on Diverse Weak Defenses for Building Adversarial Defense*. arXiv preprint arXiv: 2001.00308, 2020.
 
 
-## Citing this work
-
-If you use Athena for academic or industrial research, please feel free to cite the following [paper](https://arxiv.org/pdf/2001.00308.pdf):
-
-```
-@article{athena2020,
-  title={Ensembles of Many Weak Defenses can be Strong: Defending Deep Neural Networks Against adversarial Attacks},
-  author={Meng, Ying and Su, Jianhai and O’Kane, Jason and Jamshidi, Pooyan},
-  journal={arXiv preprint arXiv:2001.00308},
-  year={2020}
+### Bibtex
+```ruby
+@article{meng2020athena,
+      title={ATHENA: A Framework based on Diverse Weak Defenses for Building Adversarial Defense},
+      author={Ying Meng and Jianhai Su and Jason M O'Kane and Pooyan Jamshidi},
+      journal={arXiv preprint arXiv:2001.00308},
+      year={2020}
 }
 ```
-
-## Contacts
-
-* [Pooyan Jamshidi](https://pooyanjamshidi.github.io/)
-* [Ying Meng](https://github.com/MENG2010)
-
-## Contributors
-
-* [Ying Meng](https://github.com/MENG2010)
-* [Jianhai Su](https://github.com/oceank)
-* [Blake Edwards](https://github.com/blakeedwards823)
-* [Stephen Baione](https://github.com/StephenBaione)
-* [Pooyan Jamshidi](https://github.com/pooyanjamshidi)
-
-
-## Acknowledgements
-This project has been partially supported by:
-* Google via GCP cloud research credits
-* NASA (EPSCoR 521340-SC001) 
