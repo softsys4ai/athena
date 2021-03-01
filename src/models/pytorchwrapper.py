@@ -145,7 +145,9 @@ class WeakDefense(ClassifierNeuralNetwork, ClassifierGradients, Classifier):  # 
 
         # Apply transformation
         x_preprocessed = transform(set_channels_last(x), self._trans_configs)
-        x_preprocessed = set_channels_first(x_preprocessed)
+        if self.channel_index == 1:
+            x_preprocessed = set_channels_first(x_preprocessed)
+            # print(">>>>>> CHANNEL 3 --> 1")
 
         # Apply preprocessing
         x_preprocessed, _ = self._apply_preprocessing(x_preprocessed, y=None, fit=False)
@@ -156,14 +158,12 @@ class WeakDefense(ClassifierNeuralNetwork, ClassifierGradients, Classifier):  # 
         for m in range(num_batch):
             # Batch indexes
             begin, end = m * batch_size, min((m + 1) * batch_size, x_preprocessed.shape[0])
-
             model_outputs = self._model(torch.from_numpy(x_preprocessed[begin:end]).to(self._device))
             output = model_outputs[-1]
             results[begin:end] = output.detach().cpu().numpy()
 
         # Apply postprocessing
         predictions = self._apply_postprocessing(preds=results, fit=False)
-
         return predictions
 
     def fit(self, x, y, batch_size=128, nb_epochs=10, **kwargs):

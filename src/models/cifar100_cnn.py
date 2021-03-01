@@ -3,6 +3,7 @@ A neural network classifier on CIFAR-100.
 Adapted from https://github.com/kakaobrain/fast-autoaugment/blob/master/FastAutoAugment/train.py
 @author: Ying Meng (y(dot)meng201011(at)gmail(dot)com)
 """
+from __future__ import absolute_import, division, print_function, unicode_literals
 
 import itertools
 import json
@@ -22,8 +23,8 @@ from data.data import get_dataloaders
 from models.networks import get_model, num_class
 from utils.config import *
 from utils.logger import get_logger
-from utils.lr_scheduler import adjust_learning_rate_resnet
-from utils.estimator import accuracy, Accumulator
+from models.utils.lr_scheduler import adjust_learning_rate_resnet
+from models.utils.estimator import accuracy, Accumulator
 
 logger = get_logger('Athena')
 logger.setLevel(logging.INFO)
@@ -82,7 +83,6 @@ def run_epoch(model, loader, loss_fn, optimizer, desc_default='', epoch=0, write
 
 def train_and_eval(tag, dataroot, trans_type=TRANSFORMATION.clean, test_ratio=0.0, cv_fold=0, reporter=None,
                    metric='last', save_path=None, only_eval=False):
-
     print('----------------------------')
     print('Augments for model training')
     print('>>> tag:', tag)
@@ -138,7 +138,7 @@ def train_and_eval(tag, dataroot, trans_type=TRANSFORMATION.clean, test_ratio=0.
         )
 
     if not tag or not is_master:
-        from utils.estimator import SummaryWriterDummy as SummaryWriter
+        from models.utils.estimator import SummaryWriterDummy as SummaryWriter
         logger.warning('tag not provided, no tensorboard log.')
     else:
         from tensorboardX import SummaryWriter
