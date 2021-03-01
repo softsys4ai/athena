@@ -8,13 +8,13 @@ import torch
 from art.attacks.evasion.carlini import CarliniL2Method, CarliniLInfMethod
 from art.attacks.evasion.deepfool import DeepFool
 from art.attacks.evasion.saliency_map import SaliencyMapMethod
-from art.attacks.evasion.iterative_method import BasicIterativeMethod
 from art.attacks.evasion.spatial_transformation import SpatialTransformation
 from art.attacks.evasion.hop_skip_jump import HopSkipJump
 from art.attacks.evasion.zoo import ZooAttack
 
-from attacks.fast_gradient import FastGradientMethod
-from attacks.pgd import ProjectedGradientDescent
+from attacks.evasion.fast_gradient import FastGradientMethod
+from attacks.evasion.pgd import ProjectedGradientDescent
+from attacks.evasion.bim import BasicIterativeMethod
 from attacks.utils import WHITEBOX_ATTACK as ATTACK
 
 
@@ -113,7 +113,7 @@ def _cw(model, data, labels, attack_args):
     norm = attack_args.get('norm').lower()
 
     lr = attack_args.get('lr')
-    max_iter = attack_args.get('max_iter', 10)
+    max_iter = attack_args.get('max_iter', 100)
 
     # use default values for the following arguments
     confidence = attack_args.get('confidence', 0.0)
@@ -155,8 +155,8 @@ def _pgd(model, data, labels, attack_args):
     :return:
     """
     eps = attack_args.get('eps', 0.3)
-    eps_step = attack_args.get('eps_step', eps/10.)
-    max_iter = attack_args.get('max_iter', 10)
+    eps_step = attack_args.get('eps_step', eps/50.)
+    max_iter = attack_args.get('max_iter', 200)
 
     norm = _get_norm_value(attack_args.get('norm', 'linf'))
     targeted = attack_args.get('targeted', False)
@@ -188,11 +188,12 @@ def _bim(model, data, labels, attack_args):
     :return:
     """
     eps = attack_args.get('eps', 0.3)
-    eps_step = attack_args.get('eps_step', eps/10.)
+    eps_step = attack_args.get('eps_step', eps/50.)
     max_iter = attack_args.get('max_iter', 100)
+    norm = _get_norm_value(attack_args.get('norm', 'linf'))
 
     targeted = attack_args.get('targeted', False)
-    attacker = BasicIterativeMethod(classifier=model, eps=eps, eps_step=eps_step,
+    attacker = BasicIterativeMethod(classifier=model, norm=norm, eps=eps, eps_step=eps_step,
                                     max_iter=max_iter, targeted=targeted)
     return attacker.generate(data, labels)
 
@@ -226,9 +227,15 @@ def _op(model, data, labels, attack_args):
 
 def _spatial(model, data, labels, attack_args):
     max_translation = attack_args.get('max_translation', 0.2)
-    num_translations = attack_args.get('num_translations', 1)
-    max_rotation = attack_args.get('max_rotation', 10)
-    num_rotations = attack_args.get('num_rotations', 1)
+    num_translations = attack_args.get('num_translations', 10)
+    max_rotation = attack_args.get('max_rotation', 15)
+    num_rotations = attack_args.get('num_rotations', 10)
+
+    if num_rotations <= 0:
+        num_rotations = 1
+
+    if num_translations <= 0:
+        num_translations = 1
 
     attacker = SpatialTransformation(classifier=model,
                                      max_translation=max_translation, num_translations=num_translations,
@@ -253,8 +260,8 @@ def _hop_skip_jump(model, data, labels, attack_args):
 
 def _zoo(model, data, labels, attack_args):
     lr = attack_args.get('learning_rate', 0.01)
-    max_iter = attack_args.get('max_iter', 10)
-    binary_search_steps = attack_args.get('binary_search_steps', 1)
+    max_iter = attack_args.get('max_iter', 100)
+    binary_search_steps = attack_args.get('binary_search_steps', 5)
 
     confidence = attack_args.get('confidence', 0.0)
     targeted = attack_args.get('targeted', False)
@@ -276,15 +283,21 @@ def _zoo(model, data, labels, attack_args):
 def _get_norm_value(norm):
     """
     Convert a string norm to a numeric value.
-    :param norm:
-    :return:
+    :param norm: norm in string, defined in a format of `ln`,
+            where `n` is `inf` or a number e.g., 0, 1, 2, etc.
+    :return: the corresponding numeric value.
     """
-    norm = norm.lower()
-    if norm == 'linf':
+    if norm[0] not in ['l', 'L']:
+        raise ValueError('Norm should be defined in the form of `ln` (or `Ln`), where `n` is a number or `inf`. But found {}.'.format(norm))
+
+    norm = norm.lower()[1:]
+    if norm == 'inf':
         value = np.inf
-    elif norm == 'l2':
-        value = 2
     else:
-        raise ValueError('Support `l2` and `linf` norms. But found {}.'.format(norm))
+        try:
+            value = int(norm)
+        except:
+            raise ValueError('Norm should be defined in the form of `ln` (or `Ln`), where `n` is a number or `inf`. But found {}.'.format(norm))
 
     return value
+

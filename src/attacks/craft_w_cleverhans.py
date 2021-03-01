@@ -12,7 +12,6 @@ from __future__ import unicode_literals
 import os
 os.environ['KMP_DUPLICATE_LIB_OK'] = 'True'
 
-from models import *
 from utils.config import *
 
 from cleverhans.attacks import FastGradientMethod
@@ -25,7 +24,7 @@ from cleverhans.evaluation import batch_eval
 from cleverhans.utils_keras import KerasModelWrapper
 
 #from attacks.carlini_wagner_l0 import CarliniWagnerL0
-from attacks.carlini_wagner_l2 import CarliniWagnerL2
+from attacks.evasion.carlini_wagner_l2 import CarliniWagnerL2
 #from attacks.carlini_wagner_li import CarliniWagnerLinf
 
 # FLAGS = flags.FLAGS

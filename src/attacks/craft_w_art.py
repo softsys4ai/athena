@@ -49,11 +49,13 @@ def craft(X, Y, art_classifier, attack=None,
     elif attack == ATTACK.BIM:
         eps = attack_params.get('eps', 0.3)
         eps_step = attack_params.get('eps_step', eps/5.)
+        norm = attack_params.get('norm', np.inf)
         targeted = attack_params.get('targeted', False)
         batch_size = attack_params.get('batch_size', 128)
 
-        attacker = BasicIterativeMethod(classifier=art_classifier, eps=eps, eps_step=eps_step, targeted=targeted,
-                                        batch_size=batch_size)
+        attacker = BasicIterativeMethod(classifier=art_classifier, norm=norm,
+                                        eps=eps, eps_step=eps_step,
+                                        targeted=targeted, batch_size=batch_size)
 
     elif attack == ATTACK.JSMA:
         theta = attack_params.get('theta', 0.3)
