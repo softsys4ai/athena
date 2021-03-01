@@ -4,9 +4,8 @@ adapted from https://github.com/Hyperparticle/one-pixel-attack-keras/blob/master
 
 @author: Ying Meng (y(dot)meng201011(at)gmail(dot)com)
 """
+import numpy as np
 from scipy.optimize import differential_evolution
-
-from tasks.creat_models import *
 
 np_dtype = np.dtype('float32')
 
@@ -32,8 +31,7 @@ class OnePixel(object):
             [np.where (y == 1)[0][0] for y in self.Y]
         )
 
-        if MODE.DEBUG:
-            self.summary()
+        self.summary()
 
 
     def summary(self):
@@ -81,14 +79,8 @@ class OnePixel(object):
         pred_label = np.argmax(pred_probs)
 
         if targeted_attack:
-            if MODE.DEBUG:
-                print('for targeted attack, we expect pred_label == target_label ({})'.format(pred_label == target_label))
             return (pred_label == target_label)
         else: # untargeted attack
-            if MODE.DEBUG:
-                print('for untargeted attack, we expect pred_label({}) != target_label({}) ({})'.format(pred_label,
-                                                                                             target_label,
-                                                                                             pred_label != target_label))
             return (pred_label != target_label)
 
     def attack(self, img, true_label, target_label=None):
@@ -100,24 +92,16 @@ class OnePixel(object):
         for i in range(self.nb_channels):
             bounds.append((0, 256))
         bounds *= self.pixel_counts
-
-        if MODE.DEBUG:
-            print('bounds: len/shape -- {}/{}\n{}'.format(len(bounds), np.asarray(bounds).shape, bounds))
-
         popmul = max(1, self.pop_size // len(bounds))
 
         prediction_func = lambda xs: self.predict_class(xs, img, target_label, (not self.targeted))
         callback_func = lambda x, convergence: self.attack_success(x, img, target_label, self.targeted)
 
-        if MODE.DEBUG:
-            print('Differential Evolution')
         perturbations = differential_evolution(
             prediction_func, bounds, maxiter=self.max_iter, popsize=popmul,
             recombination=1, atol=-1, callback=callback_func, polish=False
         )
 
-        if MODE.DEBUG:
-            print('perturbations:', perturbations)
         x_adv = self.perturb_image(perturbations.x, img)
 
         # img = img.reshape(self.img_rows, self.img_cols, self.nb_channels)

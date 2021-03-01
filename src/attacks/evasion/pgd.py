@@ -40,7 +40,7 @@ from art.classifiers.classifier import ClassifierGradients
 from art.utils import compute_success, get_labels_np_array, check_and_transform_label_format
 from art.exceptions import ClassifierError
 
-from attacks.fast_gradient import FastGradientMethod
+from attacks.evasion.fast_gradient import FastGradientMethod
 # from utils.data import set_channels_first, set_channels_last
 
 logger = logging.getLogger(__name__)

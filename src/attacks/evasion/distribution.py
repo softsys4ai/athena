@@ -32,12 +32,12 @@ def sample_from_distribution(x, distribution_args):
 
     transformation = distribution_args.get("transformation", TRANSFORMATION_DISTRIBUTION.RANDOM.value)
 
-    channel_index = distribution_args.get("channel_index", 3)
-    if channel_index not in [1, 3]:
-        raise ValueError("`channel_index` must be 1 or 3, but found {}.".format(channel_index))
+    # channel_index = distribution_args.get("channel_index", 3)
+    # if channel_index not in [1, 3]:
+    #     raise ValueError("`channel_index` must be 1 or 3, but found {}.".format(channel_index))
 
-    if channel_index == 1:
-        x = set_channels_last(x)
+    # if channel_index == 1:
+    x = set_channels_last(x)
 
     x = x.astype(np.float32)
     if transformation == TRANSFORMATION_DISTRIBUTION.RANDOM.value:
@@ -141,8 +141,8 @@ def sample_from_distribution(x, distribution_args):
     else:
         raise ValueError("Distribution {} is not supported.".format(transformation))
 
-    if channel_index == 1:
-        x_trans = set_channels_first(x_trans)
+    # if channel_index == 1:
+    #     x_trans = set_channels_first(x_trans)
 
     return x_trans.astype(np.float32)
 

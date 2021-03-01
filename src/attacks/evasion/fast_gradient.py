@@ -1,5 +1,5 @@
 """
-Update from art.attacks.evasion.fast_gradient to supportEOT.
+Update art.attacks.evasion.fast_gradient to support EOT.
 @author: Ying Meng (y(dot)meng201011(at)gmail(dot)com)
 """
 # MIT License
@@ -37,8 +37,8 @@ from art.attacks.attack import EvasionAttack
 from art.utils import compute_success, get_labels_np_array, random_sphere, projection, check_and_transform_label_format
 from art.exceptions import ClassifierError
 
-from attacks.distribution import sample_from_distribution
-# from utils.data import set_channels_first, set_channels_last
+from attacks.evasion.distribution import sample_from_distribution
+from utils.data import set_channels_first, set_channels_last
 
 logger = logging.getLogger(__name__)
 
@@ -287,6 +287,10 @@ class FastGradientMethod(EvasionAttack):
         return True
 
     def _compute_perturbation(self, batch, batch_labels):
+        # reshape if necessary
+        if self.classifier.channel_index == 1:
+            batch = set_channels_first(batch)
+
         # Pick a small scalar to avoid division by 0
         tol = 10e-8
 
@@ -305,7 +309,10 @@ class FastGradientMethod(EvasionAttack):
 
             for i in range(num_examples):
                 for j in range(_num_samples):
-                    syn_batch.append(sample_from_distribution(batch[i], self.distribution))
+                    tmp = sample_from_distribution(batch[i], self.distribution)
+                    if self.classifier.channel_index == 1:
+                        tmp = set_channels_first(tmp)
+                    syn_batch.append(tmp)
                     syn_batch_labels.append(batch_labels[i])
 
             syn_batch = np.asarray(syn_batch)
@@ -335,9 +342,13 @@ class FastGradientMethod(EvasionAttack):
         elif self.norm == 2:
             ind = tuple(range(1, len(batch.shape)))
             grad = grad / (np.sqrt(np.sum(np.square(grad), axis=ind, keepdims=True)) + tol)
+            
+        # debug
+        # print("Bach vs Grad: {} vs {}".format(batch.shape, grad.shape))
         assert batch.shape == grad.shape
 
-        return grad
+        # reshape to (h, w, d)
+        return set_channels_last(grad)
 
     def _apply_perturbation(self, batch, perturbation, eps_step):
         batch = batch + eps_step * perturbation
