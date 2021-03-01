@@ -1,0 +1,184 @@
+{
+  "num_attacks": 16,
+  "pgd-eps0082-rot": [0, 1, 2, 3],
+  "pgd-eps011-rot": [4, 5, 6, 7],
+  "pgd-eps0082-trans": [8, 9, 10, 11],
+  "pgd-eps011-trans": [12, 13, 14, 15],
+  "graybox": [0, 10],
+  "configs0": {
+    "attack": "pgd",
+    "description": "PGD_eps0.082-Dist_rot[-45,45]_s500",
+    "eps": 0.082,
+    "distribution": {
+      "num_samples": 500,
+      "transformation": "rotation",
+      "min_angle": -45,
+      "max_angle": 45
+    }
+  },
+  "configs1": {
+    "attack": "pgd",
+    "description": "PGD_eps0.082-Dist_rot[-45,45]_s1000",
+    "eps": 0.082,
+    "distribution": {
+      "num_samples": 1000,
+      "transformation": "rotation",
+      "min_angle": -45,
+      "max_angle": 45
+    }
+  },
+  "configs2": {
+    "attack": "pgd",
+    "description": "PGD_eps0.082-Dist_rot[-30,30]_s500",
+    "eps": 0.082,
+    "distribution": {
+      "num_samples": 500,
+      "transformation": "rotation",
+      "min_angle": -30,
+      "max_angle": 30
+    }
+  },
+  "configs3": {
+    "attack": "pgd",
+    "description": "PGD_eps0.082-Dist_rot[-30,30]_s1000",
+    "eps": 0.082,
+    "distribution": {
+      "num_samples": 1000,
+      "transformation": "rotation",
+      "min_angle": -30,
+      "max_angle": 30
+    }
+  },
+  "configs4": {
+    "attack": "pgd",
+    "description": "PGD_eps0.11-Dist_rot[-45,45]_s500",
+    "eps": 0.11,
+    "distribution": {
+      "num_samples": 500,
+      "transformation": "rotation",
+      "min_angle": -45,
+      "max_angle": 45
+    }
+  },
+  "configs5": {
+    "attack": "pgd",
+    "description": "PGD_eps0.11-Dist_rot[-45,45]_s1000",
+    "eps": 0.11,
+    "distribution": {
+      "num_samples": 1000,
+      "transformation": "rotation",
+      "min_angle": -45,
+      "max_angle": 45
+    }
+  },
+  "configs6": {
+    "attack": "pgd",
+    "description": "PGD_eps0.11-Dist_rot[-30,30]_s500",
+    "eps": 0.11,
+    "distribution": {
+      "num_samples": 500,
+      "transformation": "rotation",
+      "min_angle": -30,
+      "max_angle": 30
+    }
+  },
+  "configs7": {
+    "attack": "pgd",
+    "description": "PGD_eps0.11-Dist_rot[-30,30]_s1000",
+    "eps": 0.11,
+    "distribution": {
+      "num_samples": 1000,
+      "transformation": "rotation",
+      "min_angle": -30,
+      "max_angle": 30
+    }
+  },
+  "configs8": {
+    "attack": "pgd",
+    "description": "PGD_eps0.082-Dist_trans[-0.15,0.15]_s500",
+    "eps": 0.082,
+    "distribution": {
+      "num_samples": 500,
+      "transformation": "translation",
+      "min_offset": -0.15,
+      "max_offset": 0.15
+    }
+  },
+  "configs9": {
+    "attack": "pgd",
+    "description": "PGD_eps0.082-Dist_trans[-0.15,0.15]_s1000",
+    "eps": 0.082,
+    "distribution": {
+      "num_samples": 1000,
+      "transformation": "translation",
+      "min_offset": -0.15,
+      "max_offset": 0.15
+    }
+  },
+  "configs10": {
+    "attack": "pgd",
+    "description": "PGD_eps0.082-Dist_trans[-0.25,0.25]_s500",
+    "eps": 0.082,
+    "distribution": {
+      "num_samples": 500,
+      "transformation": "translation",
+      "min_offset": -0.25,
+      "max_offset": 0.25
+    }
+  },
+  "configs11": {
+    "attack": "pgd",
+    "description": "PGD_eps0.082-Dist_trans[-0.25,0.25]_s1000",
+    "eps": 0.082,
+    "distribution": {
+      "num_samples": 1000,
+      "transformation": "translation",
+      "min_offset": -0.25,
+      "max_offset": 0.25
+    }
+  },
+  "configs12": {
+    "attack": "pgd",
+    "description": "PGD_eps0.11-Dist_trans[-0.15,0.15]_s500",
+    "eps": 0.11,
+    "distribution": {
+      "num_samples": 500,
+      "transformation": "translation",
+      "min_offset": -0.15,
+      "max_offset": 0.15
+    }
+  },
+  "configs13": {
+    "attack": "pgd",
+    "description": "PGD_eps0.11-Dist_trans[-0.15,0.15]_s1000",
+    "eps": 0.11,
+    "distribution": {
+      "num_samples": 1000,
+      "transformation": "translation",
+      "min_offset": -0.15,
+      "max_offset": 0.15
+    }
+  },
+  "configs14": {
+    "attack": "pgd",
+    "description": "PGD_eps0.11-Dist_trans[-0.25,0.25]_s500",
+    "eps": 0.11,
+    "distribution": {
+      "num_samples": 500,
+      "transformation": "translation",
+      "min_offset": -0.25,
+      "max_offset": 0.25
+    }
+  },
+  "configs15": {
+    "attack": "pgd",
+    "description": "PGD_eps0.11-Dist_trans[-0.25,0.25]_s1000",
+    "eps": 0.11,
+    "distribution": {
+      "num_samples": 1000,
+      "transformation": "translation",
+      "min_offset": -0.25,
+      "max_offset": 0.25
+    }
+  }
+}
