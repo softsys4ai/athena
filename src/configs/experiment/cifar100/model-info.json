@@ -1,0 +1,56 @@
+{
+"wresnet": {
+    "dir": "models/cifar100/wresnet/",
+    "um_file": "clean-cifar100_wres28x10.pth",
+    "wd_prefix": "",
+    "file_format": "pth",
+    "dataset": "cifar100",
+    "architecture": "wresnet",
+    "use_logits": true,
+    "wrap": true,
+    "network_configs": {
+        "model_type": "wresnet28_10",
+        "model_name": "wres28x10",
+        "aug": "fa_reduced_cifar10",
+        "cutout": 16,
+        "batch": 256,
+        "epoch": 200,
+        "lr": 0.1,
+        "lr_scheduler_type": "cosine",
+        "lr_warmup_mul": 4,
+        "lr_warmup_epoch": 5,
+        "optimizer_type": "sgd",
+        "optimizer_momentum": 0.9,
+        "optimizer_nesterov": true,
+        "optimizer_decay": 0.0005
+    }
+},
+"shake26": {
+    "dir": "models/cifar100/shake26/",
+    "um_file": "clean-cifar100_shake26_2x32d.pth",
+    "wd_prefix": "",
+    "file_format": ".pth",
+    "dataset": "cifar100",
+    "architecture": "shake26",
+    "use_logits": true,
+    "wrap": true,
+    "network_configs": {
+        "model_type": "shakeshake26_2x32d",
+        "model_name": "shake26_2x32d",
+        "aug": "fa_reduced_cifar10",
+        "cutout": 16,
+        "batch": 512,
+        "epoch": 1800,
+        "lr": 0.01,
+        "lr_scheduler_type": "cosine",
+        "lr_warmup_mul": 4,
+        "lr_warmup_epoch": 5,
+        "optimizer_type": "sgd",
+        "optimizer_momentum": 0.9,
+        "optimizer_nesterov": true,
+        "optimizer_decay": 0.001
+    }
+},
+"pgd_trained": "models/baseline/advTrained-mnist-adtC.h5",
+"detector": "models/cifar100/detectors/"
+}
