@@ -9,11 +9,10 @@ sys.path.append("../")
 import argparse
 import numpy as np
 import os
-import time
 
 from models.mnist_utils import load_pool, load_lenet
 from utils.file import load_from_json
-from utils.estimator import error_rate, get_corrections
+from models.utils.estimator import error_rate, get_corrections
 from models.athena import Ensemble, ENSEMBLE_STRATEGY
 
 

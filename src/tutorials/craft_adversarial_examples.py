@@ -12,9 +12,9 @@ import os
 import time
 from matplotlib import pyplot as plt
 
-from models.mnist_utils import load_lenet, load_pool
+from models.mnist_utils import load_pool
 from utils.file import load_from_json
-from utils.estimator import error_rate
+from models.utils.estimator import error_rate
 from attacks.attacker_art import generate
 from models.athena import Ensemble, ENSEMBLE_STRATEGY
 
