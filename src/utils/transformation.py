@@ -2,6 +2,7 @@
 Define settings of transformations.
 @author: Ying Meng (y(dot)meng201011(at)gmail(dot)com)
 """
+from __future__ import absolute_import, division, print_function, unicode_literals
 
 import cv2
 from enum import Enum

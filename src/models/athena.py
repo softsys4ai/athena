@@ -1,5 +1,5 @@
 """
-Implement Athena ensemble on top of IBM Trusted-AI ART 1.2.0.
+Implement ATHENA ensemble on top of IBM Trusted-AI ART 1.2.0.
 @author: Ying Meng (y(dot)meng201011(at)gmail(dot)com)
 """
 
@@ -11,6 +11,7 @@ from enum import Enum
 import random
 
 from art.classifiers.classifier import Classifier, ClassifierNeuralNetwork, ClassifierGradients
+from utils.data import set_channels_first, set_channels_last
 
 logger = logging.getLogger(__name__)
 
@@ -248,6 +249,17 @@ class ENSEMBLE_STRATEGY(Enum):
     AVEP = 3
     AVEL = 4
     AVEO = 5
+
+    @classmethod
+    def available_strategies(cls):
+        return {
+            cls.RD.name: cls.RD.value,
+            cls.MV.name: cls.MV.value,
+            cls.T2MV.name: cls.T2MV.value,
+            cls.AVEP.name: cls.AVEP.value,
+            cls.AVEL.name: cls.AVEL.value,
+            cls.AVEO.name: cls.AVEO.value,
+        }
 
     @classmethod
     def available_names(cls):

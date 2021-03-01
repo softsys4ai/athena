@@ -2,6 +2,8 @@
 Implement transformations
 @author: Ying Meng (y(dot)meng201011(at)gmail(dot)com)
 """
+from __future__ import absolute_import, division, print_function, unicode_literals
+
 import numpy as np
 import cv2
 from PIL import Image

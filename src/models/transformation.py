@@ -2,7 +2,8 @@
 Implement transformations.
 @auther: Ying Meng (y(dot)meng201011(at)gmail(dot)com)
 """
-import collections
+from __future__ import absolute_import, division, print_function, unicode_literals
+
 import copy
 import cv2
 from scipy import ndimage
@@ -19,7 +20,7 @@ from skimage.filters import (rank, roberts, scharr, prewitt, meijering, sato, fr
 from skimage.util import invert
 
 from utils.config import *
-from utils.plot import plot_comparisons
+# from utils.plot import plot_comparisons
 
 
 def rotate(original_images, transformation):
@@ -1171,7 +1172,7 @@ def main(*args):
     X_orig = np.copy(X[10:20])
     X_trans = transform(X_orig, args[1])
 
-    plot_comparisons(X_orig, X_trans, '{}-{}'.format(args[0], args[1]))
+    # plot_comparisons(X_orig, X_trans, '{}-{}'.format(args[0], args[1]))
     # plot_difference(X_orig[:5], X_trans[:5], 'Diff-{}-{}'.format(args[0], args[1]))
 
 

@@ -2,6 +2,7 @@
 Utilities of models for MNIST
 @author: Ying Meng (y(dot)meng201011(at)gmail(dot)com)
 """
+from __future__ import absolute_import, division, print_function, unicode_literals
 
 import os
 from enum import Enum
@@ -99,6 +100,15 @@ def load_svm(file, trans_configs=None, wrap=False):
         model = pickle.load(f)
 
     if wrap:
+        if trans_configs is None:
+            # load the undefended model by default
+            trans_configs = {
+                "type": "clean",
+                "subtype": "",
+                "id": 0,
+                "description": "clean"
+            }
+
         model = SkLearnWD(model=model, trans_configs=trans_configs, image_shape=IMAGE_SHAPE)
 
     return model

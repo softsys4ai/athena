@@ -2,6 +2,7 @@
 Utilities for data manipulations.
 @author: Ying Meng (y(dot)meng201011(at)gmail(dot)com)
 """
+from __future__ import absolute_import, division, print_function, unicode_literals
 
 import os
 import random
@@ -148,6 +149,8 @@ def subsampling(data, labels, num_classes, ratio=0.1, filepath=None, filename=No
         ids = [i for i in range(pool_size) if labels[i]==c_id]
         selected = random.sample(population=ids, k=num_samples)
         sample_ids.extend(selected)
+
+    print(">>> Drawn {} random samples.".format(len(sample_ids)))
 
     # shuffle the selected ids
     random.shuffle(sample_ids)

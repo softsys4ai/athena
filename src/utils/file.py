@@ -2,6 +2,7 @@
 Implement file operations such as read/write files here.
 @author: Ying Meng (y(dot)meng201011(at)gmail(dot)com)
 """
+from __future__ import absolute_import, division, print_function, unicode_literals
 
 import csv
 from enum import Enum
@@ -130,5 +131,4 @@ def load_from_csv(file_name, orient=CSV_ORIENT.COL, dtype='float'):
 
     else: # ORIENT.ROW == orient
         # TODO: implement
-        rows = {}
-        return rows
+        raise NotImplemented

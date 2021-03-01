@@ -3,6 +3,8 @@ Define global configurations.
 @author: Ying Meng (y(dot)meng201011(at)gmail(dot)com,
         Jianhai Su
 """
+from __future__ import absolute_import, division, print_function, unicode_literals
+
 import numpy as np
 from pathlib import Path
 
