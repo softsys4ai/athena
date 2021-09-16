@@ -9,12 +9,12 @@ from art.attacks.evasion.carlini import CarliniL2Method, CarliniLInfMethod
 from art.attacks.evasion.deepfool import DeepFool
 from art.attacks.evasion.saliency_map import SaliencyMapMethod
 from art.attacks.evasion.spatial_transformation import SpatialTransformation
-from art.attacks.evasion.hop_skip_jump import HopSkipJump
 from art.attacks.evasion.zoo import ZooAttack
 
 from attacks.evasion.fast_gradient import FastGradientMethod
 from attacks.evasion.pgd import ProjectedGradientDescent
 from attacks.evasion.bim import BasicIterativeMethod
+from attacks.evasion.hsja import HopSkipJump
 from attacks.utils import WHITEBOX_ATTACK as ATTACK
 
 
@@ -58,7 +58,7 @@ def generate(model, data_loader, attack_args, device=None):
     elif attack == ATTACK.OP.value:
         return _op(model, images, labels, attack_args)
     elif attack == ATTACK.HOP_SKIP_JUMP.value:
-        raise _hop_skip_jump(model, images, labels, attack_args)
+        return _hop_skip_jump(model, images, labels, attack_args)
     elif attack == ATTACK.SPATIAL_TRANS.value:
         return _spatial(model, images, labels, attack_args)
     elif attack == ATTACK.ZOO.value:
@@ -245,14 +245,15 @@ def _spatial(model, data, labels, attack_args):
 
 def _hop_skip_jump(model, data, labels, attack_args):
     norm = _get_norm_value(attack_args.get('norm', 'l2'))
-    max_iter = attack_args.get('max_iter', 50)
+    max_iter = attack_args.get('max_iter', 32)
     max_eval = attack_args.get('max_eval', 10000)
+    max_queries = attack_args.get('max_queries', 1000)
     init_eval = attack_args.get('init_eval', 100)
     init_size = attack_args.get('init_size', 100)
-
     targeted = attack_args.get('targeted', False)
+
     attacker = HopSkipJump(classifier=model, targeted=targeted, norm=norm,
-                           max_iter=max_iter, max_eval=max_eval,
+                           max_iter=max_iter, max_eval=max_eval, max_queries=max_queries,
                            init_eval=init_eval, init_size=init_size)
 
     return attacker.generate(data, labels)

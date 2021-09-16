@@ -20,7 +20,7 @@ class WHITEBOX_ATTACK(Enum):
     OP = 'one-pixel'
     DF = 'deepfool'
     SPATIAL_TRANS = 'spatial-transformation'
-    HOP_SKIP_JUMP = 'hop-skip-jump'
+    HOP_SKIP_JUMP = 'hsja'
     ZOO = 'zoo'
 
 
