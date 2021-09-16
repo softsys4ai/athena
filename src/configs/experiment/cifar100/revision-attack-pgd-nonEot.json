@@ -1,0 +1,95 @@
+{
+  "num_attacks": 11,
+  "group1": [0, 1, 2, 3, 4],
+  "group2": [5, 6, 7, 8, 9],
+  "group3": [10, 11, 12, 13, 14, 15],
+  "all": [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 99],
+  "div": [7],
+  "large_iter": [99],
+  "configs0": {
+    "attack": "pgd",
+    "description": "PGD_eps0.0015",
+    "eps": 0.0015
+  },
+  "configs1": {
+    "attack": "pgd",
+    "description": "PGD_eps0.0025",
+    "eps": 0.0025
+  },
+  "configs2": {
+    "attack": "pgd",
+    "description": "PGD_eps0.005",
+    "eps": 0.005
+  },
+  "configs3": {
+    "attack": "pgd",
+    "description": "PGD_eps0.0075",
+    "eps": 0.0075
+  },
+  "configs4": {
+    "attack": "pgd",
+    "description": "PGD_eps0.01",
+    "eps": 0.01
+  },
+  "configs5": {
+    "attack": "pgd",
+    "description": "PGD_eps0.015",
+    "eps": 0.015
+  },
+  "configs6": {
+    "attack": "pgd",
+    "description": "PGD_eps0.02",
+    "eps": 0.02
+  },
+  "configs7": {
+    "attack": "pgd",
+    "description": "PGD_eps0.03",
+    "eps": 0.03
+  },
+  "configs8": {
+    "attack": "pgd",
+    "description": "PGD_eps0.04",
+    "eps": 0.04
+  },
+  "configs9": {
+    "attack": "pgd",
+    "description": "PGD_eps0.05",
+    "eps": 0.05
+  },
+  "configs10": {
+    "attack": "pgd",
+    "description": "PGD_eps0.06",
+    "eps": 0.06
+  },
+  "configs11": {
+    "attack": "pgd",
+    "description": "PGD_eps0.07",
+    "eps": 0.07
+  },
+  "configs12": {
+    "attack": "pgd",
+    "description": "PGD_eps0.08",
+    "eps": 0.08
+  },
+  "configs13": {
+    "attack": "pgd",
+    "description": "PGD_eps0.09",
+    "eps": 0.09
+  },
+  "configs14": {
+    "attack": "pgd",
+    "description": "PGD_eps0.1",
+    "eps": 0.1
+  },
+  "configs15": {
+    "attack": "pgd",
+    "description": "PGD_eps0.125",
+    "eps": 0.125
+  },
+  "configs99": {
+    "attack": "pgd",
+    "description": "PGD_eps0.015",
+    "eps": 0.015,
+    "max_iter": 1000
+  }
+}

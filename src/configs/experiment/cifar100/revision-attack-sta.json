@@ -1,0 +1,43 @@
+{
+  "num_attacks": 10,
+  "configs0": {
+    "attack": "spatial-transformation",
+    "description": "STA_rotation(15, 10)",
+    "max_translation": 0,
+    "num_translations": 0,
+    "max_rotation": 15,
+    "num_rotations": 10
+  },
+  "configs1": {
+    "attack": "spatial-transformation",
+    "description": "STA_rotation(30, 10)",
+    "max_translation": 0,
+    "num_translations": 0,
+    "max_rotation": 30,
+    "num_rotations": 10
+  },
+  "configs2": {
+    "attack": "spatial-transformation",
+    "description": "STA_rotation(60, 10)",
+    "max_translation": 0,
+    "num_translations": 0,
+    "max_rotation": 60,
+    "num_rotations": 10
+  },
+  "configs3": {
+    "attack": "spatial-transformation",
+    "description": "STA_rotation(30, 30)",
+    "max_translation": 0,
+    "num_translations": 0,
+    "max_rotation": 30,
+    "num_rotations": 30
+  },
+  "configs4": {
+    "attack": "spatial-transformation",
+    "description": "STA_rotation(30, 50)",
+    "max_translation": 0,
+    "num_translations": 0,
+    "max_rotation": 30,
+    "num_rotations": 50
+  }
+}

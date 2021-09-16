@@ -2,6 +2,7 @@
 "wresnet": {
     "dir": "models/cifar100/wresnet/",
     "um_file": "clean-cifar100_wres28x10.pth",
+    "pgd_trained_cifar": "advTrained-cifar100.pth",
     "wd_prefix": "",
     "file_format": "pth",
     "dataset": "cifar100",
@@ -51,6 +52,6 @@
         "optimizer_decay": 0.001
     }
 },
-"pgd_trained": "models/baseline/advTrained-mnist-adtC.h5",
+"pgd_trained_mnist": "models/baseline/advTrained-mnist-adtC.h5",
 "detector": "models/cifar100/detectors/"
 }

@@ -1,0 +1,652 @@
+{
+    "pool_size": 63,
+    "athena": [0, 4, 13, 18, 19, 20, 21, 22, 23, 25, 28, 31,
+ 33, 36, 38, 39, 40, 41, 43, 47, 54, 57, 58],
+    "full": [
+        0, 1, 2, 3, 4, 5, 6, 7, 8, 9,
+        10, 11, 12, 13, 14, 15, 16, 17, 18, 19,
+        20, 21, 22, 23, 24, 25, 26, 27, 28, 29,
+        30, 31, 32, 33, 34, 35, 36, 37, 38, 39,
+        40, 41, 42, 43, 44, 45, 46, 47, 48, 49,
+        50, 51, 52, 53, 54, 55, 56, 57, 58, 59,
+        60, 61, 62
+    ],
+    "top20-freq": [
+      25, 60, 57, 14, 47, 48, 46, 54, 29, 45,
+      27, 43, 62, 55, 42, 2, 12, 23, 18, 20
+    ],
+    "diversity": [
+      46, 50, 8, 30
+    ],
+    "revisionES1": {
+      "ens1": [0],
+      "ens2": [34],
+      "ens3": [25]
+    },
+    "revisionES4": {
+      "ens1": [34, 25, 48, 50],
+      "ens2": [0, 37, 45, 48],
+      "ens3": [20, 36, 43, 46]
+    },
+    "revisionES8": {
+      "ens1": [20, 24, 25, 34, 48, 26, 53, 61],
+      "ens3": [0, 7, 14, 15, 26, 32, 37, 54],
+      "ens2": [0, 13, 36, 24, 50, 39, 46, 60]
+    },
+    "revisionES16": {
+      "ens1": [6, 25, 26, 27, 34, 35, 37, 53, 54, 60, 61, 20, 24, 13, 48, 51],
+      "ens3": [19, 20, 23, 37, 45, 46, 54, 55, 56, 59, 0, 7, 14, 15, 60, 62],
+      "ens2": [2, 19, 20, 35, 36, 48, 50, 57, 60, 62, 0, 4, 39, 58, 43, 46]
+    },
+    "revisionDivHigh": {
+      "s4h0": [13, 32, 3, 38],
+      "s4h1": [28, 42, 54, 29],
+      "s4h2": [42, 28, 54, 29],
+      "s4h3": [31, 15, 44, 32],
+      "s4h4": [60, 7, 10, 61],
+      "s4h5": [32, 45, 15, 31],
+      "s4h6": [44, 15, 31, 32],
+      "s4h7": [11, 14, 15, 31],
+      "s4h8": [47, 15, 31, 44],
+      "s4h9": [14, 11, 15, 31],
+      "s8h0": [13, 32, 3, 38, 18, 22, 23, 17],
+      "s8h1": [28, 42, 54, 29, 14, 15, 11, 32],
+      "s8h2": [42, 28, 54, 29, 14, 15, 11, 32],
+      "s8h3": [31, 15, 44, 32, 33, 45, 3, 47],
+      "s8h4": [60, 7, 10, 61, 8, 50, 30, 56],
+      "s8h5": [32, 45, 15, 31, 44, 33, 3, 47],
+      "s8h6": [44, 15, 31, 32, 33, 45, 3, 47],
+      "s8h7": [11, 14, 15, 31, 44, 32, 33, 3],
+      "s8h8": [47, 15, 31, 44, 32, 33, 3, 45],
+      "s8h9": [14, 11, 15, 31, 44, 32, 33, 3]
+    },
+    "revisionDivLow": {
+      "s4l0": [13, 35, 34, 26],
+      "s4l1": [28, 37, 35, 48],
+      "s4l2": [42, 37, 27, 26],
+      "s4l3": [31, 37, 35, 6],
+      "s4l4": [60, 34, 37, 35],
+      "s4l5": [32, 35, 34, 26],
+      "s4l6": [44, 37, 35, 51],
+      "s4l7": [11, 35, 37, 6],
+      "s4l8": [47, 37, 35, 34],
+      "s4l9": [14, 37, 35, 6]
+    },
+    "adt_pgd": [999],
+    "rand_smooth": [998],
+    "configs999": {
+      "type": "clean",
+      "subtype": "",
+      "id": 999,
+      "description": "adt_pgd"
+    },
+    "configs998": {
+      "type": "clean",
+      "subtype": "",
+      "id": 998,
+      "description": "rs"
+    },
+    "configs0": {
+        "type": "clean",
+        "subtype": "",
+        "id": 0,
+        "description": "clean"
+    },
+    "configs1": {
+        "type": "affine",
+        "id": 1,
+        "description": "affine_both_compress",
+    	"origin_point1": [0.25,0.25],
+        "origin_point2": [0.25,0.5],
+        "origin_point3": [0.5,0.25],
+        "new_point1": [0.28,0.28],
+        "new_point2": [0.28,0.47],
+        "new_point3": [0.47,0.28]
+    },
+    "configs2": {
+        "type": "affine",
+        "id": 2,
+        "description": "affine_both_stretch",
+    	"origin_point1": [0.25,0.25],
+        "origin_point2": [0.25,0.5],
+        "origin_point3": [0.5,0.25],
+        "new_point1": [0.22,0.22],
+        "new_point2": [0.22,0.55],
+        "new_point3": [0.55,0.22]
+    },
+    "configs3": {
+        "type": "affine",
+        "id": 3,
+        "description": "affine_horizontal_compress",
+    	"origin_point1": [0.25,0.25],
+        "origin_point2": [0.25,0.5],
+        "origin_point3": [0.5,0.25],
+        "new_point1": [0.32,0.25],
+        "new_point2": [0.32,0.5],
+        "new_point3": [0.43,0.25]
+    },
+    "configs4": {
+        "type": "affine",
+        "id": 4,
+        "description": "affine_horizontal_stretch",
+    	"origin_point1": [0.25,0.25],
+        "origin_point2": [0.25,0.5],
+        "origin_point3": [0.5,0.25],
+        "new_point1": [0.2,0.25],
+        "new_point2": [0.2,0.5],
+        "new_point3": [0.55,0.25]
+    },
+    "configs5": {
+        "type": "affine",
+        "id": 5,
+        "description": "affine_vertical_compress",
+    	"origin_point1": [0.25,0.25],
+        "origin_point2": [0.25,0.5],
+        "origin_point3": [0.5,0.25],
+        "new_point1": [0.25,0.32],
+        "new_point2": [0.25,0.48],
+        "new_point3": [0.5,0.32]
+    },
+    "configs6": {
+        "type": "affine",
+        "id": 6,
+        "description": "affine_vertical_stretch",
+    	"origin_point1": [0.25,0.25],
+        "origin_point2": [0.25,0.5],
+        "origin_point3": [0.5,0.25],
+        "new_point1": [0.25,0.2],
+        "new_point2": [0.25,0.55],
+        "new_point3": [0.5,0.2]
+    },
+    "configs7": {
+        "type": "cartoon",
+        "subtype": "gaussian_type1",
+        "id": 7,
+        "description": "cartoon_gaussian_type1",
+        "thresh_adaptive_method": "gaussian",
+        "nb_downsampling": 1,
+        "nb_bilateral": 10,
+        "blur_ksize": 3,
+        "thresh_bsize":3,
+        "thresh_C": 3,
+        "filter_d": 250,
+        "filter_sigma_color": 2,
+        "filter_sigma_space": 30
+
+    },
+    "configs8": {
+        "type": "cartoon",
+        "subtype": "gaussian_type2",
+        "id": 8,
+        "description": "cartoon_gaussian_type2",
+        "thresh_adaptive_method": "gaussian",
+        "nb_downsampling": 1,
+        "nb_bilateral": 100,
+        "blur_ksize": 3,
+        "thresh_bsize": 3,
+        "thresh_C": 3,
+        "filter_d": 250,
+        "filter_sigma_color": 2,
+        "filter_sigma_space": 30
+    },
+    "configs9": {
+        "type": "cartoon",
+        "subtype": "gaussian_type3",
+        "id": 9,
+        "description": "cartoon_gaussian_type3",
+        "thresh_adaptive_method": "gaussian",
+        "nb_downsampling": 0,
+        "nb_bilateral": 0,
+        "blur_ksize": 3,
+        "thresh_bsize": 3,
+        "thresh_C": 7,
+        "filter_d": 250,
+        "filter_sigma_color": 2,
+        "filter_sigma_space": 30
+    },
+    "configs10": {
+        "type": "cartoon",
+        "subtype": "gaussian_type4",
+        "id": 10,
+        "description": "cartoon_gaussian_type4",
+        "thresh_adaptive_method": "gaussian",
+        "nb_downsampling": 1,
+        "nb_bilateral": 10,
+        "blur_ksize": 3,
+        "thresh_bsize": 5,
+        "thresh_C": 5,
+        "filter_d": 250,
+        "filter_sigma_color": 2,
+        "filter_sigma_space": 30
+    },
+    "configs11": {
+        "type": "cartoon",
+        "subtype": "mean_type1",
+        "id": 11,
+        "description": "cartoon_mean_type1",
+        "thresh_adaptive_method": "mean",
+        "nb_downsampling": 2,
+        "nb_bilateral": 5,
+        "blur_ksize": 3,
+        "thresh_bsize":3,
+        "thresh_C": 3,
+        "filter_d": 9,
+        "filter_sigma_color": 2,
+        "filter_sigma_space": 30
+    },
+    "configs12": {
+        "type": "cartoon",
+        "subtype": "mean_type2",
+        "id": 12,
+        "description": "cartoon_mean_type2",
+        "thresh_adaptive_method": "mean",
+        "nb_downsampling": 1,
+        "nb_bilateral": 100,
+        "blur_ksize": 3,
+        "thresh_bsize": 3,
+        "thresh_C": 3,
+        "filter_d": 9,
+        "filter_sigma_color": 2,
+        "filter_sigma_space": 30
+    },
+    "configs13": {
+        "type": "cartoon",
+        "subtype": "mean_type3",
+        "id": 13,
+        "description": "cartoon_mean_type3",
+        "thresh_adaptive_method": "mean",
+        "nb_downsampling": 0,
+        "nb_bilateral": 0,
+        "blur_ksize": 3,
+        "thresh_bsize": 9,
+        "thresh_C": 7,
+        "filter_d": 9,
+        "filter_sigma_color": 100,
+        "filter_sigma_space": 30
+    },
+    "configs14": {
+        "type": "cartoon",
+        "subtype": "mean_type4",
+        "id": 14,
+        "description": "cartoon_mean_type4",
+        "thresh_adaptive_method": "mean",
+        "nb_downsampling": 2,
+        "nb_bilateral": 5,
+        "blur_ksize": 3,
+        "thresh_bsize": 5,
+        "thresh_C": 5,
+        "filter_d": 25,
+        "filter_sigma_color": 2,
+        "filter_sigma_space": 30
+    },
+    "configs15": {
+        "type": "compress",
+        "subtype": "jpeg",
+        "id": 15,
+        "description": "compress_jpeg_quality_10",
+        "format": ".jpeg",
+        "compress_rate": 10
+    },
+    "configs16": {
+        "type": "compress",
+        "subtype": "jpeg",
+        "id": 16,
+        "description": "compress_jpeg_quality_30",
+        "format": ".jpeg",
+        "compress_rate": 30
+    },
+    "configs17": {
+        "type": "compress",
+        "subtype": "jpeg",
+        "id": 17,
+        "description": "compress_jpeg_quality_50",
+        "format": ".jpeg",
+        "compress_rate": 50
+    },
+    "configs18": {
+        "type": "compress",
+        "subtype": "jpeg",
+        "id": 18,
+        "description": "compress_jpeg_quality_80",
+        "format": ".jpeg",
+        "compress_rate": 80
+    },
+    "configs19": {
+        "type": "compress",
+        "subtype": "png",
+        "id": 19,
+        "description": "compress_png_compression_1",
+        "format": ".png",
+        "compress_rate": 1
+    },
+    "configs20": {
+        "type": "compress",
+        "subtype": "png",
+        "id": 20,
+        "description": "compress_png_compression_5",
+        "format": ".png",
+        "compress_rate": 5
+    },
+    "configs21": {
+        "type": "compress",
+        "subtype": "png",
+        "id": 21,
+        "description": "compress_png_compression_8",
+        "format": ".png",
+        "compress_rate": 8
+    },
+    "configs22": {
+        "type": "denoise",
+        "subtype": "nl_means_fast",
+        "id": 22,
+        "description": "denoise_nl_means_fast",
+        "patch_size": 5,
+        "patch_distance": 6,
+        "hr": 0.6,
+        "sr": 3
+    },
+    "configs23": {
+        "type": "denoise",
+        "subtype": "tv_bregman",
+        "id": 23,
+        "description": "denoise_tv_bregman",
+        "weight": 15,
+        "epsilon": 1e-6,
+        "max_iter": 50
+    },
+    "configs24": {
+        "type": "denoise",
+        "subtype": "tv_chambolle",
+        "id": 24,
+        "description": "denoise_tv_chambolle",
+        "weight": 0.4,
+        "epsilon": 2e-4,
+        "max_iter": 200
+    },
+    "configs25": {
+        "type": "denoise",
+        "subtype": "wavelet",
+        "id": 25,
+        "description": "denoise_wavelet",
+        "method": "BayesShrink",
+        "mode": "soft",
+        "wavelet": "db1"
+    },
+    "configs26": {
+        "type": "distort",
+        "subtype": "x",
+        "id": 26,
+        "description": "distortion_x",
+        "r1": 5.0,
+        "r2": 2.0,
+        "c": 32.0
+    },
+    "configs27": {
+        "type": "distort",
+        "subtype": "y",
+        "id": 27,
+        "description": "distortion_y",
+        "r1": 5.0,
+        "r2": 2.0,
+        "c": 32.0
+    },
+    "configs28": {
+        "type": "augment",
+        "subtype": "feature_std_norm",
+        "id": 28,
+        "description": "augment_feature_std_norm"
+    },
+    "configs29": {
+        "type": "filter",
+        "subtype": "gaussian",
+        "id": 29,
+        "description": "filter_gaussian",
+        "sigma": 1
+    },
+    "configs30": {
+        "type": "filter",
+        "subtype": "maximum",
+        "id": 30,
+        "description": "filter_maximum",
+        "size": 3
+    },
+    "configs31": {
+        "type": "filter",
+        "subtype": "median",
+        "id": 31,
+        "description": "filter_median",
+        "size": 3
+    },
+    "configs32": {
+        "type": "filter",
+        "subtype": "minimum",
+        "id": 32,
+        "description": "filter_minimum",
+        "size": 3
+    },
+    "configs33": {
+        "type": "filter",
+        "subtype": "rank",
+        "id": 33,
+        "description": "filter_rank",
+        "size": 3,
+        "rank": 15
+    },
+    "configs34": {
+        "type": "filter",
+        "subtype": "roberts",
+        "id": 34,
+        "description": "filter_roberts"
+    },
+    "configs35": {
+        "type": "flip",
+        "subtype": "",
+        "id": 35,
+        "description": "flip_both",
+        "direction": -1
+    },
+    "configs36": {
+        "type": "flip",
+        "subtype": "",
+        "id": 36,
+        "description": "flip_horizontal",
+        "direction": 1
+    },
+    "configs37": {
+        "type": "flip",
+        "subtype": "",
+        "id": 37,
+        "description": "flip_vertical",
+        "direction": 0
+    },
+    "configs38": {
+        "type": "geometric",
+        "subtype": "swirl",
+        "id": 38,
+        "description": "geo_swirl",
+        "strength": 1.5,
+        "radius": 45,
+        "order": 1,
+        "mode": "reflect"
+    },
+    "configs39": {
+        "type": "morph",
+        "subtype": "closing",
+        "id": 39,
+        "description": "morph_closing",
+        "kernel_w": 2,
+        "kernel_h": 2
+    },
+    "configs40": {
+        "type": "morph",
+        "subtype": "dilation",
+        "id": 40,
+        "description": "morph_dilation",
+        "kernel_w": 2,
+        "kernel_h": 2
+    },
+    "configs41": {
+        "type": "morph",
+        "subtype": "erosion",
+        "id": 41,
+        "description": "morph_erosion",
+        "kernel_w": 2,
+        "kernel_h": 2
+    },
+    "configs42": {
+        "type": "morph",
+        "subtype": "gradient",
+        "id": 42,
+        "description": "morph_gradient",
+        "kernel_w": 2,
+        "kernel_h": 2
+    },
+    "configs43": {
+        "type": "morph",
+        "subtype": "opening",
+        "id": 43,
+        "description": "morph_opening",
+        "kernel_w": 2,
+        "kernel_h": 2
+    },
+    "configs44": {
+        "type": "noise",
+        "subtype": "gaussian",
+        "id": 44,
+        "description": "noise_gaussian",
+        "noise": "gaussian"
+    },
+    "configs45": {
+        "type": "noise",
+        "subtype": "localvar",
+        "id": 45,
+        "description": "noise_localvar",
+        "noise": "localvar"
+    },
+    "configs46": {
+        "type": "noise",
+        "subtype": "pepper",
+        "id": 46,
+        "description": "noise_pepper",
+        "noise": "pepper"
+    },
+    "configs47": {
+        "type": "noise",
+        "subtype": "poisson",
+        "id": 47,
+        "description": "noise_poisson",
+        "noise": "poisson"
+    },
+    "configs48": {
+        "type": "noise",
+        "subtype": "salt",
+        "id": 48,
+        "description": "noise_salt",
+        "noise": "salt"
+    },
+    "configs49": {
+        "type": "noise",
+        "subtype": "s&p",
+        "id": 49,
+        "description": "noise_sNp",
+        "noise": "s&p"
+    },
+    "configs50": {
+        "type": "noise",
+        "subtype": "speckle",
+        "id": 50,
+        "description": "noise_speckle",
+        "noise": "speckle"
+    },
+    "configs51": {
+        "type": "rotate",
+        "subtype": "",
+        "id": 51,
+        "description": "rotate180",
+        "angle": 180
+    },
+    "configs52": {
+        "type": "rotate",
+        "subtype": "",
+        "id": 52,
+        "description": "rotate270",
+        "angle": 270
+    },
+    "configs53": {
+        "type": "rotate",
+        "subtype": "",
+        "id": 53,
+        "description": "rotate90",
+        "angle": 90
+    },
+    "configs54": {
+        "type": "augment",
+        "subtype": "samplewise_std_norm",
+        "id": 54,
+        "description": "augment_samplewise_std_norm"
+    },
+    "configs55": {
+        "type": "shift",
+        "subtype": "",
+        "id": 55,
+        "description": "shift_bottom_left",
+    	"x_offset": -0.15,
+    	"y_offset": 0.15
+    },
+    "configs56": {
+        "type": "shift",
+        "subtype": "",
+        "id": 56,
+        "description": "shift_bottom_right",
+    	"x_offset": 0.15,
+    	"y_offset": 0.15
+    },
+    "configs57": {
+        "type": "shift",
+        "subtype": "",
+        "id": 57,
+        "description": "shift_down",
+    	"x_offset": 0,
+    	"y_offset": 0.15
+    },
+    "configs58": {
+        "type": "shift",
+        "subtype": "",
+        "id": 58,
+        "description": "shift_left",
+    	"x_offset": -0.15,
+    	"y_offset": 0
+    },
+    "configs59": {
+        "type": "shift",
+        "subtype": "",
+        "id": 59,
+        "description": "shift_right",
+        "x_offset": 0.15,
+        "y_offset": 0
+    },
+    "configs60": {
+        "type": "shift",
+        "subtype": "",
+        "id": 60,
+        "description": "shift_top_left",
+        "x_offset": -0.15,
+        "y_offset": -0.15
+    },
+    "configs61": {
+        "type": "shift",
+        "subtype": "",
+        "id": 61,
+        "description": "shift_top_right",
+        "x_offset": 0.15,
+        "y_offset": -0.15
+    },
+    "configs62": {
+        "type": "shift",
+        "subtype": "",
+        "id": 62,
+        "description": "shift_up",
+        "x_offset": 0,
+        "y_offset": -0.15
+    }
+}

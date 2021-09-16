@@ -1,0 +1,72 @@
+{
+  "num_attacks": 6,
+  "pgd-eps00035": [0, 3],
+  "pgd-eps0005": [1, 4],
+  "pgd-eps0015": [2, 5],
+  "configs0": {
+    "attack": "pgd",
+    "description": "PGD_eps0.0035-Dist_rot[-30,30]_s50",
+    "eps": 0.0035,
+    "distribution": {
+      "num_samples": 50,
+      "transformation": "rotation",
+      "min_angle": -30,
+      "max_angle": 30
+    }
+  },
+  "configs1": {
+    "attack": "pgd",
+    "description": "PGD_eps0.005-Dist_rot[-30,30]_s50",
+    "eps": 0.005,
+    "distribution": {
+      "num_samples": 50,
+      "transformation": "rotation",
+      "min_angle": -30,
+      "max_angle": 30
+    }
+  },
+  "configs2": {
+    "attack": "pgd",
+    "description": "PGD_eps0.015-Dist_rot[-30,30]_s50",
+    "eps": 0.015,
+    "distribution": {
+      "num_samples": 50,
+      "transformation": "rotation",
+      "min_angle": -30,
+      "max_angle": 30
+    }
+  },
+  "configs3": {
+    "attack": "pgd",
+    "description": "PGD_eps0.0035-Dist_trans[-0.15,0.15]_s50",
+    "eps": 0.0035,
+    "distribution": {
+      "num_samples": 50,
+      "transformation": "translation",
+      "min_offset": -0.15,
+      "max_offset": 0.15
+    }
+  },
+  "configs4": {
+    "attack": "pgd",
+    "description": "PGD_eps0.005-Dist_trans[-0.15,0.15]_s50",
+    "eps": 0.005,
+    "distribution": {
+      "num_samples": 50,
+      "transformation": "translation",
+      "min_offset": -0.15,
+      "max_offset": 0.15
+    }
+  },
+  "configs5": {
+    "attack": "pgd",
+    "description": "PGD_eps0.015-Dist_trans[-0.15,0.15]_s50",
+    "eps": 0.015,
+    "distribution": {
+      "num_samples": 50,
+      "transformation": "translation",
+      "min_offset": -0.15,
+      "max_offset": 0.15
+    }
+  }
+}

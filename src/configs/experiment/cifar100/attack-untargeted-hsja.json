@@ -1,0 +1,105 @@
+{
+  "num_attacks": 14,
+  "l2_norm": [0, 1, 2, 3, 4, 5, 6],
+  "li_norm": [7, 8, 9, 10, 11, 12, 13],
+  "div_l2": [4],
+  "div_li": [11],
+  "configs0": {
+    "attack": "hsja",
+    "description": "HSJA_untargeted_l2_queries1k",
+    "targeted": false,
+    "norm": "l2",
+    "max_queries": 1000
+  },
+  "configs1": {
+    "attack": "hsja",
+    "description": "HSJA_untargeted_l2_queries2k",
+    "targeted": false,
+    "norm": "l2",
+    "max_queries": 2000
+  },
+  "configs2": {
+    "attack": "hsja",
+    "description": "HSJA_untargeted_l2_queries3k",
+    "targeted": false,
+    "norm": "l2",
+    "max_queries": 3000
+  },
+  "configs3": {
+    "attack": "hsja",
+    "description": "HSJA_untargeted_l2_queries4k",
+    "targeted": false,
+    "norm": "l2",
+    "max_queries": 4000
+  },
+  "configs4": {
+    "attack": "hsja",
+    "description": "HSJA_untargeted_l2_queries5k",
+    "targeted": false,
+    "norm": "l2",
+    "max_queries": 5000
+  },
+  "configs5": {
+    "attack": "hsja",
+    "description": "HSJA_untargeted_l2_queries7k5",
+    "targeted": false,
+    "norm": "l2",
+    "max_queries": 7500
+  },
+  "configs6": {
+    "attack": "hsja",
+    "description": "HSJA_untargeted_l2_queries10k",
+    "targeted": false,
+    "norm": "l2",
+    "max_queries": 10000
+  },
+  "configs7": {
+    "attack": "hsja",
+    "description": "HSJA_untargeted_li_queries1k",
+    "targeted": false,
+    "norm": "linf",
+    "max_queries": 1000
+  },
+  "configs8": {
+    "attack": "hsja",
+    "description": "HSJA_untargeted_li_queries2k",
+    "targeted": false,
+    "norm": "linf",
+    "max_queries": 2000
+  },
+  "configs9": {
+    "attack": "hsja",
+    "description": "HSJA_untargeted_li_queries3k",
+    "targeted": false,
+    "norm": "linf",
+    "max_queries": 3000
+  },
+  "configs10": {
+    "attack": "hsja",
+    "description": "HSJA_untargeted_li_queries4k",
+    "targeted": false,
+    "norm": "linf",
+    "max_queries": 4000
+  },
+  "configs11": {
+    "attack": "hsja",
+    "description": "HSJA_untargeted_li_queries5k",
+    "targeted": false,
+    "norm": "linf",
+    "max_queries": 5000
+  },
+  "configs12": {
+    "attack": "hsja",
+    "description": "HSJA_untargeted_li_queries7k5",
+    "targeted": false,
+    "norm": "linf",
+    "max_queries": 7500
+  },
+  "configs13": {
+    "attack": "hsja",
+    "description": "HSJA_untargeted_li_queries10k",
+    "targeted": false,
+    "norm": "linf",
+    "max_queries": 10000
+  }
+}

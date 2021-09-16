@@ -1,10 +1,13 @@
 {
     "dir": "data/cifar100/wresnet/",
+    "train_data": ["", ""],
     "bs_full": ["BS-Test-cifar100.npy", "Labels-Test-cifar100.npy"],
     "bs_ratio03": ["subsamples-cifar100-ratio_0.3.npy", "sublabels-cifar100-ratio_0.3.npy"],
     "bs_ratio01": ["subsamples-cifar100-ratio_0.1.npy", "sublabels-cifar100-ratio_0.1.npy"],
-    "bs_ratio001": ["subsamples-cifar100-ratio_0.01.npy", "sublabels-cifar100-ratio_0.01.npy"],
-    "bs_ratio005": ["subsamples-cifar100-ratio_0.05.npy", "sublabels-cifar100-ratio_0.05.npy"],
+    "bs_ratio0002": ["subsamples-cifar100-ratio_0.002-cc.npy", "sublabels-cifar100-ratio_0.002-cc.npy"],
+    "bs_ratio001": ["subsamples-cifar100-ratio_0.01-cc.npy", "sublabels-cifar100-ratio_0.01-cc.npy"],
+    "bs_ratio002": ["subsamples-cifar100-ratio_0.02-cc.npy", "sublabels-cifar100-ratio_0.02-cc.npy"],
+    "bs_ratio005": ["subsamples-cifar100-ratio_0.05-cc.npy", "sublabels-cifar100-ratio_0.05-cc.npy"],
     "ae_files": [
         "AE-cifar100-BIML2_eps0.05.npy",
         "AE-cifar100-BIML2_eps0.075.npy",
