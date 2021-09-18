@@ -15,7 +15,7 @@
         "aug": "fa_reduced_cifar10",
         "cutout": 16,
         "batch": 256,
-        "epoch": 200,
+        "epoch": 300,
         "lr": 0.1,
         "lr_scheduler_type": "cosine",
         "lr_warmup_mul": 4,

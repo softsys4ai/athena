@@ -73,18 +73,11 @@
       "s4l9": [14, 37, 35, 6]
     },
     "adt_pgd": [999],
-    "rand_smooth": [998],
     "configs999": {
       "type": "clean",
       "subtype": "",
       "id": 999,
       "description": "adt_pgd"
-    },
-    "configs998": {
-      "type": "clean",
-      "subtype": "",
-      "id": 998,
-      "description": "rs"
     },
     "configs0": {
         "type": "clean",
