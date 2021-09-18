@@ -22,7 +22,8 @@ from torch.utils.data import SubsetRandomSampler
 from torchvision.transforms import transforms as tv_transforms
 
 import utils.data_utils as data_utils
-from models.transformation import transform
+# from models.transformation import transform
+from models.image_processor import transform
 from utils.archive import arsaug_policy, autoaug_policy, autoaug_paper_cifar10, fa_reduced_cifar10
 from utils.augmentations import *
 from utils.config import *
@@ -155,15 +156,16 @@ def get_augmentation(dataset):
 
     elif dataset in [DATA.cifar_10, DATA.cifar_100]:
         transform_train = tv_transforms.Compose([
-            tv_transforms.RandomCrop(32, padding=4),
+            #tv_transforms.RandomCrop(32, padding=4),
+            tv_transforms.RandomRotation(15),
             tv_transforms.RandomHorizontalFlip(),
-            tv_transforms.ToTensor(),
-            tv_transforms.Normalize(_CIFAR_MEAN, _CIFAR_STD)
+            #tv_transforms.ToTensor(),
+            #tv_transforms.Normalize(_CIFAR_MEAN, _CIFAR_STD)
         ])
 
         transform_test = tv_transforms.Compose([
-            tv_transforms.ToTensor(),
-            tv_transforms.Normalize(_CIFAR_MEAN, _CIFAR_STD),
+            #tv_transforms.ToTensor(),
+            #tv_transforms.Normalize(_CIFAR_MEAN, _CIFAR_STD),
         ])
 
     else:
@@ -192,6 +194,105 @@ def get_augmented_aeloaders(dataset, batch, dataroot, ae_file, trans_type=TRANSF
         drop_last=False)
 
     return train_sampler, trainloader, validloader, testloader
+
+
+def get_transformation_loaders(dataset, batch_size, transformation_configs=None, **kwargs):
+    train_aug, test_aug = get_augmentation(dataset)
+
+    split = kwargs.get('split', 0.15)
+    split_idx = kwargs.get('split_idx', 0)
+    target_lb = kwargs.get('targert_lb', -1)
+    aug = kwargs.get('aug', 'default')
+    cutout = kwargs.get('cutout', 0)
+
+    print(f'[DATA][TRANSFORM_LOADER][dataset]: {dataset}')
+    print(f'[DATA][TRANSFORM_LOADER][split: {split}')
+    print(f'[DATA][TRANSFORM_LOADER][split_idx]: {split_idx}')
+    print(f'[DATA][TRANSFORM_LOADER][train_aug]: {train_aug}')
+    print(f'[DATA][TRANSFORM_LOADER][test_aug]: {test_aug}')
+    print(f'[DATA][TRANSFORM_LOADER][aug]: {aug}')
+
+    # load raw images
+    (x_train, y_train), (x_test, y_test) = load_data(dataset=dataset)
+    y_train = np.asarray([np.argmax(y) for y in y_train])
+    y_test = np.asarray([np.argmax(y) for y in y_test])
+
+    if isinstance(aug, list):
+        logger.debug(f'Processing data with custom augmentation [{aug}].')
+        print(f'Processing data with custom augmentation [{aug}].')
+        train_aug.transforms.insert(0, Augmentation(C.get()['aug']))
+    else:
+        logger.debug(f'Processing data with pre-defined augmentation [{aug}].')
+        print(f'Processing data with pre-defined augmentation [{aug}].')
+        if aug == 'fa_reduced_cifar10':
+            train_aug.transforms.insert(0, Augmentation(fa_reduced_cifar10()))
+        elif aug == 'arsaug':
+            train_aug.transforms.insert(0, Augmentation(arsaug_policy()))
+        elif aug == 'autoaug_cifar10':
+            train_aug.transforms.insert(0, Augmentation(autoaug_paper_cifar10()))
+        elif aug == 'autoaug_extend':
+            train_aug.transforms.insert(0, Augmentation(autoaug_policy()))
+        elif aug in ['default', 'inception', 'inception320']:
+            pass
+        else:
+            raise ValueError(f'Augmentation [{aug}] is not supported.')
+
+    if cutout > 0:
+        train_aug.transforms.append(CutoutDefault(cutout))
+
+    # apply transformations
+    if transformation_configs is not None:
+        from models.bart.preprocess import process_batch
+        processed_x_train = process_batch(data=x_train, transformation_configs=transformation_configs, channel_last=True)
+        processed_x_test = process_batch(data=x_test, transformation_configs=transformation_configs, channel_last=True)
+    else:
+        processed_x_train = x_train
+        processed_x_test = x_test
+
+    processed_x_train = data_utils.set_channels_first(processed_x_train)
+    processed_x_test = data_utils.set_channels_first(processed_x_test)
+
+    if dataset in DATA.get_supported_datasets():
+        trainset = MyDataset(processed_x_train, y_train, aug=train_aug)
+        testset = MyDataset(processed_x_test, y_test, aug=test_aug)
+    else:
+        raise ValueError(f'Dataset [{dataset}] is not supported yet.')
+
+    train_sampler = None
+    if split > 0.0:
+        sss = StratifiedShuffleSplit(n_splits=5, test_size=split, random_state=0)
+        sss = sss.split(list(range(len(trainset))), trainset.targets)
+
+        train_idx = None
+        valid_idx = None
+        for _ in range(split_idx + 1):
+            train_idx, valid_idx = next(sss)
+
+        if target_lb >= 0:
+            train_idx = [i for i in train_idx if trainset.targets[i] == target_lb]
+            valid_idx = [i for i in valid_idx if trainset.targets[i] == target_lb]
+
+        train_sampler = SubsetRandomSampler(train_idx)
+        valid_sampler = SubsetSampler(valid_idx)
+   
+    else:
+        valid_sampler = SubsetSampler([])
+
+    trainloader = torch.utils.data.DataLoader(
+        trainset, batch_size=batch_size, shuffle=True if train_sampler is None else False, num_workers=32,
+        pin_memory=torch.cuda.is_available(), sampler=train_sampler, drop_last=True
+    )
+    validloader = torch.utils.data.DataLoader(
+        trainset, batch_size=batch_size, shuffle=False, num_workers=16, pin_memory=torch.cuda.is_available(),
+        sampler=valid_sampler, drop_last=False
+    )
+    testloader = torch.utils.data.DataLoader(
+        testset, batch_size=batch_size, shuffle=False, num_workers=32, pin_memory=torch.cuda.is_available(),
+        drop_last=False
+    )
+
+    return train_sampler, trainloader, validloader, testloader
+
 
 
 def get_dataloaders(dataset, batch, trans_type=TRANSFORMATION.clean, trans_set='both', **kwargs):
@@ -224,6 +325,12 @@ def get_dataloaders(dataset, batch, trans_type=TRANSFORMATION.clean, trans_set='
     if cutout > 0:
         train_aug.transforms.append(CutoutDefault(cutout))
 
+    print(f'[data][dataset]: {dataset}')
+    print(f'[data][transformation type]: {trans_type}')
+    print(f'[data][dataset to transform]: {trans_set}')
+    print(f'[data][train augmentation]: {train_aug}')
+    print(f'[data][test augmentation]: {test_aug}')
+    print(f'[data][aug]: {aug}; list? {isinstance(aug, list)}')
     (x_train, y_train), (x_test, y_test) = load_data(dataset=dataset, trans_type=trans_type, trans_set=trans_set)
     if dataset in DATA.get_supported_datasets():
         total_trainset = MyDataset(x_train, y_train, aug=train_aug)
@@ -238,7 +345,7 @@ def get_dataloaders(dataset, batch, trans_type=TRANSFORMATION.clean, trans_set='
 
         train_idx = None
         valid_idx = None
-        for _ in range(split_idx + 1):
+        for _ in range(split_idx+1):
             train_idx, valid_idx = next(sss)
 
         if target_lb >= 0:
@@ -342,6 +449,11 @@ class SubsetSampler(Sampler):
 
 class MyDataset(Dataset):
     def __init__(self, data, targets, aug=None, target_aug=None, as_image=False):
+        print(f'[MyDataset][data]: {data.shape}')
+        print(f'[MyDataset][targets]: {targets.shape}, {targets[0]}')
+        print(f'[MyDataset][aug]: {aug}')
+        print(f'[MyDataset][target_aug]: {target_aug}')
+        print(f'[MyDataset][as_image]: {as_image}')
         self.data = torch.from_numpy(data).float()
         self.targets = torch.LongTensor(targets)
         self.aug = aug
