@@ -347,7 +347,7 @@ class FastGradientMethod(EvasionAttack):
         # print("Bach vs Grad: {} vs {}".format(batch.shape, grad.shape))
         assert batch.shape == grad.shape
 
-        # reshape to (h, w, d)
+        # reshape to (height, width, channels)
         return set_channels_last(grad)
 
     def _apply_perturbation(self, batch, perturbation, eps_step):
