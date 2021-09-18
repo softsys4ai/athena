@@ -9,6 +9,7 @@ from art.attacks.evasion.carlini import CarliniL2Method, CarliniLInfMethod
 from art.attacks.evasion.deepfool import DeepFool
 from art.attacks.evasion.saliency_map import SaliencyMapMethod
 from art.attacks.evasion.spatial_transformation import SpatialTransformation
+# from art.attacks.evasion.hop_skip_jump import HopSkipJump
 from art.attacks.evasion.zoo import ZooAttack
 
 from attacks.evasion.fast_gradient import FastGradientMethod
