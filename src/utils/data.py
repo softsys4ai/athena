@@ -88,6 +88,7 @@ def channels_first(data):
 
 
 def set_channels_first(data):
+    # print("[DEBUG][data.set_channels_first]")
     if channels_last(data):
         if len(data.shape) == 4:
             data = np.transpose(data, (0, 3, 1, 2))
@@ -97,6 +98,7 @@ def set_channels_first(data):
 
 
 def set_channels_last(data):
+    # print("[DEBUG][data.set_channels_last]")
     if channels_first(data):
         if len(data.shape) == 4:
             data = np.transpose(data, (0, 2, 3, 1))
@@ -112,7 +114,9 @@ def get_dataloader(data, labels, batch_size=128, shuffle=False, **kwargs):
     return dataloader
 
 
-def subsampling(data, labels, num_classes, ratio=0.1, filepath=None, filename=None):
+def subsampling(data, labels, predictions=None,
+                num_classes=10, ratio=0.1,
+                filepath=None, filename=None):
     """
     Subsampling dataset.
     :param data: numpy array. the population dataset to sample from.
@@ -133,26 +137,38 @@ def subsampling(data, labels, num_classes, ratio=0.1, filepath=None, filename=No
 
     # prepare sampling
     pool_size = data.shape[0]
-    num_per_class = int(pool_size / num_classes)
-    num_samples = int(num_per_class * ratio)
-
-    if num_samples <= 0:
-        raise ValueError("The value of ``ratio`` is too small, 0 sample to poll.")
+    class_size = int(pool_size / num_classes)
+    num_samples_per_class = int(class_size * ratio)
 
     # convert to labels
     if len(labels.shape) > 1:
         labels = [np.argmax(p) for p in labels]
 
+    class_ids = [i for i in range(num_classes)]
+    if num_samples_per_class <= 0:
+        class_ids = random.sample(population=class_ids, k=int(pool_size*ratio))
+        num_samples_per_class = 1
+
     # sample equal number of samples from each class
     sample_ids = []
-    for c_id in range(num_classes):
-        ids = [i for i in range(pool_size) if labels[i]==c_id]
-        selected = random.sample(population=ids, k=num_samples)
+    for c_id in class_ids:
+        if predictions:
+            # get all the samples belong to the c_id-th class and
+            # the sample is correctly predicted
+            print('sampling only the correctly classified samples.')
+            ids = [i for i in range(pool_size) if labels[i] == c_id and predictions[i] == c_id]
+        else:
+            # do not care about the predictions
+            # get all the samples belong to the c_id-th class
+            ids = [i for i in range(pool_size) if labels[i] == c_id]
+
+        selected = random.sample(population=ids, k=num_samples_per_class)
+        print(">>> Draw {} samples from the {}-th class.".format(len(selected), c_id))
         sample_ids.extend(selected)
 
     print(">>> Drawn {} random samples.".format(len(sample_ids)))
 
-    # shuffle the selected ids
+    # shuffle the selected sample ids
     random.shuffle(sample_ids)
     # get sampled data and labels
     subsamples = np.asarray([data[i] for i in sample_ids])
@@ -161,9 +177,10 @@ def subsampling(data, labels, num_classes, ratio=0.1, filepath=None, filename=No
     if filepath is not None:
         # save the subsamples
         rand_idx = time.monotonic()
-        file = os.path.join(filepath, 'subsamples-{}-ratio_{}-{}.npy'.format(filename, ratio, rand_idx))
+        # -cc stands for correctly classified
+        file = os.path.join(filepath, 'subsamples-{}-ratio_{}-{}-cc.npy'.format(filename, ratio, rand_idx))
         np.save(file=file, arr=subsamples)
-        file = os.path.join(filepath, 'sublabels-{}-ratio_{}-{}.npy'.format(filename, ratio, rand_idx))
+        file = os.path.join(filepath, 'sublabels-{}-ratio_{}-{}-cc.npy'.format(filename, ratio, rand_idx))
         np.save(file=file, arr=sublabels)
 
     return subsamples, sublabels

@@ -581,35 +581,35 @@ class MODE(object):
         cls.DEBUG = False
 
 
-class PATH(object):
-    from definitions import get_project_root
-    PROJECT_DIR = get_project_root()
-
-    print('PROJECT DICTIONARY: {}'.format(PROJECT_DIR))
-    MODEL = '{}/data/models'.format(PROJECT_DIR)
-
-    ADVERSARIAL_FILE = '{}/data/adversarial_examples'.format(PROJECT_DIR)
-
-    FIGURES = '{}/data/figures'.format(PROJECT_DIR)
-    RESULTS = '{}/data/results'.format(PROJECT_DIR)
-    ANALYSE = '{}/data/analyse'.format(PROJECT_DIR)
-
-    @classmethod
-    def set_path_of_models(cls, model_base):
-        cls.MODEL = '{}/{}'.format(cls.PROJECT_DIR, model_base)
-
-    @classmethod
-    def set_path_of_ae(cls, ae_base):
-        cls.ADVERSARIAL_FILE = '{}/{}'.format(cls.PROJECT_DIR, ae_base)
-
-    @classmethod
-    def set_path_of_figs(cls, figure_base):
-        cls.FIGURES = '{}/{}'.format(cls.PROJECT_DIR, figure_base)
-
-    @classmethod
-    def set_path_of_results(cls, result_base):
-        cls.RESULTS = '{}/{}'.format(cls.PROJECT_DIR, result_base)
-
-    @classmethod
-    def set_path_of_analyse(cls, analyse_base):
-        cls.ANALYSE = '{}/{}'.format(cls.PROJECT_DIR, analyse_base)
+#class PATH(object):
+#    from definitions import get_project_root
+#    PROJECT_DIR = get_project_root()
+#
+#    print('PROJECT DICTIONARY: {}'.format(PROJECT_DIR))
+#    MODEL = '{}/data/models'.format(PROJECT_DIR)
+#
+#    ADVERSARIAL_FILE = '{}/data/adversarial_examples'.format(PROJECT_DIR)
+#
+#    FIGURES = '{}/data/figures'.format(PROJECT_DIR)
+#    RESULTS = '{}/data/results'.format(PROJECT_DIR)
+#    ANALYSE = '{}/data/analyse'.format(PROJECT_DIR)
+#
+#    @classmethod
+#    def set_path_of_models(cls, model_base):
+#        cls.MODEL = '{}/{}'.format(cls.PROJECT_DIR, model_base)
+#
+#    @classmethod
+#    def set_path_of_ae(cls, ae_base):
+#        cls.ADVERSARIAL_FILE = '{}/{}'.format(cls.PROJECT_DIR, ae_base)
+#
+#    @classmethod
+#    def set_path_of_figs(cls, figure_base):
+#        cls.FIGURES = '{}/{}'.format(cls.PROJECT_DIR, figure_base)
+#
+#    @classmethod
+#    def set_path_of_results(cls, result_base):
+#        cls.RESULTS = '{}/{}'.format(cls.PROJECT_DIR, result_base)
+#
+#    @classmethod
+#    def set_path_of_analyse(cls, analyse_base):
+#        cls.ANALYSE = '{}/{}'.format(cls.PROJECT_DIR, analyse_base)
