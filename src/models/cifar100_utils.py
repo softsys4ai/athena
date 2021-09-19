@@ -61,14 +61,26 @@ def load_model(file, model_configs,
     if os.path.isfile(file):
         print(">>> Loading model from [{}]...".format(file))
         data = torch.load(file, map_location=lambda storage, loc: storage)
-
+        data_key = list(data.keys())[0]
+        print(f">>> DATA_KEY: {data_key}")
+        
         if 'model' in data or 'state_dict' in data:
             key = 'model' if 'model' in data else 'state_dict'
-            print('checkpoint epoch@%d' % data['epoch'])
+            #if data['epoch']:
+            #    print('checkpoint epoch@%d' % data['epoch'])
             if not isinstance(model, DataParallel):
-                model.load_state_dict({k.replace('module.', ''): v for k, v in data[key].items()})
+                if data_key.startswith('classifier.module.'):
+                    model.load_state_dict({k.replace('classifier.module.', ''): v for k, v in data[key].items()})
+                elif data_key.startswith('module.'):
+                    model.load_state_dict({k.replace('module.', ''): v for k, v in data[key].items()})
+            elif data_key.startswith('classifier.module.'):
+                model.load_state_dict({k.replace('classifier.module', ''): v for k, v in data[key].items()})
+                #model.load_state_dict({k if 'classifier.module.' in k else 'classifier.module.'+k: v for k, v in data[key].items()})
             else:
-                model.load_state_dict({k if 'module.' in k else 'module.'+k: v for k, v in data[key].items()})
+                model.load_state_dict({k.replace('module.', ''): v for k, v in data[key].items()})
+            optimizer.load_state_dict(data['optimizer'])
+        elif data_key.startswith('module.'):
+            model.load_state_dict({k.replace('module.', ''): v for k, v in data.items()})
             optimizer.load_state_dict(data['optimizer'])
         else:
             model.load_state_dict({k: v for k, v in data.items()})
@@ -99,15 +111,22 @@ def load_pool(trans_configs, pool_name, model_configs, active_list=False):
 
     if active_list:
         # load the specific pool
-        wd_ids = trans_configs.get(pool_name)
+        if pool_name.startswith('revision'):
+            ens_size, ens_diversity = pool_name.split('-')
+            wd_ids = trans_configs.get(ens_size).get(ens_diversity)
+        else:
+            wd_ids = trans_configs.get(pool_name)
     else:
         # load the full pool
         num_trans = trans_configs.get("num_transformations")
         wd_ids = [i for i in range(num_trans)]
 
+    print('>>> Target models:', wd_ids)
+
     for i in wd_ids:
         key = "configs{}".format(i)
         trans = trans_configs.get(key).get("description")
+        print('[DEBUG]model-transformation:', trans)
 
         # models are named in the form of
         # <transformatin>-<dataset>-<network_configs.model_name>.<file_format>
