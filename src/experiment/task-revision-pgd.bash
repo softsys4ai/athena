@@ -13,24 +13,7 @@ module load python3/anaconda/ai-lab
 
 # setup environment
 echo '>>> Preparing environment'
-#conda create -n ym_adt python=3.7
-source activate ym_adt
-
-#conda create -n athena python=3.7
-#source activate athena
-
-#conda install pytorch torchvision -c pytorch
-#pip install -r requirements.txt
-#pip install --user scipy
-##conda install tensorflow
-#conda install opencv
-#pip install git+https://github.com/wbaek/theconf.git
-#pip install scikit-image
-#pip install scikit-learn
-#pip install Keras
-#pip install adversarial-robustness-toolbox
-#pip install tqdm
-#pip install pytorch-warmup
+# source activate <your_environment>
 
 echo '>>> Generating AEs (genAE-cifar100-wb-pgd-nonEOT.sh), it may take a while...'
 #python eval_cifar.py
