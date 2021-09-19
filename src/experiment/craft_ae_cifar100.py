@@ -25,7 +25,8 @@ from attacks.attacker_art import generate
 from models.athena import Ensemble, ENSEMBLE_STRATEGY
 
 
-def generate_ae(model, data, labels, attack_configs, selected_attacks,
+def generate_ae(model, model_name, data, labels,
+                attack_configs, selected_attacks,
                 eot=False, save=True, prefix=None, output_dir=None):
     """
     Generate adversarial examples
@@ -57,15 +58,17 @@ def generate_ae(model, data, labels, attack_configs, selected_attacks,
     for id in adversaries:
         key = "configs{}".format(id)
         attack_args = attack_configs.get(key)
-
         attack_args["eot"] = eot
+        print('[DEBUG][SAVE_FILE]:', "{}-{}.npy".format(prefix, attack_args.get("description")))
+
         start = time.monotonic()
         data_adv = generate(model=model,
                             data_loader=data_loader,
                             attack_args=attack_args
                             )
         end = time.monotonic()
-        cost[attack_args.get("description")] = end - start
+        cost[attack_args.get("description")] = (end - start) / num_bs
+        print('>>> Average Cost::: {}:{}'.format(attack_args.get("description"), cost[attack_args.get("description")]))
 
         # predict the adversarial examples
         predictions = model.predict(data_adv)
@@ -94,22 +97,35 @@ def generate_ae(model, data, labels, attack_configs, selected_attacks,
                 raise ValueError("Cannot save images to a none path.")
 
             if prefix is None:
-                file = "{}-{}.npy".format(attack_args.get("description"), time.monotonic())
+                file = "{}-{}-{}.npy".format(attack_args.get("description"), eot, time.monotonic())
             else:
-                file = "{}-{}.npy".format(prefix, attack_args.get("description"))
+                file = "{}-{}-{}.npy".format(prefix, attack_args.get("description"), eot)
 
             file = os.path.join(output_dir, file)
             print("Save the adversarial examples to file [{}].".format(file))
             np.save(file, data_adv)
 
+        # delete generated data
+        del data_adv
+
     if output_dir is not None:
         if prefix is None:
-            cost_file = "Cost-GenAE-mnist-cnn-{}-{}.json".format(selected_attacks, time.monotonic())
+            cost_file = "Cost-GenAE-cifar100-cnn-{}-{}.json".format(selected_attacks, time.monotonic())
         else:
-            cost_file = "Cost-GenAE-mnist-cnn-{}-{}.json".format(prefix, selected_attacks)
+            cost_file = "Cost-Gen{}-{}.json".format(prefix, selected_attacks)
+
+        print(">>> [COST] ({}): {}".format(cost_file, cost))
 
         cost_file = os.path.join(output_dir, cost_file)
-        with open(cost_file, "w") as file:
+
+        if os.path.exists(cost_file):
+            append_write = 'a' # append to the file if already exists
+        else:
+            append_write = 'w' # otherwise, make a new file
+
+        with open(cost_file, append_write) as file:
+            file.write('\n------------------------\n')
+            file.write('{}\n'.format(model_name))
             json.dump(cost, file)
 
 def generate_ae_zk():
@@ -122,27 +138,27 @@ if __name__ == '__main__':
     parser.add_argument('-r', '--experiment-root', required=False,
                         default='../../../')
     parser.add_argument('-p', '--pool-configs', required=False,
-                        default='../configs/experiment/cifar100/vanilla-athena.json')
+                        default='../configs/experiment/demo/pool.json')
     parser.add_argument('--selected-pool', required=False, default=None,
                         help='The key value of the selected pool.')
     parser.add_argument('-m', '--model-configs', required=False,
-                        default='../configs/experiment/cifar100/model-info.json',
+                        default='../configs/experiment/demo/model-info.json',
                         help='Folder where models stored in.')
     parser.add_argument('-d', '--data-configs', required=False,
-                        default='../configs/experiment/cifar100/data-info.json',
+                        default='../configs/experiment/demo/data.json',
                         help='Folder where test data stored in.')
     parser.add_argument('-b', '--benign-samples', required=False,
-                        default='bs_full')
+                        default='bs_ratio0002')
     parser.add_argument('-a', '--attack-configs', required=False,
-                        default='../configs/experiment/cifar100/attack-wb-cnn.json',
+                        default='../configs/experiment/demo/attack.json',
                         help='Folder where test data stored in.')
     parser.add_argument('--selected-attacks', required=False, default=None,
                         help='The key value of the selected attacks.')
     parser.add_argument('-o', '--output-root', required=False,
-                        default='../../experiment/cifar100/results',
+                        default='../../experiment/demo/results',
                         help='Folder for outputs.')
-    parser.add_argument('--targeted-model', required=False, default='ensemble',
-                        help='The type of the adversarial target. It has to be either `single` or `ensemble`.')
+    parser.add_argument('--targeted-model', required=False, default='single',
+                        help='The type of the adversarial target. It has to be `single`, `adt_pgd`, or `ensemble`.')
     parser.add_argument('--eot', required=False, default='false',
                         help='`True` if use EOT, `False` otherwise.')
     parser.add_argument('--debug', required=False, default='false')
@@ -199,12 +215,42 @@ if __name__ == '__main__':
 
         model_file = os.path.join(model_configs.get("wresnet").get('dir'), model_configs.get("wresnet").get("um_file"))
         target, _, _ = load_model(file=model_file, model_configs=model_configs.get("wresnet"), trans_configs=None)
+    elif args.targeted_model == 'adt_pgd':
+        # In the context of the adversarially trained model,
+        # we use the undefended model as adversary's target model.
+        prefix = "AE-cifar100-wresnet-{}".format(args.targeted_model)
+
+        model_file = os.path.join(model_configs.get("wresnet").get('dir'), model_configs.get("wresnet").get("pgd_trained_cifar"))
+
+        if os.path.isfile(model_file):
+            # model exist
+            model, _, _ = load_model(file=model_file, model_configs=model_configs.get("wresnet"), trans_configs=None)
+        else:
+            model_file = os.path.join(model_configs.get("wresnet").get('dir'),
+                                      model_configs.get("wresnet").get("um_file"))
+            model, _, _ = load_model(file=model_file, model_configs=model_configs.get("wresnet"), trans_configs=None)
+
+            # train a model first
+            from data.data import load_data
+            from adversarial_train import pgd_adv_train
+            (x_train, y_train), _ = load_data('cifar100', channel_first=True)
+            print('>>> Training the model...')
+
+            target = pgd_adv_train(model=model,
+                                   data=(x_train, y_train),
+                                   outpath=model_configs.get("wresnet").get('dir'),
+                                   model_name=model_configs.get("wresnet").get("pgd_trained_cifar"))
+
     elif args.targeted_model == 'ensemble':
         # In the context of the white-box threat model,
         # we use the ensemble as adversary's target model.
         # load weak defenses (in this example, load a tiny pool of 3 weak defenses)
-        selected_pool = "demo_pool" if args.selected_pool is None else args.selected_pool
-        print(">>> POOL:", pool_configs.get(selected_pool))
+        if args.selected_pool is None:
+            selected_pool = "demo_pool"
+        else:
+            selected_pool = args.selected_pool
+
+        print(">>> Target Ensemble:", selected_pool)
         print(model_configs.get("wresnet"))
 
         pool, _ = load_pool(trans_configs=pool_configs,
@@ -216,15 +262,17 @@ if __name__ == '__main__':
         wds = list(pool.values())
         target = Ensemble(classifiers=wds, strategy=ENSEMBLE_STRATEGY.AVEP.value, channel_index=1)
 
-        prefix = "AE-mnist-cnn-{}_{}".format(args.targeted_model, len(wds))
+        # prefix = "AE-cifar100-wresnet-{}_{}".format(args.targeted_model, len(wds))
+        # for revision
+        prefix = "AE-cifar100-wresnet-{}".format(selected_pool)
     else:
-        raise ValueError('Expect targeted model to be `single` or `ensemble`. But found {}.'.format(args.targeted_model))
+        raise ValueError('Expect targeted model to be `single`, `adt_pgd`, or `ensemble`. But found {}.'.format(args.targeted_model))
 
     # -----------------------
     # Prepare benign samples and corresponding true labels for AE generation
     # -----------------------
     # load the benign samples & corresponding true labels
-    bs = args.benign_samples if args.benign_samples else "bs_full"
+    bs = args.benign_samples if args.benign_samples else "bs_ratio0002"
     data_file = os.path.join(data_configs.get('dir'), data_configs.get(bs)[0])
     label_file = os.path.join(data_configs.get('dir'), data_configs.get(bs)[1])
     print(">>> Loading data from [{}].".format(data_file))
@@ -235,8 +283,8 @@ if __name__ == '__main__':
     # ------------------------
     # Generate adversarial examples for a small subset
     # ------------------------
-    # data_bs = data_bs[:3]
-    # labels = labels[:3]
+    # data_bs = data_bs[:1]
+    # labels = labels[:1]
 
     # Normal approach (EOT=False)
     # Compute the loss w.r.t. a single input
@@ -244,7 +292,9 @@ if __name__ == '__main__':
     # Adaptive approach (EOT=True)
     # Compute the loss expectation over a specific distribution.
     # For an ensemble target, averaging the EOT of WDs'.
+    print('[DEBUG]prefix:', prefix)
     generate_ae(model=target,
+                model_name=args.selected_pool,
                 data=data_bs, labels=labels,
                 eot=args.eot,
                 save=True,
@@ -253,3 +303,6 @@ if __name__ == '__main__':
                 selected_attacks=args.selected_attacks,
                 output_dir=args.output_root,
                 )
+
+    # del useless objects
+    del target, data_bs, labels
