@@ -25,11 +25,12 @@ class WeakDefense(ClassifierNeuralNetwork, ClassifierGradients, Classifier):
                                           preprocessing=(0, 1),
                                           channel_index=channel_index, )
 
-        self._model = model
+        self.classifier = model
         self._trans_configs = trans_configs
         self._channel_index = channel_index
         self._input_layer = input_layer
         self._output_layer = output_layer
+        self._num_queries = 0
 
         if "<class 'tensorflow" in str(type(model)):
             self.is_tensorflow = True
@@ -161,10 +162,13 @@ class WeakDefense(ClassifierNeuralNetwork, ClassifierGradients, Classifier):
         predictions = np.zeros((x_preprocessed.shape[0], self.nb_classes()), dtype=ART_NUMPY_DTYPE)
         for batch_index in range(int(np.ceil(x_preprocessed.shape[0] / float(batch_size)))):
             begin, end = batch_index * batch_size, min((batch_index + 1) * batch_size, x_preprocessed.shape[0])
-            predictions[begin:end] = self._model.predict([x_preprocessed[begin:end]])
+            predictions[begin:end] = self.classifier.predict([x_preprocessed[begin:end]])
 
         # Apply postprocessing
         predictions = self._apply_postprocessing(preds=predictions, fit=False)
+
+        # increase number of queries
+        self._num_queries += x.shape[0]
 
         return predictions
 
@@ -196,7 +200,7 @@ class WeakDefense(ClassifierNeuralNetwork, ClassifierGradients, Classifier):
 
         gen = generator_fit(x_preprocessed, y_preprocessed, batch_size)
         steps_per_epoch = max(int(x_preprocessed.shape[0] / batch_size), 1)
-        self._model.fit_generator(gen, steps_per_epoch=steps_per_epoch, epochs=nb_epochs, **kwargs)
+        self.classifier.fit_generator(gen, steps_per_epoch=steps_per_epoch, epochs=nb_epochs, **kwargs)
 
     def fit_generator(self, generator, nb_epochs=20, **kwargs):
         """
@@ -220,12 +224,25 @@ class WeakDefense(ClassifierNeuralNetwork, ClassifierGradients, Classifier):
                 (self.preprocessing_defences is None or self.preprocessing_defences == []) and \
                 self.preprocessing == (0, 1):
             try:
-                self._model.fit_generator(generator.iterator, epochs=nb_epochs, **kwargs)
+                self.classifier.fit_generator(generator.iterator, epochs=nb_epochs, **kwargs)
             except ValueError:
                 logger.info('Unable to use data generator as Keras generator. Now treating as framework-independent.')
                 super(WeakDefense, self).fit_generator(generator, nb_epochs=nb_epochs, **kwargs)
         else:
             super(WeakDefense, self).fit_generator(generator, nb_epochs=nb_epochs, **kwargs)
+
+    def reset_model_queries(self):
+        """
+        Set the number of model queries to 0.
+        """
+        self._num_queries = 0
+
+    @property
+    def num_queries(self):
+        """
+        Return the number of model queries.
+        """
+        return self._num_queries
 
     @property
     def layer_names(self):
@@ -277,7 +294,7 @@ class WeakDefense(ClassifierNeuralNetwork, ClassifierGradients, Classifier):
         else:
             raise TypeError("Layer must be of type `str` or `int`.")
 
-        layer_output = self._model.get_layer(layer_name).output
+        layer_output = self.classifier.get_layer(layer_name).output
         output_func = k.function([self._input], [layer_output])
 
         if x.shape == self.input_shape:
@@ -348,7 +365,7 @@ class WeakDefense(ClassifierNeuralNetwork, ClassifierGradients, Classifier):
         if not os.path.exists(folder):
             os.makedirs(folder)
 
-        self._model.save(str(full_path))
+        self.classifier.save(str(full_path))
         logger.info("Model saved in path: %s.", full_path)
 
     def _init_class_gradients(self, label=None):
@@ -433,28 +450,28 @@ class WeakDefense(ClassifierNeuralNetwork, ClassifierGradients, Classifier):
         self._use_logits = use_logits
 
         # Get loss function
-        if not hasattr(self._model, "loss"):
+        if not hasattr(self.classifier, "loss"):
             logger.warning("Keras model has no loss set. Classifier tries to use `k.sparse_categorical_crossentropy`.")
             loss_function = k.sparse_categorical_crossentropy
         else:
 
-            if isinstance(self._model.loss, six.string_types):
-                loss_function = getattr(k, self._model.loss)
+            if isinstance(self.classifier.loss, six.string_types):
+                loss_function = getattr(k, self.classifier.loss)
 
-            elif "__name__" in dir(self._model.loss) and self._model.loss.__name__ in [
+            elif "__name__" in dir(self.classifier.loss) and self.classifier.loss.__name__ in [
                 "categorical_hinge",
                 "categorical_crossentropy",
                 "sparse_categorical_crossentropy",
                 "binary_crossentropy",
                 "kullback_leibler_divergence",
             ]:
-                if self._model.loss.__name__ in ["categorical_hinge", "kullback_leibler_divergence"]:
-                    loss_function = getattr(keras.losses, self._model.loss.__name__)
+                if self.classifier.loss.__name__ in ["categorical_hinge", "kullback_leibler_divergence"]:
+                    loss_function = getattr(keras.losses, self.classifier.loss.__name__)
                 else:
-                    loss_function = getattr(keras.backend, self._model.loss.__name__)
+                    loss_function = getattr(keras.backend, self.classifier.loss.__name__)
 
             elif isinstance(
-                self._model.loss,
+                self.classifier.loss,
                 (
                     keras.losses.CategoricalHinge,
                     keras.losses.CategoricalCrossentropy,
@@ -463,9 +480,9 @@ class WeakDefense(ClassifierNeuralNetwork, ClassifierGradients, Classifier):
                     keras.losses.KLDivergence,
                 ),
             ):
-                loss_function = self._model.loss
+                loss_function = self.classifier.loss
             else:
-                loss_function = getattr(k, self._model.loss.__name__)
+                loss_function = getattr(k, self.classifier.loss.__name__)
 
         # Check if loss function is an instance of loss function generator, the try is required because some of the
         # modules are not available in older Keras versions
@@ -552,7 +569,7 @@ class WeakDefense(ClassifierNeuralNetwork, ClassifierGradients, Classifier):
         else:
             from keras.engine.topology import InputLayer
 
-        layer_names = [layer.name for layer in self._model.layers[:-1] if not isinstance(layer, InputLayer)]
+        layer_names = [layer.name for layer in self.classifier.layers[:-1] if not isinstance(layer, InputLayer)]
         logger.info("Inferred %i hidden layers on Keras classifier.", len(layer_names))
 
         return layer_names
@@ -604,7 +621,7 @@ class WeakDefense(ClassifierNeuralNetwork, ClassifierGradients, Classifier):
         full_path = os.path.join(ART_DATA_PATH, state["model_name"])
         model = load_model(str(full_path))
 
-        self._model = model
+        self.classifier = model
         self._initialize_params(model, state["_use_logits"], state["_input_layer"], state["_output_layer"])
 
     def __repr__(self):
@@ -613,7 +630,7 @@ class WeakDefense(ClassifierNeuralNetwork, ClassifierGradients, Classifier):
             "postprocessing_defences=%r, preprocessing=%r, input_layer=%r, output_layer=%r)"
             % (
                 self.__module__ + "." + self.__class__.__name__,
-                self._model,
+                self.classifier,
                 self._use_logits,
                 self.channel_index,
                 self.clip_values,

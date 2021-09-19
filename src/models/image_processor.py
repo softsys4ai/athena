@@ -4,6 +4,7 @@ Implement transformations
 """
 from __future__ import absolute_import, division, print_function, unicode_literals
 
+import matplotlib.pyplot as plt
 import numpy as np
 import cv2
 from PIL import Image
@@ -41,7 +42,7 @@ def transform(X, trans_args):
 def _transform_images(X, trans_args):
     # print('TRANSFORMATION [{}].'.format(trans_args.get('description')))
 
-    if trans_args is None or trans_args.get('type') == trans_utils.TRANSFORMATION.CLEAN.value:
+    if trans_args is None or type(trans_args)==str or trans_args.get('type') == trans_utils.TRANSFORMATION.CLEAN.value:
         return X
     elif trans_args.get('type') == trans_utils.TRANSFORMATION.ROTATE.value:
         return _rotate(X, trans_args)
@@ -424,47 +425,50 @@ def _quant_trans(original_images, trans_args):
     transformed_images = []
     for img in original_images:
         img_type = img.dtype
+        try:
+            """
+            Convert gray scale images to RGB color space such that
+            we can further convert the image to LAB color space.
+            This function will return a 3-channel gray image that
+            each channel is a copy of the original gray image.
+            """
+            if (nb_channels == 1):
+                img = cv2.cvtColor(img, cv2.COLOR_GRAY2RGB)
+            """
+            Convert the image from the RGB color space to the LAB color space,
+            since we will be clustering using k-means which is based on
+            the euclidean distance, we will use the LAB color space where
+            the euclidean distance implies perceptual meaning.
+            """
+            img = cv2.cvtColor(img, cv2.COLOR_RGB2LAB)
+            """
+            reshape the image into a feature vector so that k-mean can be applied
+            """
+            img = img.reshape((img_rows * img_cols, 3))
+            """
+            apply k-means using the specified number of clusters and then
+            create the quantized image based on the predictions.
+            """
+            cluster = MiniBatchKMeans(n_clusters=nb_clusters)
+            labels = cluster.fit_predict(img)
+            quant = cluster.cluster_centers_[labels]
 
-        """
-        Convert gray scale images to RGB color space such that
-        we can further convert the image to LAB color space.
-        This function will return a 3-channel gray image that
-        each channel is a copy of the original gray image.
-        """
-        if (nb_channels == 1):
-            img = cv2.cvtColor(img, cv2.COLOR_GRAY2RGB)
-        """
-        Convert the image from the RGB color space to the LAB color space,
-        since we will be clustering using k-means which is based on
-        the euclidean distance, we will use the LAB color space where
-        the euclidean distance implies perceptual meaning.
-        """
-        img = cv2.cvtColor(img, cv2.COLOR_RGB2LAB)
-        """
-        reshape the image into a feature vector so that k-mean can be applied
-        """
-        img = img.reshape((img_rows * img_cols, 3))
-        """
-        apply k-means using the specified number of clusters and then
-        create the quantized image based on the predictions.
-        """
-        cluster = MiniBatchKMeans(n_clusters=nb_clusters)
-        labels = cluster.fit_predict(img)
-        quant = cluster.cluster_centers_[labels]
-
-        """
-        reshape the feature vectors back to image
-        """
-        quant = quant.reshape((img_rows, img_cols, 3))
-        """
-        convert from LAB back to RGB
-        """
-        quant = cv2.cvtColor(quant, cv2.COLOR_Lab2RGB)
-        """
-        convert from RGB back to grayscale
-        """
-        if (nb_channels == 1):
-            quant = cv2.cvtColor(quant, cv2.COLOR_RGB2GRAY)
+            """
+            reshape the feature vectors back to image
+            """
+            quant = quant.reshape((img_rows, img_cols, 3))
+            """
+            convert from LAB back to RGB
+            """
+            quant = cv2.cvtColor(quant, cv2.COLOR_Lab2RGB)
+            """
+            convert from RGB back to grayscale
+            """
+            if (nb_channels == 1):
+                quant = cv2.cvtColor(quant, cv2.COLOR_RGB2GRAY)
+        except:
+            print('!!! Failed to apply cluster[{}].'.format(nb_clusters))
+            quant = img
         transformed_images.append(quant.astype(img_type))
 
     transformed_images = np.stack(transformed_images, axis=0)
@@ -581,7 +585,11 @@ def _noise_trans(original_images, trans_args):
     noise = trans_args.get('noise')
     transformed_images = []
     for img in original_images:
-        img = util.random_noise(img, mode=noise)
+        try:
+            img = util.random_noise(img, mode=noise)
+        except:
+            print('!!! Failed to add noise [{}].'.format(noise))
+        # plt.imshow(img)
         transformed_images.append(img)
     transformed_images = np.stack(transformed_images, axis=0)
     if (nb_channels == 1):

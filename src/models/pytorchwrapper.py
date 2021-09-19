@@ -101,14 +101,16 @@ class WeakDefense(ClassifierNeuralNetwork, ClassifierGradients, Classifier):  # 
 
         self._nb_classes = nb_classes
         self._input_shape = input_shape
-        self._model = self._make_model_wrapper(model)
+        self.classifier = self._make_model_wrapper(model)
         self._loss = loss
         self._optimizer = optimizer
         self._learning_phase = None
         self._trans_configs = trans_configs
 
         # Get the internal layers
-        self._layer_names = self._model.get_layers
+        self._layer_names = self.classifier.get_layers
+        # the number of model queries
+        self._num_queries = 0
 
         # Set device
         import torch
@@ -119,7 +121,7 @@ class WeakDefense(ClassifierNeuralNetwork, ClassifierGradients, Classifier):  # 
             cuda_idx = torch.cuda.current_device()
             self._device = torch.device("cuda:{}".format(cuda_idx))
 
-        self._model.to(self._device)
+        self.classifier.to(self._device)
 
         # Index of layer at which the class gradients should be calculated
         self._layer_idx_gradients = -1
@@ -147,7 +149,7 @@ class WeakDefense(ClassifierNeuralNetwork, ClassifierGradients, Classifier):  # 
         x_preprocessed = transform(set_channels_last(x), self._trans_configs)
         if self.channel_index == 1:
             x_preprocessed = set_channels_first(x_preprocessed)
-            # print(">>>>>> CHANNEL 3 --> 1")
+            # print("[DEBUG][model.predict()]: CHANNEL 3 --> 1")
 
         # Apply preprocessing
         x_preprocessed, _ = self._apply_preprocessing(x_preprocessed, y=None, fit=False)
@@ -158,12 +160,16 @@ class WeakDefense(ClassifierNeuralNetwork, ClassifierGradients, Classifier):  # 
         for m in range(num_batch):
             # Batch indexes
             begin, end = m * batch_size, min((m + 1) * batch_size, x_preprocessed.shape[0])
-            model_outputs = self._model(torch.from_numpy(x_preprocessed[begin:end]).to(self._device))
+            model_outputs = self.classifier(torch.from_numpy(x_preprocessed[begin:end]).to(self._device))
             output = model_outputs[-1]
             results[begin:end] = output.detach().cpu().numpy()
 
         # Apply postprocessing
         predictions = self._apply_postprocessing(preds=results, fit=False)
+
+        # increase number of model queries
+        self._num_queries += x.shape[0]
+
         return predictions
 
     def fit(self, x, y, batch_size=128, nb_epochs=10, **kwargs):
@@ -210,7 +216,7 @@ class WeakDefense(ClassifierNeuralNetwork, ClassifierGradients, Classifier):  # 
                 self._optimizer.zero_grad()
 
                 # Perform prediction
-                model_outputs = self._model(i_batch)
+                model_outputs = self.classifier(i_batch)
 
                 # Form the loss function
                 loss = self._loss(model_outputs[-1], o_batch)
@@ -255,7 +261,7 @@ class WeakDefense(ClassifierNeuralNetwork, ClassifierGradients, Classifier):  # 
                     self._optimizer.zero_grad()
 
                     # Perform prediction
-                    model_outputs = self._model(i_batch)
+                    model_outputs = self.classifier(i_batch)
 
                     # Form the loss function
                     loss = self._loss(model_outputs[-1], o_batch)
@@ -306,7 +312,7 @@ class WeakDefense(ClassifierNeuralNetwork, ClassifierGradients, Classifier):  # 
             x_preprocessed.requires_grad = True
 
         # Run prediction
-        model_outputs = self._model(x_preprocessed)
+        model_outputs = self.classifier(x_preprocessed)
 
         # Set where to get gradient
         if self._layer_idx_gradients >= 0:
@@ -329,7 +335,7 @@ class WeakDefense(ClassifierNeuralNetwork, ClassifierGradients, Classifier):  # 
 
         input_grad.register_hook(save_grad())
 
-        self._model.zero_grad()
+        self.classifier.zero_grad()
         if label is None:
             for i in range(self.nb_classes()):
                 torch.autograd.backward(
@@ -387,11 +393,11 @@ class WeakDefense(ClassifierNeuralNetwork, ClassifierGradients, Classifier):  # 
         labels_t = torch.from_numpy(y_preprocessed).to(self._device)
 
         # Compute the gradient and return
-        model_outputs = self._model(inputs_t)
+        model_outputs = self.classifier(inputs_t)
         loss = self._loss(model_outputs[-1], labels_t)
 
         # Clean gradients
-        self._model.zero_grad()
+        self.classifier.zero_grad()
 
         # Compute gradients
         loss.backward()
@@ -400,6 +406,19 @@ class WeakDefense(ClassifierNeuralNetwork, ClassifierGradients, Classifier):  # 
         assert grads.shape == x.shape
 
         return grads
+
+    def reset_model_queries(self):
+        """
+        Set the number of model queries to 0.
+        """
+        self._num_queries = 0
+
+    @property
+    def num_queries(self):
+        """
+        Return the number of model queries
+        """
+        return self._num_queries
 
     @property
     def layer_names(self):
@@ -457,7 +476,7 @@ class WeakDefense(ClassifierNeuralNetwork, ClassifierGradients, Classifier):  # 
             begin, end = m * batch_size, min((m + 1) * batch_size, x_preprocessed.shape[0])
 
             # Run prediction for the current batch
-            layer_output = self._model(torch.from_numpy(x_preprocessed[begin:end]).to(self._device))[layer_index]
+            layer_output = self.classifier(torch.from_numpy(x_preprocessed[begin:end]).to(self._device))[layer_index]
             results.append(layer_output.detach().cpu().numpy())
 
         results = np.concatenate(results)
@@ -473,7 +492,7 @@ class WeakDefense(ClassifierNeuralNetwork, ClassifierGradients, Classifier):  # 
         """
         if isinstance(train, bool):
             self._learning_phase = train
-            self._model.train(train)
+            self.classifier.train(train)
 
     def nb_classes(self):
         """
@@ -499,9 +518,9 @@ class WeakDefense(ClassifierNeuralNetwork, ClassifierGradients, Classifier):  # 
         import torch
 
         if path is None:
-            from art.config import ART_DATA_PATH
-
-            full_path = os.path.join(ART_DATA_PATH, filename)
+            #from art.config import ART_DATA_PATH
+            #full_path = os.path.join(ART_DATA_PATH, filename)
+            full_path = filename
         else:
             full_path = os.path.join(path, filename)
         folder = os.path.split(full_path)[0]
@@ -510,10 +529,17 @@ class WeakDefense(ClassifierNeuralNetwork, ClassifierGradients, Classifier):  # 
 
         # pylint: disable=W0212
         # disable pylint because access to _modules required
-        torch.save(self._model._model.state_dict(), full_path + ".model")
-        torch.save(self._optimizer.state_dict(), full_path + ".optimizer")
-        logger.info("Model state dict saved in path: %s.", full_path + ".model")
-        logger.info("Optimizer state dict saved in path: %s.", full_path + ".optimizer")
+        #torch.save(self.classifier._model.state_dict(), full_path + ".model")
+        #torch.save(self._optimizer.state_dict(), full_path + ".optimizer")
+        #logger.info("Model state dict saved in path: %s.", full_path + ".model")
+        #logger.info("Optimizer state dict saved in path: %s.", full_path + ".optimizer")
+
+        # save in one pack
+        torch.save({
+            'model': self.classifier.classifier.state_dict(), # the model state_dict
+            #'optimizer': self._optimizer.state_dict(), # the optimizer state_dict
+            #'loss': self._loss,
+        }, full_path)
 
     def __getstate__(self):
         """
@@ -560,11 +586,11 @@ class WeakDefense(ClassifierNeuralNetwork, ClassifierGradients, Classifier):  # 
         model = state["inner_model"]
         model.load_state_dict(torch.load(str(full_path) + ".model"))
         model.eval()
-        self._model = self._make_model_wrapper(model)
+        self.classifier = self._make_model_wrapper(model)
 
         # Recover device
         self._device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
-        self._model.to(self._device)
+        self.classifier.to(self._device)
 
         # Recover optimizer
         self._optimizer.load_state_dict(torch.load(str(full_path) + ".optimizer"))
@@ -578,7 +604,7 @@ class WeakDefense(ClassifierNeuralNetwork, ClassifierGradients, Classifier):  # 
             "clip_values=%r, preprocessing_defences=%r, postprocessing_defences=%r, preprocessing=%r)"
             % (
                 self.__module__ + "." + self.__class__.__name__,
-                self._model,
+                self.classifier,
                 self._loss,
                 self._optimizer,
                 self._input_shape,
@@ -614,7 +640,7 @@ class WeakDefense(ClassifierNeuralNetwork, ClassifierGradients, Classifier):  # 
                         :type model: is instance of `torch.nn.Module`
                         """
                         super(ModelWrapper, self).__init__()
-                        self._model = model
+                        self.classifier = model
 
                     # pylint: disable=W0221
                     # disable pylint because of API requirements for function
@@ -632,13 +658,13 @@ class WeakDefense(ClassifierNeuralNetwork, ClassifierGradients, Classifier):  # 
                         import torch.nn as nn
 
                         result = []
-                        if isinstance(self._model, nn.Sequential):
-                            for _, module_ in self._model._modules.items():
+                        if isinstance(self.classifier, nn.Sequential):
+                            for _, module_ in self.classifier._modules.items():
                                 x = module_(x)
                                 result.append(x)
 
-                        elif isinstance(self._model, nn.Module):
-                            x = self._model(x)
+                        elif isinstance(self.classifier, nn.Module):
+                            x = self.classifier(x)
                             result.append(x)
 
                         else:
@@ -664,13 +690,13 @@ class WeakDefense(ClassifierNeuralNetwork, ClassifierGradients, Classifier):  # 
                         import torch.nn as nn
 
                         result = []
-                        if isinstance(self._model, nn.Sequential):
+                        if isinstance(self.classifier, nn.Sequential):
                             # pylint: disable=W0212
                             # disable pylint because access to _modules required
-                            for name, module_ in self._model._modules.items():
+                            for name, module_ in self.classifier._modules.items():
                                 result.append(name + "_" + str(module_))
 
-                        elif isinstance(self._model, nn.Module):
+                        elif isinstance(self.classifier, nn.Module):
                             result.append("final_layer")
 
                         else:
@@ -680,10 +706,10 @@ class WeakDefense(ClassifierNeuralNetwork, ClassifierGradients, Classifier):  # 
                         return result
 
                 # Set newly created class as private attribute
-                self._model_wrapper = ModelWrapper
+                self.classifier_wrapper = ModelWrapper
 
             # Use model wrapping class to wrap the PyTorch model received as argument
-            return self._model_wrapper(model)
+            return self.classifier_wrapper(model)
 
         except ImportError:
             raise ImportError("Could not find PyTorch (`torch`) installation.")

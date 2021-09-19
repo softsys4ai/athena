@@ -122,11 +122,12 @@ class ScikitlearnClassifier(Classifier):
             postprocessing_defences=postprocessing_defences,
             preprocessing=preprocessing,
         )
-        self._model = model
+        self.classifier = model
         self._trans_configs = trans_configs
         self._image_shape = image_shape
         self._input_shape = self._get_input_shape(model)
         self._nb_classes = self._get_nb_classes()
+        self._num_queries = 0
 
     def fit(self, x, y, **kwargs):
         """
@@ -143,18 +144,18 @@ class ScikitlearnClassifier(Classifier):
         :return: `None`
         """
         # Apply transformation
-        _input_shape = self._get_input_shape(self._model)
+        _input_shape = self._get_input_shape(self.classifier)
         if x.shape == _input_shape:
             x = x.reshape((-1, self._image_shape[0], self._image_shape[1], self._image_shape[2]))
         x_preprocessed = transform(x, self._trans_configs)
-        x_preprocessed = x_preprocessed.reshape(self._get_input_shape(self._model))
+        x_preprocessed = x_preprocessed.reshape(self._get_input_shape(self.classifier))
 
         # Apply preprocessing
         x_preprocessed, y_preprocessed = self._apply_preprocessing(x_preprocessed, y, fit=True)
         y_preprocessed = np.argmax(y_preprocessed, axis=1)
 
-        self._model.fit(x_preprocessed, y_preprocessed, **kwargs)
-        self._input_shape = self._get_input_shape(self._model)
+        self.classifier.fit(x_preprocessed, y_preprocessed, **kwargs)
+        self._input_shape = self._get_input_shape(self.classifier)
         self._nb_classes = self._get_nb_classes()
 
     def predict(self, x, **kwargs):
@@ -179,15 +180,18 @@ class ScikitlearnClassifier(Classifier):
         # Apply defences
         x_preprocessed, _ = self._apply_preprocessing(x_preprocessed, y=None, fit=False)
 
-        if hasattr(self._model, "predict_proba") and callable(getattr(self._model, "predict_proba")):
-            y_pred = self._model.predict_proba(x_preprocessed)
-        elif hasattr(self._model, "predict") and callable(getattr(self._model, "predict")):
-            y_pred = to_categorical(self._model.predict(x_preprocessed), nb_classes=self._model.classes_.shape[0])
+        if hasattr(self.classifier, "predict_proba") and callable(getattr(self.classifier, "predict_proba")):
+            y_pred = self.classifier.predict_proba(x_preprocessed)
+        elif hasattr(self.classifier, "predict") and callable(getattr(self.classifier, "predict")):
+            y_pred = to_categorical(self.classifier.predict(x_preprocessed), nb_classes=self.classifier.classes_.shape[0])
         else:
             raise ValueError("The provided model does not have methods `predict_proba` or `predict`.")
 
         # Apply postprocessing
         predictions = self._apply_postprocessing(preds=y_pred, fit=False)
+
+        # Increase the number of model queries
+        self._num_queries += x.shape[0]
 
         return predictions
 
@@ -198,8 +202,8 @@ class ScikitlearnClassifier(Classifier):
         :return: Number of classes in the data.
         :rtype: `int` or `None`
         """
-        if hasattr(self._model, "n_classes_"):
-            _nb_classes = self._model.n_classes_
+        if hasattr(self.classifier, "n_classes_"):
+            _nb_classes = self.classifier.n_classes_
         else:
             _nb_classes = None
         return _nb_classes
@@ -208,7 +212,20 @@ class ScikitlearnClassifier(Classifier):
         import pickle
 
         with open(filename + ".pickle", "wb") as file_pickle:
-            pickle.dump(self._model, file=file_pickle)
+            pickle.dump(self.classifier, file=file_pickle)
+
+    def reset_model_queries(self):
+        """
+        Set the number of model queries to 0
+        """
+        self._num_queries = 0
+
+    @property
+    def num_queries(self):
+        """
+        Return the number of model queries
+        """
+        return self._num_queries
 
     def _get_input_shape(self, model):
         if hasattr(model, "n_features_"):
@@ -230,10 +247,10 @@ class ScikitlearnClassifier(Classifier):
         return _input_shape
 
     def _get_nb_classes(self):
-        if hasattr(self._model, "n_classes_"):
-            _nb_classes = self._model.n_classes_
-        elif hasattr(self._model, "classes_"):
-            _nb_classes = self._model.classes_.shape[0]
+        if hasattr(self.classifier, "n_classes_"):
+            _nb_classes = self.classifier.n_classes_
+        elif hasattr(self.classifier, "classes_"):
+            _nb_classes = self.classifier.classes_.shape[0]
         else:
             logger.warning("Number of classes not recognised. The model might not have been fitted.")
             _nb_classes = None
@@ -278,7 +295,7 @@ class ScikitlearnClassifier(Classifier):
 #             postprocessing_defences=postprocessing_defences,
 #             preprocessing=preprocessing,
 #         )
-#         self._model = model
+#         self.classifier = model
 #
 #     def get_classes_at_node(self, node_id):
 #         """
@@ -287,7 +304,7 @@ class ScikitlearnClassifier(Classifier):
 #         :return: major class in node.
 #         :rtype: `float`
 #         """
-#         return np.argmax(self._model.tree_.value[node_id])
+#         return np.argmax(self.classifier.tree_.value[node_id])
 #
 #     def get_threshold_at_node(self, node_id):
 #         """
@@ -296,7 +313,7 @@ class ScikitlearnClassifier(Classifier):
 #         :return: threshold value of feature split in this node.
 #         :rtype: `float`
 #         """
-#         return self._model.tree_.threshold[node_id]
+#         return self.classifier.tree_.threshold[node_id]
 #
 #     def get_feature_at_node(self, node_id):
 #         """
@@ -305,7 +322,7 @@ class ScikitlearnClassifier(Classifier):
 #         :return: feature index of feature split in this node.
 #         :rtype: `int`
 #         """
-#         return self._model.tree_.feature[node_id]
+#         return self.classifier.tree_.feature[node_id]
 #
 #     def get_left_child(self, node_id):
 #         """
@@ -314,7 +331,7 @@ class ScikitlearnClassifier(Classifier):
 #         :return: the indices of the left child in the tree.
 #         :rtype: `int`
 #         """
-#         return self._model.tree_.children_left[node_id]
+#         return self.classifier.tree_.children_left[node_id]
 #
 #     def get_right_child(self, node_id):
 #         """
@@ -323,7 +340,7 @@ class ScikitlearnClassifier(Classifier):
 #         :return: the indices of the right child in the tree.
 #         :rtype: `int`
 #         """
-#         return self._model.tree_.children_right[node_id]
+#         return self.classifier.tree_.children_right[node_id]
 #
 #     def get_decision_path(self, x):
 #         """
@@ -333,9 +350,9 @@ class ScikitlearnClassifier(Classifier):
 #         :rtype: `np.ndarray`
 #         """
 #         if len(np.shape(x)) == 1:
-#             return self._model.decision_path(x.reshape(1, -1)).indices
+#             return self.classifier.decision_path(x.reshape(1, -1)).indices
 #
-#         return self._model.decision_path(x).indices
+#         return self.classifier.decision_path(x).indices
 #
 #     def get_values_at_node(self, node_id):
 #         """
@@ -344,7 +361,7 @@ class ScikitlearnClassifier(Classifier):
 #         :return: Normalized values at node node_id.
 #         :rtype: `nd.array`
 #         """
-#         return self._model.tree_.value[node_id] / np.linalg.norm(self._model.tree_.value[node_id])
+#         return self.classifier.tree_.value[node_id] / np.linalg.norm(self.classifier.tree_.value[node_id])
 #
 #     def _get_leaf_nodes(self, node_id, i_tree, class_label, box):
 #         from copy import deepcopy
@@ -427,7 +444,7 @@ class ScikitlearnClassifier(Classifier):
 #             postprocessing_defences=postprocessing_defences,
 #             preprocessing=preprocessing,
 #         )
-#         self._model = model
+#         self.classifier = model
 #
 #     def get_values_at_node(self, node_id):
 #         """
@@ -436,7 +453,7 @@ class ScikitlearnClassifier(Classifier):
 #         :return: Normalized values at node node_id.
 #         :rtype: `nd.array`
 #         """
-#         return self._model.tree_.value[node_id]
+#         return self.classifier.tree_.value[node_id]
 #
 #     def _get_leaf_nodes(self, node_id, i_tree, class_label, box):
 #         from copy import deepcopy
@@ -518,7 +535,7 @@ class ScikitlearnClassifier(Classifier):
 #             postprocessing_defences=postprocessing_defences,
 #             preprocessing=preprocessing,
 #         )
-#         self._model = model
+#         self.classifier = model
 #
 #
 # class ScikitlearnAdaBoostClassifier(ScikitlearnClassifier):
@@ -559,7 +576,7 @@ class ScikitlearnClassifier(Classifier):
 #             postprocessing_defences=postprocessing_defences,
 #             preprocessing=preprocessing,
 #         )
-#         self._model = model
+#         self.classifier = model
 #
 #
 # class ScikitlearnBaggingClassifier(ScikitlearnClassifier):
@@ -600,7 +617,7 @@ class ScikitlearnClassifier(Classifier):
 #             postprocessing_defences=postprocessing_defences,
 #             preprocessing=preprocessing,
 #         )
-#         self._model = model
+#         self.classifier = model
 #
 #
 # class ScikitlearnExtraTreesClassifier(ScikitlearnClassifier, ClassifierDecisionTree):
@@ -641,7 +658,7 @@ class ScikitlearnClassifier(Classifier):
 #             postprocessing_defences=postprocessing_defences,
 #             preprocessing=preprocessing,
 #         )
-#         self._model = model
+#         self.classifier = model
 #
 #     def get_trees(self):  # lgtm [py/similar-function]
 #         """
@@ -654,7 +671,7 @@ class ScikitlearnClassifier(Classifier):
 #
 #         trees = list()
 #
-#         for i_tree, decision_tree_model in enumerate(self._model.estimators_):
+#         for i_tree, decision_tree_model in enumerate(self.classifier.estimators_):
 #             box = Box()
 #
 #             #     if num_classes == 2:
@@ -664,7 +681,7 @@ class ScikitlearnClassifier(Classifier):
 #
 #             extra_tree_classifier = ScikitlearnExtraTreeClassifier(model=decision_tree_model)
 #
-#             for i_class in range(self._model.n_classes_):
+#             for i_class in range(self.classifier.n_classes_):
 #                 class_label = i_class
 #
 #                 # pylint: disable=W0212
@@ -716,7 +733,7 @@ class ScikitlearnClassifier(Classifier):
 #             postprocessing_defences=postprocessing_defences,
 #             preprocessing=preprocessing,
 #         )
-#         self._model = model
+#         self.classifier = model
 #
 #     def get_trees(self):
 #         """
@@ -728,14 +745,14 @@ class ScikitlearnClassifier(Classifier):
 #         from art.metrics.verification_decisions_trees import Box, Tree
 #
 #         trees = list()
-#         num_trees, num_classes = self._model.estimators_.shape
+#         num_trees, num_classes = self.classifier.estimators_.shape
 #
 #         for i_tree in range(num_trees):
 #             box = Box()
 #
 #             for i_class in range(num_classes):
 #                 decision_tree_classifier = ScikitlearnDecisionTreeRegressor(
-#                     model=self._model.estimators_[i_tree, i_class]
+#                     model=self.classifier.estimators_[i_tree, i_class]
 #                 )
 #
 #                 if num_classes == 2:
@@ -792,7 +809,7 @@ class ScikitlearnClassifier(Classifier):
 #             postprocessing_defences=postprocessing_defences,
 #             preprocessing=preprocessing,
 #         )
-#         self._model = model
+#         self.classifier = model
 #
 #     def get_trees(self):  # lgtm [py/similar-function]
 #         """
@@ -805,7 +822,7 @@ class ScikitlearnClassifier(Classifier):
 #
 #         trees = list()
 #
-#         for i_tree, decision_tree_model in enumerate(self._model.estimators_):
+#         for i_tree, decision_tree_model in enumerate(self.classifier.estimators_):
 #             box = Box()
 #
 #             #     if num_classes == 2:
@@ -815,7 +832,7 @@ class ScikitlearnClassifier(Classifier):
 #
 #             decision_tree_classifier = ScikitlearnDecisionTreeClassifier(model=decision_tree_model)
 #
-#             for i_class in range(self._model.n_classes_):
+#             for i_class in range(self.classifier.n_classes_):
 #                 class_label = i_class
 #
 #                 # pylint: disable=W0212
@@ -861,7 +878,7 @@ class ScikitlearnClassifier(Classifier):
 #             postprocessing_defences=postprocessing_defences,
 #             preprocessing=preprocessing,
 #         )
-#         self._model = model
+#         self.classifier = model
 #
 #     def nb_classes(self):
 #         """
@@ -870,8 +887,8 @@ class ScikitlearnClassifier(Classifier):
 #         :return: Number of classes in the data.
 #         :rtype: `int` or `None`
 #         """
-#         if hasattr(self._model, "coef_"):
-#             _nb_classes = self._model.classes_.shape[0]
+#         if hasattr(self.classifier, "coef_"):
+#             _nb_classes = self.classifier.classes_.shape[0]
 #         else:
 #             _nb_classes = None
 #         return _nb_classes
@@ -895,7 +912,7 @@ class ScikitlearnClassifier(Classifier):
 #                  `(batch_size, 1, input_shape)` when `label` parameter is specified.
 #         :rtype: `np.ndarray`
 #         """
-#         if not hasattr(self._model, "coef_"):
+#         if not hasattr(self.classifier, "coef_"):
 #             raise ValueError(
 #                 """Model has not been fitted. Run function `fit(x, y)` of classifier first or provide a
 #             fitted model."""
@@ -906,8 +923,8 @@ class ScikitlearnClassifier(Classifier):
 #         # Apply preprocessing
 #         x_preprocessed, _ = self._apply_preprocessing(x, y=None, fit=False)
 #
-#         y_pred = self._model.predict_proba(X=x_preprocessed)
-#         weights = self._model.coef_
+#         y_pred = self.classifier.predict_proba(X=x_preprocessed)
+#         weights = self.classifier.coef_
 #
 #         if self.nb_classes() > 2:
 #             w_weighted = np.matmul(y_pred, weights)
@@ -985,7 +1002,7 @@ class ScikitlearnClassifier(Classifier):
 #         # pylint: disable=E0001
 #         from sklearn.utils.class_weight import compute_class_weight
 #
-#         if not hasattr(self._model, "coef_"):
+#         if not hasattr(self.classifier, "coef_"):
 #             raise ValueError(
 #                 """Model has not been fitted. Run function `fit(x, y)` of classifier first or provide a
 #             fitted model."""
@@ -998,15 +1015,15 @@ class ScikitlearnClassifier(Classifier):
 #         gradients = np.zeros(x_preprocessed.shape)
 #
 #         y_index = np.argmax(y_preprocessed, axis=1)
-#         if self._model.class_weight is None or self._model.class_weight == "balanced":
+#         if self.classifier.class_weight is None or self.classifier.class_weight == "balanced":
 #             class_weight = np.ones(self.nb_classes())
 #         else:
 #             class_weight = compute_class_weight(
-#                 class_weight=self._model.class_weight, classes=self._model.classes_, y=y_index
+#                 class_weight=self.classifier.class_weight, classes=self.classifier.classes_, y=y_index
 #             )
 #
-#         y_pred = self._model.predict_proba(X=x_preprocessed)
-#         weights = self._model.coef_
+#         y_pred = self.classifier.predict_proba(X=x_preprocessed)
+#         weights = self.classifier.coef_
 #
 #         # Consider the special case of a binary logistic regression model:
 #         if self.nb_classes() == 2:
@@ -1082,10 +1099,11 @@ class ScikitlearnSVC(ScikitlearnClassifier, ClassifierGradients):
             postprocessing_defences=postprocessing_defences,
             preprocessing=preprocessing,
         )
-        self._model = model
+        self.classifier = model
         self._trans_configs = trans_configs
         self._image_shape = image_shape
         self._kernel = self._kernel_func()
+        self._num_queries = 0
 
     def class_gradient(self, x, label=None, **kwargs):
         """
@@ -1111,11 +1129,11 @@ class ScikitlearnSVC(ScikitlearnClassifier, ClassifierGradients):
 
         num_samples, _ = x_preprocessed.shape
 
-        if isinstance(self._model, SVC):
-            if self._model.fit_status_:
+        if isinstance(self.classifier, SVC):
+            if self.classifier.fit_status_:
                 raise AssertionError("Model has not been fitted correctly.")
 
-            support_indices = [0] + list(np.cumsum(self._model.n_support_))
+            support_indices = [0] + list(np.cumsum(self.classifier.n_support_))
 
             if self.nb_classes() == 2:
                 sign_multiplier = -1
@@ -1135,14 +1153,14 @@ class ScikitlearnSVC(ScikitlearnClassifier, ClassifierGradients):
                                     label_multiplier = 1
 
                                 for label_sv in range(support_indices[i_label], support_indices[i_label + 1]):
-                                    alpha_i_k_y_i = self._model.dual_coef_[
+                                    alpha_i_k_y_i = self.classifier.dual_coef_[
                                         not_label if not_label < i_label else not_label - 1, label_sv
                                     ]
                                     grad_kernel = self._get_kernel_gradient_sv(label_sv, x_preprocessed[i_sample])
                                     gradients[i_sample, i_label] += label_multiplier * alpha_i_k_y_i * grad_kernel
 
                                 for not_label_sv in range(support_indices[not_label], support_indices[not_label + 1]):
-                                    alpha_i_k_y_i = self._model.dual_coef_[
+                                    alpha_i_k_y_i = self.classifier.dual_coef_[
                                         i_label if i_label < not_label else i_label - 1, not_label_sv
                                     ]
                                     grad_kernel = self._get_kernel_gradient_sv(not_label_sv, x_preprocessed[i_sample])
@@ -1160,14 +1178,14 @@ class ScikitlearnSVC(ScikitlearnClassifier, ClassifierGradients):
                                 label_multiplier = 1
 
                             for label_sv in range(support_indices[label], support_indices[label + 1]):
-                                alpha_i_k_y_i = self._model.dual_coef_[
+                                alpha_i_k_y_i = self.classifier.dual_coef_[
                                     not_label if not_label < label else not_label - 1, label_sv
                                 ]
                                 grad_kernel = self._get_kernel_gradient_sv(label_sv, x_preprocessed[i_sample])
                                 gradients[i_sample, 0] += label_multiplier * alpha_i_k_y_i * grad_kernel
 
                             for not_label_sv in range(support_indices[not_label], support_indices[not_label + 1]):
-                                alpha_i_k_y_i = self._model.dual_coef_[
+                                alpha_i_k_y_i = self.classifier.dual_coef_[
                                     label if label < not_label else label - 1, not_label_sv
                                 ]
                                 grad_kernel = self._get_kernel_gradient_sv(not_label_sv, x_preprocessed[i_sample])
@@ -1191,14 +1209,14 @@ class ScikitlearnSVC(ScikitlearnClassifier, ClassifierGradients):
                             for label_sv in range(
                                 support_indices[label[i_sample]], support_indices[label[i_sample] + 1]
                             ):
-                                alpha_i_k_y_i = self._model.dual_coef_[
+                                alpha_i_k_y_i = self.classifier.dual_coef_[
                                     not_label if not_label < label[i_sample] else not_label - 1, label_sv
                                 ]
                                 grad_kernel = self._get_kernel_gradient_sv(label_sv, x_preprocessed[i_sample])
                                 gradients[i_sample, 0] += label_multiplier * alpha_i_k_y_i * grad_kernel
 
                             for not_label_sv in range(support_indices[not_label], support_indices[not_label + 1]):
-                                alpha_i_k_y_i = self._model.dual_coef_[
+                                alpha_i_k_y_i = self.classifier.dual_coef_[
                                     label[i_sample] if label[i_sample] < not_label else label[i_sample] - 1,
                                     not_label_sv,
                                 ]
@@ -1210,25 +1228,25 @@ class ScikitlearnSVC(ScikitlearnClassifier, ClassifierGradients):
 
             gradients = self._apply_preprocessing_gradient(x, gradients * sign_multiplier)
 
-        elif isinstance(self._model, LinearSVC):
+        elif isinstance(self.classifier, LinearSVC):
             if label is None:
                 gradients = np.zeros((x_preprocessed.shape[0], self.nb_classes(), x_preprocessed.shape[1]))
 
                 for i in range(self.nb_classes()):
                     for i_sample in range(num_samples):
                         if self.nb_classes() == 2:
-                            gradients[i_sample, i] = self._model.coef_[0] * (2 * i - 1)
+                            gradients[i_sample, i] = self.classifier.coef_[0] * (2 * i - 1)
                         else:
-                            gradients[i_sample, i] = self._model.coef_[i]
+                            gradients[i_sample, i] = self.classifier.coef_[i]
 
             elif isinstance(label, (int, np.integer)):
                 gradients = np.zeros((x_preprocessed.shape[0], 1, x_preprocessed.shape[1]))
 
                 for i_sample in range(num_samples):
                     if self.nb_classes() == 2:
-                        gradients[i_sample, 0] = self._model.coef_[0] * (2 * label - 1)
+                        gradients[i_sample, 0] = self.classifier.coef_[0] * (2 * label - 1)
                     else:
-                        gradients[i_sample, 0] = self._model.coef_[label]
+                        gradients[i_sample, 0] = self.classifier.coef_[label]
 
             elif (
                 (isinstance(label, list) and len(label) == num_samples)
@@ -1239,9 +1257,9 @@ class ScikitlearnSVC(ScikitlearnClassifier, ClassifierGradients):
 
                 for i_sample in range(num_samples):
                     if self.nb_classes() == 2:
-                        gradients[i_sample, 0] = self._model.coef_[0] * (2 * label[i_sample] - 1)
+                        gradients[i_sample, 0] = self.classifier.coef_[0] * (2 * label[i_sample] - 1)
                     else:
-                        gradients[i_sample, 0] = self._model.coef_[label[i_sample]]
+                        gradients[i_sample, 0] = self.classifier.coef_[label[i_sample]]
 
             else:
                 raise TypeError("Unrecognized type for argument `label` with type " + str(type(label)))
@@ -1262,26 +1280,26 @@ class ScikitlearnSVC(ScikitlearnClassifier, ClassifierGradients):
         :rtype: `np.ndarray`
         """
         # pylint: disable=W0212
-        if self._model.kernel == "linear":
+        if self.classifier.kernel == "linear":
             grad = sv
-        elif self._model.kernel == "poly":
+        elif self.classifier.kernel == "poly":
             grad = (
-                self._model.degree
-                * (self._model._gamma * np.sum(x_sample * sv) + self._model.coef0) ** (self._model.degree - 1)
+                self.classifier.degree
+                * (self.classifier._gamma * np.sum(x_sample * sv) + self.classifier.coef0) ** (self.classifier.degree - 1)
                 * sv
             )
-        elif self._model.kernel == "rbf":
+        elif self.classifier.kernel == "rbf":
             grad = (
                 2
-                * self._model._gamma
+                * self.classifier._gamma
                 * (-1)
-                * np.exp(-self._model._gamma * np.linalg.norm(x_sample - sv, ord=2))
+                * np.exp(-self.classifier._gamma * np.linalg.norm(x_sample - sv, ord=2))
                 * (x_sample - sv)
             )
-        elif self._model.kernel == "sigmoid":
+        elif self.classifier.kernel == "sigmoid":
             raise NotImplementedError
         else:
-            raise NotImplementedError("Loss gradients for kernel '{}' are not implemented.".format(self._model.kernel))
+            raise NotImplementedError("Loss gradients for kernel '{}' are not implemented.".format(self.classifier.kernel))
         return grad
 
     def _get_kernel_gradient_sv(self, i_sv, x_sample):
@@ -1295,7 +1313,7 @@ class ScikitlearnSVC(ScikitlearnClassifier, ClassifierGradients):
         :return: The kernelized product of the vectors.
         :rtype: `np.ndarray`
         """
-        x_i = self._model.support_vectors_[i_sv, :]
+        x_i = self.classifier.support_vectors_[i_sv, :]
         return self._kernel_grad(x_i, x_sample)
 
     def loss_gradient(self, x, y, **kwargs):
@@ -1324,9 +1342,9 @@ class ScikitlearnSVC(ScikitlearnClassifier, ClassifierGradients):
 
         y_index = np.argmax(y_preprocessed, axis=1)
 
-        if isinstance(self._model, SVC):
+        if isinstance(self.classifier, SVC):
 
-            if self._model.fit_status_:
+            if self.classifier.fit_status_:
                 raise AssertionError("Model has not been fitted correctly.")
 
             if y_preprocessed.shape[1] == 2:
@@ -1337,7 +1355,7 @@ class ScikitlearnSVC(ScikitlearnClassifier, ClassifierGradients):
             i_not_label_i = None
             label_multiplier = None
 
-            support_indices = [0] + list(np.cumsum(self._model.n_support_))
+            support_indices = [0] + list(np.cumsum(self.classifier.n_support_))
 
             for i_sample in range(num_samples):
 
@@ -1355,16 +1373,16 @@ class ScikitlearnSVC(ScikitlearnClassifier, ClassifierGradients):
                             label_multiplier = 1
 
                         for i_label_sv in range(support_indices[i_label], support_indices[i_label + 1]):
-                            alpha_i_k_y_i = self._model.dual_coef_[i_not_label_i, i_label_sv] * label_multiplier
+                            alpha_i_k_y_i = self.classifier.dual_coef_[i_not_label_i, i_label_sv] * label_multiplier
                             grad_kernel = self._get_kernel_gradient_sv(i_label_sv, x_preprocessed[i_sample])
                             gradients[i_sample, :] += sign_multiplier * alpha_i_k_y_i * grad_kernel
 
                         for i_not_label_sv in range(support_indices[i_not_label], support_indices[i_not_label + 1]):
-                            alpha_i_k_y_i = self._model.dual_coef_[i_not_label_i, i_not_label_sv] * label_multiplier
+                            alpha_i_k_y_i = self.classifier.dual_coef_[i_not_label_i, i_not_label_sv] * label_multiplier
                             grad_kernel = self._get_kernel_gradient_sv(i_not_label_sv, x_preprocessed[i_sample])
                             gradients[i_sample, :] += sign_multiplier * alpha_i_k_y_i * grad_kernel
 
-        elif isinstance(self._model, LinearSVC):
+        elif isinstance(self.classifier, LinearSVC):
 
             for i_sample in range(num_samples):
 
@@ -1381,7 +1399,7 @@ class ScikitlearnSVC(ScikitlearnClassifier, ClassifierGradients):
                     i_label_i = i_label
                     label_multiplier = -1
 
-                gradients[i_sample] = label_multiplier * self._model.coef_[i_label_i]
+                gradients[i_sample] = label_multiplier * self.classifier.coef_[i_label_i]
         else:
             raise TypeError("Model not recognized.")
 
@@ -1400,10 +1418,10 @@ class ScikitlearnSVC(ScikitlearnClassifier, ClassifierGradients):
         from sklearn.svm import SVC, LinearSVC
         from sklearn.metrics.pairwise import polynomial_kernel, linear_kernel, rbf_kernel
 
-        if isinstance(self._model, LinearSVC):
+        if isinstance(self.classifier, LinearSVC):
             kernel = "linear"
-        elif isinstance(self._model, SVC):
-            kernel = self._model.kernel
+        elif isinstance(self.classifier, SVC):
+            kernel = self.classifier.kernel
         else:
             raise NotImplementedError("SVM model not yet supported.")
 
@@ -1432,8 +1450,8 @@ class ScikitlearnSVC(ScikitlearnClassifier, ClassifierGradients):
         :rtype: `np.ndarray`
         """
         submatrix_shape = (rows.shape[0], cols.shape[0])
-        y_row = self._model.predict(rows)
-        y_col = self._model.predict(cols)
+        y_row = self.classifier.predict(rows)
+        y_col = self.classifier.predict(cols)
         y_row[y_row == 0] = -1
         y_col[y_col == 0] = -1
         q_rc = np.zeros(submatrix_shape)
@@ -1467,15 +1485,31 @@ class ScikitlearnSVC(ScikitlearnClassifier, ClassifierGradients):
         # Apply defences
         x_preprocessed, _ = self._apply_preprocessing(x_preprocessed, y=None, fit=False)
 
-        if isinstance(self._model, SVC) and self._model.probability:
-            y_pred = self._model.predict_proba(X=x_preprocessed)
+        if isinstance(self.classifier, SVC) and self.classifier.probability:
+            y_pred = self.classifier.predict_proba(X=x_preprocessed)
         else:
-            y_pred_label = self._model.predict(X=x_preprocessed)
+            y_pred_label = self.classifier.predict(X=x_preprocessed)
             targets = np.array(y_pred_label).reshape(-1)
             one_hot_targets = np.eye(self.nb_classes())[targets]
             y_pred = one_hot_targets
 
+        # increase the number of model queries
+        self._num_queries += x.shape[0]
+
         return y_pred
+
+    def reset_model_queries(self):
+        """
+        Set the number of model queries to 0
+        """
+        self._num_queries = 0
+
+    @property
+    def queries(self):
+        """
+        Return the number of model queries
+        """
+        return self._num_queries
 
     def nb_classes(self):
         """
@@ -1484,8 +1518,8 @@ class ScikitlearnSVC(ScikitlearnClassifier, ClassifierGradients):
         :return: Number of classes in the data.
         :rtype: `int` or `None`
         """
-        if hasattr(self._model, "classes_"):
-            _nb_classes = len(self._model.classes_)
+        if hasattr(self.classifier, "classes_"):
+            _nb_classes = len(self.classifier.classes_)
         else:
             _nb_classes = None
         return _nb_classes
