@@ -502,10 +502,11 @@ def cartoonify(original_images, transformation):
     filter_sigma_space = 30
 
     if (adaptive_method == 'gaussian'):
-        adaptive_method = cv2.ADAPTIVE_THRESH_GAUSSIAN_C
+        thresh_adaptive_method = cv2.ADAPTIVE_THRESH_GAUSSIAN_C
         nb_downsampling = 1
         nb_bilateral = 10
         filter_d = 250
+
     if (catoon_type == 'type2'):
         thresh_bsize = 3
         nb_downsampling = 1
