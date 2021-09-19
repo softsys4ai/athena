@@ -31,6 +31,8 @@ class Ensemble(ClassifierNeuralNetwork, ClassifierGradients, Classifier):
             preprocessing=preprocessing,
         )
 
+        self._num_queries = 0
+
         if classifiers is None or not classifiers:
             raise ValueError('No classifiers provided for the whitebox.')
 
@@ -81,6 +83,8 @@ class Ensemble(ClassifierNeuralNetwork, ClassifierGradients, Classifier):
             [self._classifier_weights[i] * self._classifiers[i].predict(x) for i in range(self._nb_classifiers)]
         )
 
+        self._num_queries += x.shape[0]
+
         if raw:
             return raw_predictions
         else:
@@ -112,11 +116,12 @@ class Ensemble(ClassifierNeuralNetwork, ClassifierGradients, Classifier):
                 labels = [predicted_labels[wd_id][s_id] for wd_id in range(self._nb_classifiers)]
                 values, freqs = np.unique(labels, return_counts=True)
                 votes.append((values, freqs))
-                rates = np.ones((self._nb_classes, ), dtype=np.float32)
+                rates = np.zeros((self._nb_classes, ), dtype=np.float32)
+                amount = 0.
                 for v, f in zip(values, freqs):
                     rates[v] = f
-                sum = np.sum(rates) * 1.
-                rates = rates / sum
+                    amount += f
+                rates = rates / amount
                 ensemble_preds.append(rates)
 
             ensemble_preds = np.asarray(ensemble_preds)
@@ -182,6 +187,19 @@ class Ensemble(ClassifierNeuralNetwork, ClassifierGradients, Classifier):
 
     def fit_generator(self, generator, nb_epochs=20, **kwargs):
         raise NotImplementedError
+
+    def reset_model_queries(self):
+        """
+        Set the number of model queries to 0.
+        """
+        self._num_queries = 0
+
+    @property
+    def num_queries(self):
+        """
+        Return the number of model queries
+        """
+        return self._num_queries
 
     @property
     def layer_names(self):
